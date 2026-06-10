@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* CDY Brand */
+  --cdy-navy: #0a1628;
+  --cdy-navy-light: #112240;
+  --cdy-navy-border: #1e3a5f;
+  --cdy-red: #c41e3a;
+  --cdy-red-hover: #a01830;
+  --cdy-red-light: #2d0a10;
+  --cdy-white: #f8fafc;
+  --cdy-white-muted: #94a3b8;
+  --cdy-white-dim: #475569;
+  --cdy-success: #10b981;
+  --cdy-warning: #f59e0b;
+  --cdy-danger: #ef4444;
+  --cdy-info: #3b82f6;
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-cdy-navy-border;
+  }
+
+  body {
+    @apply bg-cdy-navy text-cdy-white antialiased;
+    background: var(--cdy-navy);
+    color: var(--cdy-white);
+  }
+}
