@@ -62,7 +62,60 @@ export interface FinanceSummary {
     overdue: number;
     totalExpenses: number;
     netCashPosition: number;
+    totalDraftInvoices: number;
+    totalSentInvoices: number;
     previousMonth: FinanceSummaryMetrics;
+}
+export interface LineItem {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+}
+export interface InvoiceRecord {
+    id: string;
+    invoiceNumber: string;
+    clientId: string;
+    projectId: string | null;
+    status: InvoiceStatus;
+    lineItems: LineItem[];
+    subtotal: number;
+    taxRate: number;
+    taxAmount: number;
+    total: number;
+    currency: string;
+    dueDate: string;
+    sentAt: string | null;
+    paidAt: string | null;
+    writtenOffAt: string | null;
+    writtenOffBy: string | null;
+    notes: string | null;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface InvoicePayment {
+    id: string;
+    invoiceId: string;
+    amount: number;
+    method: PaymentMethod;
+    reference: string | null;
+    paidAt: string;
+    receiptSent: boolean;
+    notes: string | null;
+    recordedBy: string;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface InvoiceDetail extends InvoiceRecord {
+    payments: InvoicePayment[];
+}
+export interface PaginatedInvoices {
+    data: InvoiceRecord[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
 }
 export interface ApiResponse<T> {
     data: T;

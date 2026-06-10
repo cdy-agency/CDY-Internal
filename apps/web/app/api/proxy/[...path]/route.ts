@@ -12,9 +12,14 @@ async function proxyRequest(
   const url = new URL(request.url);
   const targetUrl = `${API_URL}/${path}${url.search}`;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  const headers: Record<string, string> = {};
+
+  const contentType = request.headers.get('Content-Type');
+  if (contentType) {
+    headers['Content-Type'] = contentType;
+  } else if (request.method !== 'GET' && request.method !== 'HEAD') {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -34,13 +39,26 @@ async function proxyRequest(
 
   try {
     const response = await fetch(targetUrl, init);
-    const data = await response.text();
+    const responseContentType =
+      response.headers.get('Content-Type') ?? 'application/json';
 
+    if (responseContentType.includes('application/pdf')) {
+      const buffer = await response.arrayBuffer();
+      return new NextResponse(buffer, {
+        status: response.status,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition':
+            response.headers.get('Content-Disposition') ??
+            'attachment; filename="invoice.pdf"',
+        },
+      });
+    }
+
+    const data = await response.text();
     return new NextResponse(data, {
       status: response.status,
-      headers: {
-        'Content-Type': response.headers.get('Content-Type') ?? 'application/json',
-      },
+      headers: { 'Content-Type': responseContentType },
     });
   } catch {
     return NextResponse.json(

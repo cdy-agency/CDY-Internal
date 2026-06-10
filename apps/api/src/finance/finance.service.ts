@@ -48,6 +48,8 @@ export class FinanceService {
       overdue,
       previousOutstanding,
       previousOverdue,
+      totalDraftInvoices,
+      totalSentInvoices,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -59,6 +61,8 @@ export class FinanceService {
       this.sumOverdueBalance(),
       this.sumOutstandingBalance(lastMonthEnd),
       this.sumOverdueBalance(lastMonthEnd),
+      this.countInvoicesByStatus('DRAFT'),
+      this.countInvoicesByStatus('SENT'),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -83,8 +87,18 @@ export class FinanceService {
 
     return {
       ...currentMetrics,
+      totalDraftInvoices,
+      totalSentInvoices,
       previousMonth: previousMetrics,
     };
+  }
+
+  private async countInvoicesByStatus(
+    status: 'DRAFT' | 'SENT',
+  ): Promise<number> {
+    return this.prisma.invoice.count({
+      where: { deletedAt: null, status },
+    });
   }
 
   private async sumInvoices(start: Date, end: Date): Promise<number> {

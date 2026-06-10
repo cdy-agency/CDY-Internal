@@ -1,5 +1,5 @@
-import StubPage from '../../_components/StubPage';
+import { redirect } from 'next/navigation';
 
-export default function NewInvoicePage(): JSX.Element {
-  return <StubPage title="New Invoice" />;
+export default function NewInvoiceRedirect(): never {
+  redirect('/finance/invoices');
 }

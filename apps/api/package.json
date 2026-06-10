@@ -18,6 +18,7 @@
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.19",
     "@nestjs/jwt": "^10.2.0",
+    "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.19",
     "@nestjs/swagger": "^8.1.1",
@@ -27,7 +28,9 @@
     "class-validator": "^0.14.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "puppeteer": "^25.1.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.12.4",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
