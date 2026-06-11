@@ -32,12 +32,15 @@ WORKDIR /app
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/tsconfig.seed.json ./apps/api/tsconfig.seed.json
+COPY docker/api/docker-entrypoint.sh ./docker-entrypoint.sh
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 RUN mkdir -p /app/uploads/receipts
+RUN chmod +x /app/docker-entrypoint.sh
 
-CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && node dist/main.js"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 EXPOSE 3251

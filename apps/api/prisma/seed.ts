@@ -11,9 +11,15 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-async function main(): Promise<void> {
-  const passwordHash = await bcrypt.hash('CDY@2026!', 10);
-
+async function clearAllData(): Promise<void> {
+  await prisma.payrollLineItem.deleteMany();
+  await prisma.payrollRun.deleteMany();
+  await prisma.employeeSalary.deleteMany();
+  await prisma.balanceSheetEntry.deleteMany();
+  await prisma.financeSetting.deleteMany();
+  await prisma.budgetIncreaseRequest.deleteMany();
+  await prisma.projectBudget.deleteMany();
+  await prisma.taxPayment.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.invoiceReminder.deleteMany();
   await prisma.commissionRecord.deleteMany();
@@ -22,6 +28,23 @@ async function main(): Promise<void> {
   await prisma.expense.deleteMany();
   await prisma.bill.deleteMany();
   await prisma.user.deleteMany();
+}
+
+async function main(): Promise<void> {
+  const forceReseed = process.env.SEED_FORCE === 'true';
+
+  if (!forceReseed) {
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+      process.stdout.write('Seed skipped: database already contains users\n');
+      return;
+    }
+  } else {
+    process.stdout.write('SEED_FORCE=true — wiping and reseeding database\n');
+    await clearAllData();
+  }
+
+  const passwordHash = await bcrypt.hash('CDY@2026!', 10);
 
   const ceo = await prisma.user.create({
     data: {
@@ -296,6 +319,10 @@ async function main(): Promise<void> {
   void sentInvoice;
   void overdueInvoice;
   void salesAgent;
+
+  process.stdout.write(
+    'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com (password: CDY@2026!)\n',
+  );
 }
 
 main()

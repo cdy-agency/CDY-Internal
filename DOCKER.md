@@ -38,7 +38,8 @@ Internet → host nginx :443
 ```bash
 cp .env.docker.prod.example .env.docker   # edit secrets on the server
 docker compose -f docker-compose.prod.yml --env-file .env.docker up --build -d
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
+# Migrations + seed run automatically on API startup (first boot seeds demo data)
+docker compose -f docker-compose.prod.yml logs api --tail 30
 ```
 
 ### Host nginx setup

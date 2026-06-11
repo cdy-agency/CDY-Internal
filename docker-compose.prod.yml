@@ -39,6 +39,8 @@ services:
       PORT: 3251
       UPLOAD_DIR: /app/uploads
       SENTRY_DSN: ${SENTRY_DSN}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      SEED_FORCE: ${SEED_FORCE:-false}
     volumes:
       - cdy_uploads_prod:/app/uploads
     ports:
