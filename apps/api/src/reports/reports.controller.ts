@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -23,6 +24,10 @@ import { ExpenseReportFiltersDto } from './dto/expense-report-filters.dto';
 import { CashFlowFiltersDto } from './dto/cash-flow-filters.dto';
 import { CreateCashFlowAdjustmentDto } from './dto/create-cash-flow-adjustment.dto';
 import { BalanceSheetFiltersDto } from './dto/balance-sheet-filters.dto';
+import {
+  CreateBalanceSheetEntryDto,
+  UpdateBalanceSheetEntryDto,
+} from './dto/balance-sheet-entry.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
@@ -197,6 +202,36 @@ export class ReportsController {
       message: 'Balance sheet generated',
       statusCode: HttpStatus.OK,
     };
+  }
+
+  @Post('balance-sheet/entries')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Create manual balance sheet entry' })
+  async createBalanceSheetEntry(
+    @Body() dto: CreateBalanceSheetEntryDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.balanceSheetService.createEntry(dto, user.sub);
+    return { data, message: 'Entry created', statusCode: HttpStatus.CREATED };
+  }
+
+  @Patch('balance-sheet/entries/:id')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Update balance sheet entry' })
+  async updateBalanceSheetEntry(
+    @Param('id') id: string,
+    @Body() dto: UpdateBalanceSheetEntryDto,
+  ) {
+    const data = await this.balanceSheetService.updateEntry(id, dto);
+    return { data, message: 'Entry updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('balance-sheet/entries/:id')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Delete balance sheet entry' })
+  async deleteBalanceSheetEntry(@Param('id') id: string) {
+    const data = await this.balanceSheetService.deleteEntry(id);
+    return { data, message: 'Entry deleted', statusCode: HttpStatus.OK };
   }
 
   @Get('balance-sheet/pdf')

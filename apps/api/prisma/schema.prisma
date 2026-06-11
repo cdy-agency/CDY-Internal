@@ -26,6 +26,8 @@ model User {
   commissions     CommissionRecord[] @relation("AgentCommissions")
   notifications   Notification[]
   creditNotes     CreditNote[]
+  salary          EmployeeSalary?
+  payrollLineItems PayrollLineItem[] @relation("EmployeePayroll")
 
   @@index([role])
 }
@@ -574,4 +576,111 @@ model BudgetIncreaseRequest {
 
   @@index([projectId])
   @@index([status])
+}
+
+enum PayrollStatus {
+  DRAFT
+  PROCESSED
+  LOCKED
+}
+
+model PayrollRun {
+  id              String        @id @default(cuid())
+  month           String
+  status          PayrollStatus @default(DRAFT)
+  processedAt     DateTime?
+  processedBy     String?
+  lockedAt        DateTime?
+  lockedBy        String?
+  totalGross      Decimal       @db.Decimal(12, 2) @default(0)
+  totalDeductions Decimal       @db.Decimal(12, 2) @default(0)
+  totalNet        Decimal       @db.Decimal(12, 2) @default(0)
+  currency        String        @default("USD")
+  notes           String?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  lineItems PayrollLineItem[]
+
+  @@unique([month])
+  @@index([status])
+  @@index([month])
+}
+
+model PayrollLineItem {
+  id               String   @id @default(cuid())
+  payrollRunId     String
+  employeeId       String
+  employeeName     String
+  employeeEmail    String
+  baseSalary       Decimal  @db.Decimal(12, 2)
+  commission       Decimal  @db.Decimal(12, 2) @default(0)
+  bonus            Decimal  @db.Decimal(12, 2) @default(0)
+  grossPay         Decimal  @db.Decimal(12, 2)
+  taxDeduction     Decimal  @db.Decimal(12, 2) @default(0)
+  otherDeductions  Decimal  @db.Decimal(12, 2) @default(0)
+  netPay           Decimal  @db.Decimal(12, 2)
+  payslipSent      Boolean  @default(false)
+  payslipUrl       String?
+  notes            String?
+  adjustedBy       String?
+  adjustmentReason String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id])
+  employee   User?      @relation("EmployeePayroll", fields: [employeeId], references: [id])
+
+  @@index([payrollRunId])
+  @@index([employeeId])
+}
+
+model EmployeeSalary {
+  id            String   @id @default(cuid())
+  employeeId    String   @unique
+  employeeName  String
+  employeeEmail String
+  baseSalary    Decimal  @db.Decimal(12, 2)
+  currency      String   @default("USD")
+  effectiveFrom DateTime @default(now())
+  isActive      Boolean  @default(true)
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee User @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([isActive])
+}
+
+enum BalanceSheetType {
+  ASSET
+  LIABILITY
+}
+
+model BalanceSheetEntry {
+  id        String           @id @default(cuid())
+  type      BalanceSheetType
+  label     String
+  amount    Decimal          @db.Decimal(12, 2)
+  currency  String           @default("USD")
+  asOfDate  DateTime         @default(now())
+  notes     String?
+  createdBy String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+
+  @@index([type])
+  @@index([asOfDate])
+}
+
+model FinanceSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedBy String
+  updatedAt DateTime @updatedAt
 }

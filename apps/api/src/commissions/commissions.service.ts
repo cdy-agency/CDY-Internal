@@ -33,6 +33,24 @@ export class CommissionsService {
     private readonly auditService: AuditService,
   ) {}
 
+  async findSalesAgents() {
+    const agents = await this.prisma.user.findMany({
+      where: {
+        role: Role.SALES_AGENT,
+        isActive: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+      orderBy: { firstName: 'asc' },
+    });
+    return agents;
+  }
+
   async createRule(dto: CreateCommissionRuleDto, createdBy: string) {
     const rule = await this.prisma.commissionRule.create({
       data: {
@@ -59,9 +77,93 @@ export class CommissionsService {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
       },
-      orderBy: { effectiveFrom: 'desc' },
+      orderBy: [{ agentId: 'asc' }, { effectiveFrom: 'desc' }],
     });
-    return rules.map((r) => this.serializeRule(r));
+
+    const grouped = new Map<
+      string,
+      {
+        agentId: string;
+        agentName: string;
+        rules: ReturnType<CommissionsService['serializeRule']>[];
+      }
+    >();
+
+    for (const rule of rules) {
+      const serialized = this.serializeRule(rule);
+      const agentName = rule.agent
+        ? `${rule.agent.firstName} ${rule.agent.lastName}`
+        : rule.agentId;
+
+      const existing = grouped.get(rule.agentId);
+      if (existing) {
+        existing.rules.push(serialized);
+      } else {
+        grouped.set(rule.agentId, {
+          agentId: rule.agentId,
+          agentName,
+          rules: [serialized],
+        });
+      }
+    }
+
+    return Array.from(grouped.values());
+  }
+
+  async deactivateRule(
+    id: string,
+    userId: string,
+    auditCtx?: AuditContext,
+  ) {
+    const rule = await this.prisma.commissionRule.findUnique({
+      where: { id },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+    if (!rule) throw new NotFoundException('Commission rule not found');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (rule.effectiveTo && rule.effectiveTo <= today) {
+      throw new BadRequestException('Rule is already deactivated');
+    }
+
+    const updated = await this.prisma.commissionRule.update({
+      where: { id },
+      data: { effectiveTo: today },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    const serialized = this.serializeRule(updated);
+
+    if (auditCtx) {
+      this.auditService.log({
+        ...auditCtx,
+        action: 'commission_rule.deactivated',
+        entityType: 'CommissionRule',
+        entityId: id,
+        newValue: serialized,
+      });
+    } else {
+      this.auditService.log({
+        userId,
+        userEmail: '',
+        action: 'commission_rule.deactivated',
+        entityType: 'CommissionRule',
+        entityId: id,
+        newValue: serialized,
+      });
+    }
+
+    return serialized;
   }
 
   async updateRule(id: string, dto: UpdateCommissionRuleDto) {

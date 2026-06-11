@@ -64,6 +64,39 @@
 - [ ] Audit log page shows entries in correct order
 - [ ] No delete endpoint exists — verify 405 is returned
 
+## Payroll path (Sprint 8)
+- [ ] Add salary records for 3 employees
+- [ ] Add commission rule for sales agent
+- [ ] Close a test deal via POST /commissions/calculate
+- [ ] Approve commission via commission review page
+- [ ] Create payroll run for current month
+- [ ] Verify commission appears in agent's line item
+- [ ] Adjust one employee's line item (as a different user)
+- [ ] Verify self-adjust block — cannot adjust own line item
+- [ ] Process payroll as a different user (separation of duties)
+- [ ] Verify self-process block — creator cannot process own run
+- [ ] All payslips sent — verify payslip email received
+- [ ] Lock payroll run — verify LOCKED status prevents any further edits
+
+## Commission rules path (Sprint 8)
+- [ ] Create commission rule via rules page
+- [ ] Create deal and verify correct rate applied
+- [ ] Deactivate rule — new deals no longer use it
+- [ ] Old commission records referencing the rule are unaffected
+
+## Balance sheet hardening path (Sprint 8)
+- [ ] Add manual asset entry "Cash in bank: $50,000"
+- [ ] Add manual liability "Bank loan: $20,000"
+- [ ] Balance sheet reflects new entries in totals
+- [ ] Equity = total assets − total liabilities (verify manually)
+- [ ] Year-on-year comparison shows correct previous year figures
+
+## Settings path (Sprint 8)
+- [ ] Update company name in General settings
+- [ ] Create a new invoice — PDF shows updated company name
+- [ ] Update invoice footer note — PDF shows new note
+- [ ] Tax Rates tab shows same content as /finance/settings/tax
+
 ## Production smoke test
 - [ ] Login on production URL
 - [ ] Create draft invoice

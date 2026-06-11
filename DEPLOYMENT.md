@@ -22,7 +22,33 @@ railway run npx prisma migrate status
 
 ### 3. Push to main
 ```bash
-git tag v1.0.0-finance
+git tag v2.0.0-finance
+git push origin main --tags
+```
+
+## v2.0.0-finance Release
+
+### New in v2.0.0
+- Payroll engine with payslip generation
+- Commission rules management UI
+- Balance sheet manual entries + year-on-year comparison
+- Finance settings (company details, invoice prefix, payroll config)
+- Employee salary management
+
+### Migration
+```bash
+railway run npx prisma migrate deploy
+```
+
+### Seed payroll data (once)
+```bash
+# Add salary records for each employee via the UI or API
+# POST /api/v1/payroll/salaries for each employee
+```
+
+### Tag and deploy
+```bash
+git tag v2.0.0-finance
 git push origin main --tags
 ```
 

@@ -16,6 +16,8 @@ import {
   RefreshCw,
   PiggyBank,
   Percent,
+  Wallet,
+  Settings2,
   LogOut,
   Menu,
   X,
@@ -113,10 +115,22 @@ const navItems: NavItem[] = [
     roles: [Role.CEO, Role.FINANCE_MANAGER, Role.SALES_AGENT],
   },
   {
+    label: 'Payroll',
+    href: '/finance/payroll',
+    icon: Wallet,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
     label: 'Audit Log',
     href: '/finance/audit',
     icon: ShieldCheck,
     roles: [Role.CEO],
+  },
+  {
+    label: 'Settings',
+    href: '/finance/settings',
+    icon: Settings2,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
   },
   {
     label: 'Tax Rates',
@@ -216,7 +230,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
             <span className="text-xl font-semibold text-cdy-white">Finance</span>
           </div>
           <span className="mt-1 inline-block rounded-full border border-cdy-navy-border px-2 py-0.5 text-xs text-cdy-muted">
-            v1.0
+            v2.0
           </span>
         </div>
 

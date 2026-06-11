@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
@@ -10,6 +10,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AuditModule } from './audit/audit.module';
 import { DebugModule } from './debug/debug.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { SettingsModule } from './settings/settings.module';
+import { SettingsService } from './settings/settings.service';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     FinanceModule,
     AutomationModule,
     DebugModule,
+    SettingsModule,
   ],
   providers: [
     {
@@ -33,4 +36,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationBootstrap {
+  constructor(private readonly settingsService: SettingsService) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    await this.settingsService.seed();
+  }
+}

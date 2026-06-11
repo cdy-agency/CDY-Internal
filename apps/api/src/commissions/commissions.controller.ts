@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -37,8 +38,16 @@ import { Role } from '@cdy/shared';
 export class CommissionsController {
   constructor(private readonly commissionsService: CommissionsService) {}
 
+  @Get('agents')
+  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @ApiOperation({ summary: 'List sales agents for commission rules' })
+  async findSalesAgents() {
+    const data = await this.commissionsService.findSalesAgents();
+    return { data, message: 'Agents retrieved', statusCode: HttpStatus.OK };
+  }
+
   @Post('rules')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Create commission rule' })
   async createRule(
     @Body() dto: CreateCommissionRuleDto,
@@ -57,11 +66,27 @@ export class CommissionsController {
   }
 
   @Patch('rules/:id')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Update commission rule' })
   async updateRule(@Param('id') id: string, @Body() dto: UpdateCommissionRuleDto) {
     const data = await this.commissionsService.updateRule(id, dto);
     return { data, message: 'Rule updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('rules/:id')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Deactivate commission rule' })
+  async deactivateRule(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.commissionsService.deactivateRule(
+      id,
+      user.sub,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Rule deactivated', statusCode: HttpStatus.OK };
   }
 
   @Post('calculate')

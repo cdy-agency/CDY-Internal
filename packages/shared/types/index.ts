@@ -259,20 +259,117 @@ export interface CashFlowAdjustment {
   date: string;
 }
 
+export interface BalanceSheetManualEntry {
+  id: string;
+  label: string;
+  amount: number;
+  currency: string;
+  asOfDate: string;
+}
+
 export interface BalanceSheetData {
   asOf: string;
   assets: {
     accountsReceivable: number;
-    cash: number;
-    otherAssets: number;
+    manual: BalanceSheetManualEntry[];
     totalAssets: number;
   };
   liabilities: {
     accountsPayable: number;
-    otherLiabilities: number;
+    manual: BalanceSheetManualEntry[];
     totalLiabilities: number;
   };
   equity: number;
+  previousPeriod: {
+    totalAssets: number;
+    totalLiabilities: number;
+    equity: number;
+  } | null;
+}
+
+export enum PayrollStatus {
+  DRAFT = 'DRAFT',
+  PROCESSED = 'PROCESSED',
+  LOCKED = 'LOCKED',
+}
+
+export interface PayrollLineItem {
+  id: string;
+  payrollRunId: string;
+  employeeId: string;
+  employeeName: string;
+  employeeEmail: string;
+  baseSalary: number;
+  commission: number;
+  bonus: number;
+  grossPay: number;
+  taxDeduction: number;
+  otherDeductions: number;
+  netPay: number;
+  payslipSent: boolean;
+  payslipUrl: string | null;
+  notes: string | null;
+  adjustedBy: string | null;
+  adjustmentReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  month: string;
+  status: PayrollStatus;
+  processedAt: string | null;
+  processedBy: string | null;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  totalGross: number;
+  totalDeductions: number;
+  totalNet: number;
+  currency: string;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  lineItems: PayrollLineItem[];
+}
+
+export interface EmployeeSalary {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeEmail: string;
+  baseSalary: number;
+  currency: string;
+  effectiveFrom: string;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommissionRuleGroup {
+  agentId: string;
+  agentName: string;
+  rules: CommissionRule[];
+}
+
+export interface CommissionRule {
+  id: string;
+  agentId: string;
+  serviceType: string | null;
+  ratePercent: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  agent?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 export interface LineItem {

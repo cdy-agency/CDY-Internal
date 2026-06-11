@@ -364,19 +364,32 @@ export class ReportPdfService implements OnModuleDestroy {
     asOf: string;
     assets: {
       accountsReceivable: number;
-      cash: number;
-      otherAssets: number;
+      manual: { label: string; amount: number }[];
       totalAssets: number;
     };
     liabilities: {
       accountsPayable: number;
-      otherLiabilities: number;
+      manual: { label: string; amount: number }[];
       totalLiabilities: number;
     };
     equity: number;
   }): Promise<Buffer> {
     const asOf = format(new Date(data.asOf), 'MMMM d, yyyy');
     const equityColor = data.equity >= 0 ? '#16a34a' : '#C41E3A';
+
+    const assetManualRows = data.assets.manual
+      .map(
+        (e) =>
+          `<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">${e.label}</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(e.amount)}</td></tr>`,
+      )
+      .join('');
+
+    const liabilityManualRows = data.liabilities.manual
+      .map(
+        (e) =>
+          `<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">${e.label}</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(e.amount)}</td></tr>`,
+      )
+      .join('');
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
     <body style="font-family:Arial,sans-serif;color:#0f172a;background:#fff;">
@@ -386,8 +399,7 @@ export class ReportPdfService implements OnModuleDestroy {
           <h2 style="font-size:12px;color:#C41E3A;letter-spacing:2px;margin-bottom:12px;">ASSETS</h2>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Accounts Receivable</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.accountsReceivable)}</td></tr>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Cash</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.cash)}</td></tr>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Other Assets</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.otherAssets)}</td></tr>
+            ${assetManualRows}
             <tr style="font-weight:bold;"><td style="padding:10px 0;">TOTAL ASSETS</td><td style="padding:10px 0;text-align:right;">${this.fmt(data.assets.totalAssets)}</td></tr>
           </table>
         </div>
@@ -395,7 +407,7 @@ export class ReportPdfService implements OnModuleDestroy {
           <h2 style="font-size:12px;color:#C41E3A;letter-spacing:2px;margin-bottom:12px;">LIABILITIES</h2>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Accounts Payable</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.liabilities.accountsPayable)}</td></tr>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Other Liabilities</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.liabilities.otherLiabilities)}</td></tr>
+            ${liabilityManualRows}
             <tr style="font-weight:bold;"><td style="padding:10px 0;">TOTAL LIABILITIES</td><td style="padding:10px 0;text-align:right;">${this.fmt(data.liabilities.totalLiabilities)}</td></tr>
           </table>
         </div>

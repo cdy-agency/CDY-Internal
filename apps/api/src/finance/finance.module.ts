@@ -20,6 +20,8 @@ import { ReconciliationModule } from '../reconciliation/reconciliation.module';
 import { TaxModule } from '../tax/tax.module';
 import { RetainersModule } from '../retainers/retainers.module';
 import { BudgetModule } from '../budget/budget.module';
+import { PayrollModule } from '../payroll/payroll.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { BudgetModule } from '../budget/budget.module';
     TaxModule,
     RetainersModule,
     BudgetModule,
+    PayrollModule,
+    SettingsModule,
   ],
 
   controllers: [FinanceController],

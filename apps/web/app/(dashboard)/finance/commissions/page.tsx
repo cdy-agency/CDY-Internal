@@ -185,6 +185,7 @@ export default function CommissionsPage(): JSX.Element {
       </nav>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setMonth(shiftMonth(month, -1))}>
             <ChevronLeft className="h-4 w-4" />
@@ -193,6 +194,12 @@ export default function CommissionsPage(): JSX.Element {
           <Button variant="outline" size="sm" onClick={() => setMonth(shiftMonth(month, 1))}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+        </div>
+        {user?.role === Role.FINANCE_MANAGER && (
+          <Link href="/finance/commissions/rules">
+            <Button variant="outline" size="sm">Manage Rules</Button>
+          </Link>
+        )}
         </div>
         {user?.role === Role.FINANCE_MANAGER && data && data.summary.pending > 0 && (
           <Button onClick={approveAll} disabled={approveAllLoading}>
