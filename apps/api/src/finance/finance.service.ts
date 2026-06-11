@@ -37,6 +37,12 @@ export class FinanceService {
       999,
     );
 
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
     const [
       currentInvoiced,
       currentCollected,
@@ -50,6 +56,14 @@ export class FinanceService {
       previousOverdue,
       totalDraftInvoices,
       totalSentInvoices,
+      totalBillsPending,
+      totalBillsOverdue,
+      paymentsReceivedToday,
+      expensesThisWeek,
+      previousBillsPending,
+      previousBillsOverdue,
+      previousPaymentsToday,
+      previousExpensesWeek,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -63,6 +77,17 @@ export class FinanceService {
       this.sumOverdueBalance(lastMonthEnd),
       this.countInvoicesByStatus('DRAFT'),
       this.countInvoicesByStatus('SENT'),
+      this.sumBillsPending(),
+      this.sumBillsOverdue(),
+      this.sumPayments(todayStart, todayEnd),
+      this.sumExpenses(weekStart, now),
+      this.sumBillsPending(lastMonthEnd),
+      this.sumBillsOverdue(lastMonthEnd),
+      this.sumPayments(lastMonthStart, lastMonthEnd),
+      this.sumExpenses(
+        new Date(lastMonthEnd.getTime() - 7 * 24 * 60 * 60 * 1000),
+        lastMonthEnd,
+      ),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -72,6 +97,10 @@ export class FinanceService {
       overdue,
       totalExpenses: currentExpenses,
       netCashPosition: currentCollected - currentExpenses,
+      totalBillsPending,
+      totalBillsOverdue,
+      paymentsReceivedToday,
+      expensesThisWeek,
     };
 
     const previousMetrics: FinanceSummaryMetrics = {
@@ -81,6 +110,10 @@ export class FinanceService {
       overdue: previousOverdue,
       totalExpenses: previousExpenses,
       netCashPosition: previousCollected - previousExpenses,
+      totalBillsPending: previousBillsPending,
+      totalBillsOverdue: previousBillsOverdue,
+      paymentsReceivedToday: previousPaymentsToday,
+      expensesThisWeek: previousExpensesWeek,
     };
 
     this.logger.debug('Finance summary computed');
@@ -91,6 +124,32 @@ export class FinanceService {
       totalSentInvoices,
       previousMonth: previousMetrics,
     };
+  }
+
+  private async sumBillsPending(asOf?: Date): Promise<number> {
+    const result = await this.prisma.bill.aggregate({
+      _sum: { amount: true },
+      where: {
+        deletedAt: null,
+        status: 'UNPAID',
+        ...(asOf ? { createdAt: { lte: asOf } } : {}),
+      },
+    });
+    return this.toNumber(result._sum.amount);
+  }
+
+  private async sumBillsOverdue(asOf?: Date): Promise<number> {
+    const referenceDate = asOf ?? new Date();
+    const result = await this.prisma.bill.aggregate({
+      _sum: { amount: true },
+      where: {
+        deletedAt: null,
+        status: 'UNPAID',
+        dueDate: { lt: referenceDate },
+        ...(asOf ? { createdAt: { lte: asOf } } : {}),
+      },
+    });
+    return this.toNumber(result._sum.amount);
   }
 
   private async countInvoicesByStatus(

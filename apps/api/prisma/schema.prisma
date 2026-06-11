@@ -59,8 +59,9 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
 
-  payments Payment[]
-  creator  User      @relation(fields: [createdBy], references: [id])
+  payments  Payment[]
+  reminders InvoiceReminder[]
+  creator   User              @relation(fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -75,6 +76,19 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   WRITTEN_OFF
+}
+
+model InvoiceReminder {
+  id             String   @id @default(cuid())
+  invoiceId      String
+  reminderNumber Int
+  sentAt         DateTime @default(now())
+  emailAddress   String
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@unique([invoiceId, reminderNumber])
+  @@index([invoiceId])
 }
 
 model Payment {
@@ -114,6 +128,7 @@ model Expense {
   date       DateTime
   projectId  String?
   receiptUrl String?
+  uploadPath String?
   notes      String?
   createdBy  String
   createdAt  DateTime        @default(now())

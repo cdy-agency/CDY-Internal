@@ -1,0 +1,40 @@
+# ─── Base ─────────────────────────────────────────────────────
+FROM node:20-alpine AS base
+RUN npm install -g pnpm
+WORKDIR /app
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
+COPY packages/ ./packages/
+COPY apps/api/package.json ./apps/api/
+
+# ─── Dependencies ─────────────────────────────────────────────
+FROM base AS deps
+RUN pnpm install --frozen-lockfile
+
+# ─── Development (hot reload) ─────────────────────────────────
+FROM deps AS development
+COPY apps/api/ ./apps/api/
+RUN pnpm --filter @cdy/shared build && pnpm --filter api prisma:generate
+EXPOSE 3001
+
+# ─── Build ────────────────────────────────────────────────────
+FROM deps AS builder
+COPY apps/api/ ./apps/api/
+RUN pnpm --filter @cdy/shared build && pnpm --filter api prisma:generate
+RUN pnpm --filter api build
+
+# ─── Production ───────────────────────────────────────────────
+FROM node:20-alpine AS production
+RUN npm install -g pnpm
+WORKDIR /app
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+RUN mkdir -p /app/uploads/receipts
+
+CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && node dist/main.js"]
+EXPOSE 3001

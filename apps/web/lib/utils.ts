@@ -20,3 +20,13 @@ export function calculateDelta(current: number, previous: number): number {
   }
   return Math.round(((current - previous) / Math.abs(previous)) * 100);
 }
+
+export function getApiBaseUrl(): string {
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+  return apiUrl.replace(/\/api\/v1\/?$/, '');
+}
+
+export function getUploadUrl(path: string): string {
+  return `${getApiBaseUrl()}${path}`;
+}

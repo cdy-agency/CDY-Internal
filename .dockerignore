@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+.git
+.gitignore
+*.log
+.env
+.env.local
+.env.*.local
+coverage
+.turbo
+apps/api/node_modules
+apps/web/node_modules
+apps/web/.next
+**/*.tsbuildinfo
+docker-compose.override.yml
+.env.docker.local

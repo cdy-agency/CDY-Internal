@@ -21,6 +21,7 @@ import { downloadInvoicePdf } from '@/lib/invoicePdf';
 import { useInvoice } from '@/hooks/useInvoice';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { InvoiceDrawer } from '@/components/finance/invoiceDrawer/InvoiceDrawer';
+import { RecordPaymentModal } from '@/components/finance/payments/RecordPaymentModal';
 import { NotFound } from '@/components/finance/NotFound';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export default function InvoiceDetailPage(): JSX.Element {
   const queryClient = useQueryClient();
   const { data: invoice, isLoading, isError, error } = useInvoice(params.id);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sendLoading, setSendLoading] = useState(false);
 
@@ -267,7 +269,7 @@ export default function InvoiceDetailPage(): JSX.Element {
               {(invoice.status === InvoiceStatus.SENT ||
                 invoice.status === InvoiceStatus.OVERDUE) && (
                 <>
-                  <Button disabled title="Coming in Sprint 3">
+                  <Button onClick={() => setPaymentModalOpen(true)}>
                     <CreditCard className="h-4 w-4" />
                     Record Payment
                   </Button>
@@ -288,7 +290,7 @@ export default function InvoiceDetailPage(): JSX.Element {
 
               {invoice.status === InvoiceStatus.PARTIALLY_PAID && (
                 <>
-                  <Button disabled title="Coming in Sprint 3">
+                  <Button onClick={() => setPaymentModalOpen(true)}>
                     <CreditCard className="h-4 w-4" />
                     Record Payment
                   </Button>
@@ -397,6 +399,12 @@ export default function InvoiceDetailPage(): JSX.Element {
       <InvoiceDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        invoice={invoice}
+      />
+
+      <RecordPaymentModal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
         invoice={invoice}
       />
     </div>

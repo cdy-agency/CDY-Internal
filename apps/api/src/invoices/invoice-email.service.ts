@@ -135,4 +135,88 @@ export class InvoiceEmailService {
       throw new InternalServerErrorException('Failed to send invoice email');
     }
   }
+
+  async sendReminder(invoice: Invoice, reminderNumber: number): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(
+        `Skipping reminder ${reminderNumber} for ${invoice.invoiceNumber} — RESEND not configured`,
+      );
+      return;
+    }
+
+    const tones: Record<
+      number,
+      { subject: string; tone: string; message: string }
+    > = {
+      1: {
+        subject: 'Payment reminder',
+        tone: 'friendly',
+        message:
+          'This is a friendly reminder that your invoice is now due. Please arrange payment at your earliest convenience.',
+      },
+      2: {
+        subject: 'Second payment reminder',
+        tone: 'firm',
+        message:
+          'This is a second reminder that your invoice remains unpaid. Please settle this invoice promptly to avoid further action.',
+      },
+      3: {
+        subject: 'Final payment notice',
+        tone: 'urgent',
+        message:
+          'This is a final notice. Your invoice is significantly overdue. Immediate payment is required.',
+      },
+    };
+
+    const toneConfig = tones[reminderNumber];
+    if (!toneConfig) {
+      return;
+    }
+
+    const fromEmail =
+      this.configService.get<string>('RESEND_FROM_EMAIL') ?? 'finance@cdy.com';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const formattedTotal = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: invoice.currency,
+    }).format(Number(invoice.total));
+    const formattedDueDate = invoice.dueDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const clientEmail = `${invoice.clientId.replace(/[^a-zA-Z0-9]/g, '')}@client.cdy.com`;
+    const cc =
+      reminderNumber === 3
+        ? [this.configService.get<string>('RESEND_FROM_EMAIL') ?? 'finance@cdy.com']
+        : undefined;
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#0A1628;padding:24px;"><span style="color:#C41E3A;font-size:24px;font-weight:bold;">CDY</span></div>
+        <div style="background:#112240;padding:32px;color:#F8FAFC;">
+          <p>Hello ${invoice.clientId},</p>
+          <p>${toneConfig.message}</p>
+          <p>Invoice: <strong>${invoice.invoiceNumber}</strong><br/>
+          Amount: <strong>${formattedTotal}</strong><br/>
+          Due: <strong>${formattedDueDate}</strong></p>
+          <a href="${frontendUrl}/finance/invoices/${invoice.id}" style="display:inline-block;background:#C41E3A;color:#F8FAFC;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:16px;">View Invoice</a>
+        </div>
+      </div>`;
+
+    const result = await this.resend.emails.send({
+      from: fromEmail,
+      to: clientEmail,
+      cc,
+      subject: `${toneConfig.subject} — Invoice ${invoice.invoiceNumber} from CDY`,
+      html,
+    });
+
+    if (result.error) {
+      this.logger.error(`Reminder email failed: ${JSON.stringify(result.error)}`);
+      throw new InternalServerErrorException('Failed to send reminder email');
+    }
+  }
 }

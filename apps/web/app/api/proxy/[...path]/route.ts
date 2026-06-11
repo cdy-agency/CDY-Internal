@@ -31,9 +31,14 @@ async function proxyRequest(
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    const body = await request.text();
-    if (body) {
-      init.body = body;
+    const isMultipart = contentType?.includes('multipart/form-data');
+    if (isMultipart) {
+      init.body = await request.arrayBuffer();
+    } else {
+      const body = await request.text();
+      if (body) {
+        init.body = body;
+      }
     }
   }
 

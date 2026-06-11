@@ -5,7 +5,17 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "type-check": "turbo run type-check"
+    "type-check": "turbo run type-check",
+    "dev:docker": "docker-compose --env-file .env.docker up --build",
+    "dev:docker:detach": "docker-compose --env-file .env.docker up --build -d",
+    "dev:docker:down": "docker-compose down",
+    "dev:docker:logs": "docker-compose logs -f",
+    "dev:docker:reset": "docker-compose down -v && docker-compose --env-file .env.docker up --build",
+    "prod:docker": "docker-compose -f docker-compose.prod.yml --env-file .env.docker up --build -d",
+    "prod:docker:down": "docker-compose -f docker-compose.prod.yml down",
+    "db:migrate": "docker-compose exec api pnpm --filter api prisma:migrate",
+    "db:seed": "docker-compose exec api pnpm --filter api prisma:seed",
+    "db:studio": "docker-compose exec api pnpm --filter api prisma:studio"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

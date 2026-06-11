@@ -9,6 +9,8 @@ import {
   Receipt,
   TrendingUp,
   Plus,
+  Building2,
+  AlertOctagon,
 } from 'lucide-react';
 import { MetricCard } from '@/components/finance/MetricCard';
 import { Button } from '@/components/ui/button';
@@ -65,6 +67,26 @@ export default function FinanceOverviewPage(): JSX.Element {
               ? 'bg-emerald-500/10 text-[var(--cdy-success)]'
               : 'bg-red-500/10 text-[var(--cdy-danger)]',
         },
+        {
+          label: 'Bills Pending',
+          value: formatCurrency(data.totalBillsPending),
+          delta: calculateDelta(
+            data.totalBillsPending,
+            data.previousMonth.totalBillsPending,
+          ),
+          icon: Building2,
+          iconColor: 'bg-amber-500/10 text-[var(--cdy-warning)]',
+        },
+        {
+          label: 'Bills Overdue',
+          value: formatCurrency(data.totalBillsOverdue),
+          delta: calculateDelta(
+            data.totalBillsOverdue,
+            data.previousMonth.totalBillsOverdue,
+          ),
+          icon: AlertOctagon,
+          iconColor: 'bg-red-500/10 text-[var(--cdy-danger)]',
+        },
       ]
     : [];
 
@@ -83,7 +105,7 @@ export default function FinanceOverviewPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading
-          ? Array.from({ length: 6 }).map((_, index) => (
+          ? Array.from({ length: 8 }).map((_, index) => (
               <MetricCard
                 key={`skeleton-${index}`}
                 label=""
@@ -119,19 +141,19 @@ export default function FinanceOverviewPage(): JSX.Element {
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/finance/payments/new">
+            <Link href="/finance/payments">
               <Plus className="h-4 w-4" />
-              Record Payment
+              View Payments
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/finance/expenses/new">
+            <Link href="/finance/expenses">
               <Plus className="h-4 w-4" />
               Log Expense
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/finance/bills/new">
+            <Link href="/finance/bills">
               <Plus className="h-4 w-4" />
               Add Bill
             </Link>

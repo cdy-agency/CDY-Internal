@@ -60,7 +60,9 @@ export function InvoiceDrawer({
     reset,
     formState: { errors },
   } = useForm<InvoiceFormValues>({
-    resolver: zodResolver(invoiceSchema) as Resolver<InvoiceFormValues>,
+    resolver: zodResolver(
+      invoiceSchema as never,
+    ) as unknown as Resolver<InvoiceFormValues>,
     defaultValues: {
       clientId: '',
       projectId: '',
