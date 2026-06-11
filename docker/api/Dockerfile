@@ -1,5 +1,7 @@
 # ─── Base ─────────────────────────────────────────────────────
 FROM node:20-alpine AS base
+# Prisma query engine requires OpenSSL on Alpine (musl)
+RUN apk add --no-cache openssl libc6-compat
 RUN npm install -g pnpm
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
@@ -24,6 +26,7 @@ RUN pnpm --filter api build
 
 # ─── Production ───────────────────────────────────────────────
 FROM node:20-alpine AS production
+RUN apk add --no-cache openssl libc6-compat
 RUN npm install -g pnpm
 WORKDIR /app
 COPY --from=builder /app/apps/api/dist ./apps/api/dist

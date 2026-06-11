@@ -86,6 +86,23 @@ docker compose -f docker-compose.prod.yml --env-file .env.docker up -d --force-r
 
 ---
 
+## Symptom: Prisma OpenSSL / "Could not parse schema engine response"
+
+On Alpine Linux, Prisma needs OpenSSL installed in the API container.
+
+```bash
+docker compose -f docker-compose.prod.yml exec api sh -c "apk info openssl && npx prisma migrate deploy"
+```
+
+If still failing, rebuild the API image (Dockerfile installs `openssl` + `libc6-compat`):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.docker build --no-cache api
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d api
+```
+
+---
+
 ## Stop old Docker nginx (if still running)
 
 ```bash
