@@ -52,14 +52,17 @@ git tag v2.0.0-finance
 git push origin main --tags
 ```
 
-### Docker production (with host nginx)
+### Docker production (host nginx)
 
 Public URL: **https://inhouse.cdyagency.com**
 
+Host nginx proxies to `127.0.0.1:3250` (web) and `127.0.0.1:3251` (api). No Docker nginx container.
+
 1. Copy env: `cp .env.docker.prod.example .env.docker` and fill secrets.
-2. Start stack: `docker compose -f docker-compose.prod.yml --env-file .env.docker up -build -d`
-3. Install host nginx site from `docker/nginx/host-nginx.example.conf`.
+2. Start stack: `docker compose -f docker-compose.prod.yml --env-file .env.docker up --build -d`
+3. Install host nginx: `host-nginx.http-only.example.conf` first, then `host-nginx.example.conf` after cert.
 4. Run migrations: `docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy`
+5. Stop old Docker nginx if present: `docker rm -f cdy_nginx 2>/dev/null`
 
 CI/CD pipeline handles the rest automatically.
 

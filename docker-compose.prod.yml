@@ -41,6 +41,8 @@ services:
       SENTRY_DSN: ${SENTRY_DSN}
     volumes:
       - cdy_uploads_prod:/app/uploads
+    ports:
+      - '127.0.0.1:3251:3251'
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,26 +62,10 @@ services:
       NODE_ENV: production
       PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
-    depends_on:
-      - api
-    networks:
-      - cdy_network
-
-  nginx:
-    build:
-      context: ./docker/nginx
-      dockerfile: Dockerfile
-    container_name: cdy_nginx
-    restart: always
-    # Bind to localhost only — host nginx terminates TLS and proxies here.
-    # Do NOT map 80:80 or 443:443 or you will conflict with system nginx.
     ports:
-      - '127.0.0.1:${CDY_NGINX_HOST_PORT:-8081}:80'
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - '127.0.0.1:3250:3250'
     depends_on:
       - api
-      - web
     networks:
       - cdy_network
 
