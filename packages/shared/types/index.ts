@@ -91,10 +91,121 @@ export interface FinanceSummary {
   expensesThisWeek: number;
   commissionsPending: number;
   commissionsPendingValue: number;
+  cashFlowAlert: boolean;
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
     totalSentInvoices?: number;
   };
+}
+
+export enum NotificationType {
+  INVOICE_OVERDUE = 'INVOICE_OVERDUE',
+  INVOICE_REMINDER_SENT = 'INVOICE_REMINDER_SENT',
+  INVOICE_PAID = 'INVOICE_PAID',
+  BILL_DUE_SOON = 'BILL_DUE_SOON',
+  BILL_OVERDUE = 'BILL_OVERDUE',
+  PAYMENT_RECEIVED = 'PAYMENT_RECEIVED',
+  COMMISSION_APPROVED = 'COMMISSION_APPROVED',
+  COMMISSION_REJECTED = 'COMMISSION_REJECTED',
+  REMINDER_FAILED = 'REMINDER_FAILED',
+  BUDGET_ALERT = 'BUDGET_ALERT',
+  SYSTEM = 'SYSTEM',
+}
+
+export interface NotificationRecord {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationRecord[];
+  unreadCount: number;
+}
+
+export interface FinanceAuditLogRecord {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  previousValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogListResponse {
+  logs: FinanceAuditLogRecord[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface CashFlowLineItem {
+  date: string;
+  amount: number;
+  label: string;
+  type: 'INVOICE' | 'BILL' | 'ADJUSTMENT';
+  invoiceId?: string;
+  billId?: string;
+}
+
+export interface CashFlowWeekBucket {
+  weekStart: string;
+  weekEnd: string;
+  weekLabel: string;
+  inflows: number;
+  outflows: number;
+  netFlow: number;
+  runningBalance: number;
+  inflowItems: CashFlowLineItem[];
+  outflowItems: CashFlowLineItem[];
+  isNegative: boolean;
+}
+
+export interface CashFlowForecast {
+  openingBalance: number;
+  forecastPeriod: { from: string; to: string; weeks: number };
+  totalExpectedInflows: number;
+  totalExpectedOutflows: number;
+  lowestProjectedBalance: number;
+  hasShortfall: boolean;
+  hasShortfall30Days: boolean;
+  shortfallWeeks: string[];
+  weeks: CashFlowWeekBucket[];
+  adjustments: CashFlowAdjustment[];
+}
+
+export interface CashFlowAdjustment {
+  id: string;
+  label: string;
+  amount: number;
+  direction: 'IN' | 'OUT';
+  date: string;
+}
+
+export interface BalanceSheetData {
+  asOf: string;
+  assets: {
+    accountsReceivable: number;
+    cash: number;
+    otherAssets: number;
+    totalAssets: number;
+  };
+  liabilities: {
+    accountsPayable: number;
+    otherLiabilities: number;
+    totalLiabilities: number;
+  };
+  equity: number;
 }
 
 export interface LineItem {

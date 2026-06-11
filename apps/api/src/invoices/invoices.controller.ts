@@ -10,9 +10,11 @@ import {
   HttpStatus,
   UseGuards,
   Res,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { buildAuditContext } from '../common/audit/build-audit-context';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -31,13 +33,18 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Create a new invoice' })
   async create(
     @Body() dto: CreateInvoiceDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    const data = await this.invoicesService.create(dto, user.sub);
+    const data = await this.invoicesService.create(
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Invoice created',
@@ -85,8 +92,17 @@ export class InvoicesController {
   @Patch(':id')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Update a draft invoice' })
-  async update(@Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
-    const data = await this.invoicesService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInvoiceDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.invoicesService.update(
+      id,
+      dto,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Invoice updated',
@@ -113,8 +129,14 @@ export class InvoicesController {
     @Param('id') id: string,
     @Body() dto: SendInvoiceDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    const data = await this.invoicesService.send(id, user.sub, dto);
+    const data = await this.invoicesService.send(
+      id,
+      user.sub,
+      dto,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Invoice sent',
@@ -125,8 +147,15 @@ export class InvoicesController {
   @Delete(':id')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Soft-delete an invoice' })
-  async remove(@Param('id') id: string) {
-    const data = await this.invoicesService.softDelete(id);
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.invoicesService.softDelete(
+      id,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: data.message,

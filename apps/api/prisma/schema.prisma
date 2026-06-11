@@ -24,6 +24,7 @@ model User {
   expenses Expense[]
   commissionRules CommissionRule[] @relation("AgentCommissionRules")
   commissions     CommissionRecord[] @relation("AgentCommissions")
+  notifications   Notification[]
 
   @@index([role])
 }
@@ -234,4 +235,68 @@ model CommissionRecord {
   @@index([month])
   @@index([status])
   @@index([month, status])
+}
+
+enum NotificationType {
+  INVOICE_OVERDUE
+  INVOICE_REMINDER_SENT
+  INVOICE_PAID
+  BILL_DUE_SOON
+  BILL_OVERDUE
+  PAYMENT_RECEIVED
+  COMMISSION_APPROVED
+  COMMISSION_REJECTED
+  REMINDER_FAILED
+  BUDGET_ALERT
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+model FinanceAuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  userEmail     String
+  action        String
+  entityType    String
+  entityId      String
+  previousValue Json?
+  newValue      Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model CashFlowAdjustment {
+  id        String    @id @default(cuid())
+  label     String
+  amount    Decimal   @db.Decimal(12, 2)
+  direction String
+  date      DateTime
+  createdBy String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([date])
 }

@@ -2,11 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { ExpenseCategory, Prisma } from '@prisma/client';
+import { Role } from '@cdy/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileUploadService } from './file-upload.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditContext } from '../common/audit/audit.context';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { ExpenseFiltersDto } from './dto/expense-filters.dto';
@@ -20,11 +24,13 @@ export class ExpensesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fileUploadService: FileUploadService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(
     dto: CreateExpenseDto,
     userId: string,
+    auditCtx: AuditContext,
     file?: Express.Multer.File,
   ) {
     let receiptUrl: string | undefined;
@@ -51,7 +57,16 @@ export class ExpensesService {
       },
     });
 
-    return this.serialize(expense);
+    const serialized = this.serialize(expense);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'expense.created',
+      entityType: 'Expense',
+      entityId: expense.id,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async findAll(filters: ExpenseFiltersDto) {
@@ -134,9 +149,29 @@ export class ExpensesService {
     return this.serialize(expense);
   }
 
-  async update(id: string, dto: UpdateExpenseDto) {
+  async update(id: string, dto: UpdateExpenseDto, auditCtx: AuditContext) {
     const existing = await this.getOrThrow(id);
     this.assertEditWindow(existing.createdAt);
+
+    if (
+      existing.createdBy === auditCtx.userId &&
+      auditCtx.userRole === Role.FINANCE_MANAGER
+    ) {
+      this.auditService.log({
+        userId: auditCtx.userId,
+        userEmail: auditCtx.userEmail,
+        action: 'expense.self_edit_blocked',
+        entityType: 'Expense',
+        entityId: existing.id,
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+      throw new ForbiddenException(
+        'Finance managers cannot edit their own expense records. Contact the Operations Manager.',
+      );
+    }
+
+    const before = this.serialize(existing);
 
     const expense = await this.prisma.expense.update({
       where: { id },
@@ -151,7 +186,17 @@ export class ExpensesService {
       },
     });
 
-    return this.serialize(expense);
+    const serialized = this.serialize(expense);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'expense.updated',
+      entityType: 'Expense',
+      entityId: id,
+      previousValue: before,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async softDelete(id: string): Promise<{ message: string }> {

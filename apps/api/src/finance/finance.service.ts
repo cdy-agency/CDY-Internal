@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CashFlowService } from '../reports/cash-flow.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
 import { FinanceSummaryMetrics } from '@cdy/shared';
 
@@ -12,7 +13,10 @@ interface BalanceResult {
 export class FinanceService {
   private readonly logger = new Logger(FinanceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cashFlowService: CashFlowService,
+  ) {}
 
   async getSummary(): Promise<FinanceSummaryDto> {
     const now = new Date();
@@ -120,6 +124,8 @@ export class FinanceService {
       expensesThisWeek: previousExpensesWeek,
     };
 
+    const cashFlowAlert = await this.cashFlowService.hasShortfallIn30Days();
+
     this.logger.debug('Finance summary computed');
 
     return {
@@ -128,6 +134,7 @@ export class FinanceService {
       totalSentInvoices,
       commissionsPending,
       commissionsPendingValue,
+      cashFlowAlert,
       previousMonth: previousMetrics,
     };
   }

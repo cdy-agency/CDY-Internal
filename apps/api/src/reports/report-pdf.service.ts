@@ -297,4 +297,120 @@ export class ReportPdfService implements OnModuleDestroy {
     this.logger.debug('Generated expense PDF');
     return this.renderPdf(html);
   }
+
+  async generateCashFlowReport(data: {
+    openingBalance: number;
+    forecastPeriod: { from: string; to: string; weeks: number };
+    totalExpectedInflows: number;
+    totalExpectedOutflows: number;
+    lowestProjectedBalance: number;
+    hasShortfall: boolean;
+    shortfallWeeks: string[];
+    weeks: {
+      weekLabel: string;
+      inflows: number;
+      outflows: number;
+      netFlow: number;
+      runningBalance: number;
+      isNegative: boolean;
+    }[];
+  }): Promise<Buffer> {
+    const rows = data.weeks
+      .map(
+        (w) => `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;">${this.escapeHtml(w.weekLabel)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(w.inflows)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(w.outflows)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(w.netFlow)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:${w.isNegative ? '#C41E3A' : '#0f172a'};">${this.fmt(w.runningBalance)}</td>
+        </tr>`,
+      )
+      .join('');
+
+    const shortfallNote = data.hasShortfall
+      ? `<div style="margin:16px 0;padding:12px 16px;background:#fef2f2;border-left:4px solid #C41E3A;color:#C41E3A;">
+          Projected shortfall in: ${data.shortfallWeeks.map((w) => this.escapeHtml(w)).join(', ')}
+        </div>`
+      : '';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+    <body style="font-family:Arial,sans-serif;color:#0f172a;background:#fff;">
+      ${this.header('CASH FLOW FORECAST', `${data.forecastPeriod.weeks}-week projection`)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;font-size:13px;">
+        <div>Opening Balance: <strong>${this.fmt(data.openingBalance)}</strong></div>
+        <div>Expected Inflows: <strong>${this.fmt(data.totalExpectedInflows)}</strong></div>
+        <div>Expected Outflows: <strong>${this.fmt(data.totalExpectedOutflows)}</strong></div>
+        <div>Lowest Balance: <strong style="color:${data.lowestProjectedBalance < 0 ? '#C41E3A' : '#0f172a'};">${this.fmt(data.lowestProjectedBalance)}</strong></div>
+      </div>
+      ${shortfallNote}
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:#f8fafc;">
+          <th style="padding:8px 12px;text-align:left;">Week</th>
+          <th style="padding:8px 12px;text-align:right;">Inflows</th>
+          <th style="padding:8px 12px;text-align:right;">Outflows</th>
+          <th style="padding:8px 12px;text-align:right;">Net</th>
+          <th style="padding:8px 12px;text-align:right;">Balance</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${this.footer()}
+    </body></html>`;
+
+    this.logger.debug('Generated cash flow PDF');
+    return this.renderPdf(html);
+  }
+
+  async generateBalanceSheetReport(data: {
+    asOf: string;
+    assets: {
+      accountsReceivable: number;
+      cash: number;
+      otherAssets: number;
+      totalAssets: number;
+    };
+    liabilities: {
+      accountsPayable: number;
+      otherLiabilities: number;
+      totalLiabilities: number;
+    };
+    equity: number;
+  }): Promise<Buffer> {
+    const asOf = format(new Date(data.asOf), 'MMMM d, yyyy');
+    const equityColor = data.equity >= 0 ? '#16a34a' : '#C41E3A';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+    <body style="font-family:Arial,sans-serif;color:#0f172a;background:#fff;">
+      ${this.header('BALANCE SHEET', `As of ${asOf}`)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:24px;">
+        <div>
+          <h2 style="font-size:12px;color:#C41E3A;letter-spacing:2px;margin-bottom:12px;">ASSETS</h2>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Accounts Receivable</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.accountsReceivable)}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Cash</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.cash)}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Other Assets</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.assets.otherAssets)}</td></tr>
+            <tr style="font-weight:bold;"><td style="padding:10px 0;">TOTAL ASSETS</td><td style="padding:10px 0;text-align:right;">${this.fmt(data.assets.totalAssets)}</td></tr>
+          </table>
+        </div>
+        <div>
+          <h2 style="font-size:12px;color:#C41E3A;letter-spacing:2px;margin-bottom:12px;">LIABILITIES</h2>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Accounts Payable</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.liabilities.accountsPayable)}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">Other Liabilities</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${this.fmt(data.liabilities.otherLiabilities)}</td></tr>
+            <tr style="font-weight:bold;"><td style="padding:10px 0;">TOTAL LIABILITIES</td><td style="padding:10px 0;text-align:right;">${this.fmt(data.liabilities.totalLiabilities)}</td></tr>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:32px;padding:16px;background:#0A1628;border-radius:8px;text-align:center;">
+        <div style="font-size:12px;color:#94a3b8;letter-spacing:1px;">NET EQUITY (Assets − Liabilities)</div>
+        <div style="font-size:28px;font-weight:bold;color:${equityColor};margin-top:8px;">${this.fmt(data.equity)}</div>
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:#64748b;text-align:center;">
+        Prepared by CDY Finance System
+      </div>
+      ${this.footer()}
+    </body></html>`;
+
+    this.logger.debug('Generated balance sheet PDF');
+    return this.renderPdf(html);
+  }
 }

@@ -7,5 +7,6 @@ import { BillAlertsJob } from './jobs/bill-alerts.job';
 @Module({
   imports: [InvoicesModule],
   providers: [OverdueInvoicesJob, InvoiceRemindersJob, BillAlertsJob],
+  exports: [OverdueInvoicesJob, InvoiceRemindersJob, BillAlertsJob],
 })
 export class AutomationModule {}

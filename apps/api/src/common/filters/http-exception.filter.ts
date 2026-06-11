@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { Response } from 'express';
 
 @Catch()
@@ -30,6 +31,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
         const msg = (exceptionResponse as { message: string | string[] }).message;
         message = Array.isArray(msg) ? msg.join(', ') : msg;
       }
+    }
+
+    if (statusCode >= 500) {
+      Sentry.captureException(exception);
     }
 
     response.status(statusCode).json({

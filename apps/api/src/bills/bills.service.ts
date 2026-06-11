@@ -9,14 +9,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto, PayBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
 import { BillFiltersDto } from './dto/bill-filters.dto';
+import { AuditService } from '../audit/audit.service';
+import { AuditContext } from '../common/audit/audit.context';
 
 @Injectable()
 export class BillsService {
   private readonly logger = new Logger(BillsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
-  async create(dto: CreateBillDto, userId: string) {
+  async create(dto: CreateBillDto, userId: string, auditCtx: AuditContext) {
     const bill = await this.prisma.bill.create({
       data: {
         vendorName: dto.vendorName,
@@ -28,7 +33,15 @@ export class BillsService {
         createdBy: userId,
       },
     });
-    return this.serialize(bill);
+    const serialized = this.serialize(bill);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'bill.created',
+      entityType: 'Bill',
+      entityId: bill.id,
+      newValue: serialized,
+    });
+    return serialized;
   }
 
   async findAll(filters: BillFiltersDto) {
@@ -121,8 +134,9 @@ export class BillsService {
     return this.serialize(bill);
   }
 
-  async markAsPaid(id: string, dto: PayBillDto) {
+  async markAsPaid(id: string, dto: PayBillDto, auditCtx: AuditContext) {
     const bill = await this.getOrThrow(id);
+    const before = this.serialize(bill);
     if (bill.status === BillStatus.PAID) {
       throw new BadRequestException('Bill is already paid');
     }
@@ -138,7 +152,17 @@ export class BillsService {
       },
     });
 
-    return this.serialize(updated);
+    const serialized = this.serialize(updated);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'bill.paid',
+      entityType: 'Bill',
+      entityId: id,
+      previousValue: before,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async softDelete(id: string): Promise<{ message: string }> {

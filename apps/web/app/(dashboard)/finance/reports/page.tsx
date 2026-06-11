@@ -2,13 +2,25 @@
 
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { BarChart3, FileText, Receipt, TrendingUp } from 'lucide-react';
-import { usePlReport, useAgeingReport, useExpenseReport } from '@/hooks/useReports';
+import {
+  BarChart3,
+  FileText,
+  Receipt,
+  TrendingUp,
+  Scale,
+} from 'lucide-react';
+import {
+  usePlReport,
+  useAgeingReport,
+  useExpenseReport,
+  useCashFlowReport,
+  useBalanceSheetReport,
+} from '@/hooks/useReports';
+import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { buildPlPresets, currentMonthKey } from '@/lib/reportDates';
 import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import toast from 'react-hot-toast';
 
 const presets = buildPlPresets();
@@ -22,6 +34,9 @@ export default function ReportsLandingPage(): JSX.Element {
   });
   const { data: ageing } = useAgeingReport({});
   const { data: expenses } = useExpenseReport({ month });
+  const { data: cashFlow } = useCashFlowReport({ weeks: 13 });
+  const { data: balanceSheet } = useBalanceSheetReport();
+  const { data: summary } = useFinanceSummary();
 
   async function downloadPl(): Promise<void> {
     try {
@@ -59,6 +74,30 @@ export default function ReportsLandingPage(): JSX.Element {
     }
   }
 
+  async function downloadCashFlow(): Promise<void> {
+    try {
+      await downloadReportPdf(
+        '/reports/cashflow/pdf?weeks=13',
+        `CDY-CashFlow-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+        {},
+      );
+    } catch {
+      toast.error('Failed to download PDF');
+    }
+  }
+
+  async function downloadBalanceSheet(): Promise<void> {
+    try {
+      await downloadReportPdf(
+        '/reports/balance-sheet/pdf',
+        `CDY-BalanceSheet-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+        {},
+      );
+    } catch {
+      toast.error('Failed to download PDF');
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -68,7 +107,7 @@ export default function ReportsLandingPage(): JSX.Element {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ReportCard
           icon={BarChart3}
           iconClass="bg-blue-500/10 text-[var(--cdy-info)]"
@@ -108,21 +147,37 @@ export default function ReportsLandingPage(): JSX.Element {
           viewHref="/finance/reports/expenses"
           onDownload={downloadExpenses}
         />
-        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-cdy-navy text-cdy-muted">
-            <TrendingUp className="h-8 w-8" />
-          </div>
-          <h3 className="text-lg font-medium text-cdy-white">Cash Flow Forecast</h3>
-          <p className="mt-1 text-sm text-cdy-muted">
-            90-day projected cash position
-          </p>
-          <span className="mt-3 inline-block rounded-full border border-cdy-navy-border bg-cdy-navy px-3 py-1 text-xs text-cdy-muted">
-            Coming in Sprint 5
-          </span>
-          <Button variant="outline" className="mt-4" disabled>
-            Coming Soon
-          </Button>
-        </div>
+        <ReportCard
+          icon={TrendingUp}
+          iconClass="bg-cdy-red/10 text-cdy-red"
+          title="Cash Flow Forecast"
+          description="90-day projected cash position"
+          stat={
+            cashFlow
+              ? `Lowest balance: ${formatCurrency(cashFlow.lowestProjectedBalance)}`
+              : 'Loading...'
+          }
+          badge={
+            summary?.cashFlowAlert || cashFlow?.hasShortfall30Days
+              ? 'Shortfall alert'
+              : undefined
+          }
+          viewHref="/finance/reports/cashflow"
+          onDownload={downloadCashFlow}
+        />
+        <ReportCard
+          icon={Scale}
+          iconClass="bg-green-500/10 text-green-400"
+          title="Balance Sheet"
+          description="Assets, liabilities, and equity as of a date"
+          stat={
+            balanceSheet
+              ? `Equity: ${formatCurrency(balanceSheet.equity)}`
+              : 'Loading...'
+          }
+          viewHref="/finance/reports/balance-sheet"
+          onDownload={downloadBalanceSheet}
+        />
       </div>
     </div>
   );
@@ -134,6 +189,7 @@ function ReportCard({
   title,
   description,
   stat,
+  badge,
   viewHref,
   onDownload,
 }: {
@@ -142,6 +198,7 @@ function ReportCard({
   title: string;
   description: string;
   stat: string;
+  badge?: string;
   viewHref: string;
   onDownload: () => void;
 }): JSX.Element {
@@ -152,7 +209,14 @@ function ReportCard({
       >
         <Icon className="h-8 w-8" />
       </div>
-      <h3 className="text-lg font-medium text-cdy-white">{title}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-lg font-medium text-cdy-white">{title}</h3>
+        {badge && (
+          <span className="shrink-0 rounded-full bg-cdy-red/20 px-2 py-0.5 text-xs text-cdy-red">
+            {badge}
+          </span>
+        )}
+      </div>
       <p className="mt-1 text-sm text-cdy-muted">{description}</p>
       <p className="mt-3 text-sm text-cdy-white">{stat}</p>
       <div className="mt-4 flex gap-2">

@@ -26,7 +26,8 @@
     "react-hot-toast": "^2.6.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@sentry/nextjs": "^9.28.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",

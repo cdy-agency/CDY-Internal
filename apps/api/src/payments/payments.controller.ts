@@ -7,8 +7,11 @@ import {
   Query,
   HttpStatus,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Request } from 'express';
+import { buildAuditContext } from '../common/audit/build-audit-context';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentFiltersDto } from './dto/payment-filters.dto';
@@ -31,11 +34,13 @@ export class PaymentsController {
     @Param('invoiceId') invoiceId: string,
     @Body() dto: CreatePaymentDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
     const data = await this.paymentsService.recordPayment(
       invoiceId,
       dto,
       user.sub,
+      buildAuditContext(user, req),
     );
     return {
       data,

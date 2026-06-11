@@ -18,12 +18,20 @@ import { CreateCommissionRuleDto, UpdateCommissionRuleDto } from './dto/create-c
 import { CalculateCommissionDto } from './dto/calculate-commission.dto';
 import { ReviewCommissionDto } from './dto/review-commission.dto';
 import { CommissionFiltersDto } from './dto/commission-filters.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditContext } from '../common/audit/audit.context';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class CommissionsService {
   private readonly logger = new Logger(CommissionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async createRule(dto: CreateCommissionRuleDto, createdBy: string) {
     const rule = await this.prisma.commissionRule.create({
@@ -103,7 +111,7 @@ export class CommissionsService {
     return catchAll ?? null;
   }
 
-  async calculate(dto: CalculateCommissionDto) {
+  async calculate(dto: CalculateCommissionDto, auditCtx?: AuditContext) {
     const rule = await this.getRateForAgent(
       dto.agentId,
       dto.serviceType,
@@ -149,7 +157,18 @@ export class CommissionsService {
       `Commission created: agent=${dto.agentId} deal=${dto.dealId} amount=${calculatedAmount}`,
     );
 
-    return this.serializeRecord(commission);
+    const serialized = this.serializeRecord(commission);
+    if (auditCtx) {
+      this.auditService.log({
+        ...auditCtx,
+        action: 'commission.calculated',
+        entityType: 'Commission',
+        entityId: commission.id,
+        newValue: serialized,
+      });
+    }
+
+    return serialized;
   }
 
   async findAll(filters: CommissionFiltersDto) {
@@ -206,7 +225,12 @@ export class CommissionsService {
     return this.serializeRecord(record);
   }
 
-  async review(id: string, dto: ReviewCommissionDto, reviewerId: string) {
+  async review(
+    id: string,
+    dto: ReviewCommissionDto,
+    reviewerId: string,
+    auditCtx: AuditContext,
+  ) {
     const commission = await this.prisma.commissionRecord.findUnique({
       where: { id },
     });
@@ -241,7 +265,26 @@ export class CommissionsService {
           },
         },
       });
-      return this.serializeRecord(updated);
+      const serialized = this.serializeRecord(updated);
+      const finalAmount = serialized.finalAmount;
+
+      this.notificationsService.createNotificationAsync({
+        userId: commission.agentId,
+        type: NotificationType.COMMISSION_APPROVED,
+        title: `Commission approved — $${finalAmount.toFixed(2)}`,
+        body: `Your commission for deal ${commission.dealId} has been approved${commission.adjustedAmount ? ` (adjusted from $${Number(commission.calculatedAmount).toFixed(2)})` : ''}.`,
+        link: '/finance/commissions/my',
+      });
+
+      this.auditService.log({
+        ...auditCtx,
+        action: 'commission.approved',
+        entityType: 'Commission',
+        entityId: id,
+        newValue: serialized,
+      });
+
+      return serialized;
     }
 
     if (!dto.rejectionReason) {
@@ -264,7 +307,25 @@ export class CommissionsService {
         },
       },
     });
-    return this.serializeRecord(updated);
+    const serialized = this.serializeRecord(updated);
+
+    this.notificationsService.createNotificationAsync({
+      userId: commission.agentId,
+      type: NotificationType.COMMISSION_REJECTED,
+      title: `Commission rejected — ${commission.dealId}`,
+      body: `Your commission for deal ${commission.dealId} was rejected. Reason: ${dto.rejectionReason}`,
+      link: '/finance/commissions/my',
+    });
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'commission.rejected',
+      entityType: 'Commission',
+      entityId: id,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async approveAll(month: string, reviewerId: string) {

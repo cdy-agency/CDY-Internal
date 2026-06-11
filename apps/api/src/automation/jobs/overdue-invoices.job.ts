@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceStatus, NotificationType, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class OverdueInvoicesJob {
   private readonly logger = new Logger(OverdueInvoicesJob.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   @Cron('0 8 * * *', { name: 'overdue-invoice-detection' })
   async detectOverdueInvoices(): Promise<void> {
@@ -35,5 +39,14 @@ export class OverdueInvoicesJob {
     });
 
     this.logger.log(`Flagged ${updated.count} invoices as overdue`);
+
+    if (updated.count > 0) {
+      this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+        type: NotificationType.INVOICE_OVERDUE,
+        title: `${updated.count} invoice${updated.count > 1 ? 's' : ''} are now overdue`,
+        body: `${updated.count} invoice${updated.count > 1 ? 's have' : ' has'} passed their due date and been marked overdue.`,
+        link: '/finance/reports/ageing',
+      });
+    }
   }
 }

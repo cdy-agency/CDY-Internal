@@ -7,6 +7,9 @@ import type {
   PlReportData,
   AgeingReportData,
   ExpenseReportData,
+  CashFlowForecast,
+  BalanceSheetData,
+  CashFlowAdjustment,
 } from '@cdy/shared';
 
 export interface PlFilters {
@@ -73,4 +76,61 @@ export function useExpenseReport(filters: ExpenseReportFilters) {
     },
     staleTime: 300_000,
   });
+}
+
+export interface CashFlowFilters {
+  weeks?: number;
+  openingBalance?: number;
+}
+
+export function useCashFlowReport(filters: CashFlowFilters) {
+  return useQuery({
+    queryKey: ['reports', 'cashflow', filters],
+    queryFn: async (): Promise<CashFlowForecast> => {
+      const params = new URLSearchParams();
+      if (filters.weeks) params.set('weeks', String(filters.weeks));
+      if (filters.openingBalance !== undefined) {
+        params.set('openingBalance', String(filters.openingBalance));
+      }
+      const qs = params.toString();
+      const res = await api.get<ApiResponse<CashFlowForecast>>(
+        `/reports/cashflow${qs ? `?${qs}` : ''}`,
+      );
+      return res.data.data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useBalanceSheetReport(date?: string) {
+  return useQuery({
+    queryKey: ['reports', 'balance-sheet', date],
+    queryFn: async (): Promise<BalanceSheetData> => {
+      const params = new URLSearchParams();
+      if (date) params.set('date', date);
+      const qs = params.toString();
+      const res = await api.get<ApiResponse<BalanceSheetData>>(
+        `/reports/balance-sheet${qs ? `?${qs}` : ''}`,
+      );
+      return res.data.data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+export async function createCashFlowAdjustment(payload: {
+  label: string;
+  amount: number;
+  direction: 'IN' | 'OUT';
+  date: string;
+}): Promise<CashFlowAdjustment> {
+  const res = await api.post<ApiResponse<CashFlowAdjustment>>(
+    '/reports/cashflow/adjustments',
+    payload,
+  );
+  return res.data.data;
+}
+
+export async function deleteCashFlowAdjustment(id: string): Promise<void> {
+  await api.delete(`/reports/cashflow/adjustments/${id}`);
 }

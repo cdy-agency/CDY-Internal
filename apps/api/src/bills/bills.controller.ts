@@ -9,8 +9,11 @@ import {
   Query,
   HttpStatus,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Request } from 'express';
+import { buildAuditContext } from '../common/audit/build-audit-context';
 import { BillsService } from './bills.service';
 import { CreateBillDto, PayBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
@@ -30,8 +33,16 @@ export class BillsController {
   @Post()
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Create a bill' })
-  async create(@Body() dto: CreateBillDto, @CurrentUser() user: JwtPayload) {
-    const data = await this.billsService.create(dto, user.sub);
+  async create(
+    @Body() dto: CreateBillDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.billsService.create(
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Bill created',
@@ -78,8 +89,17 @@ export class BillsController {
   @Post(':id/pay')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Mark bill as paid' })
-  async pay(@Param('id') id: string, @Body() dto: PayBillDto) {
-    const data = await this.billsService.markAsPaid(id, dto);
+  async pay(
+    @Param('id') id: string,
+    @Body() dto: PayBillDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.billsService.markAsPaid(
+      id,
+      dto,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Bill marked as paid',

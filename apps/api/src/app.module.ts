@@ -6,6 +6,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
 import { AutomationModule } from './automation/automation.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AuditModule } from './audit/audit.module';
+import { DebugModule } from './debug/debug.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -17,8 +20,11 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
+    AuditModule,
+    NotificationsModule,
     FinanceModule,
     AutomationModule,
+    DebugModule,
   ],
   providers: [
     {

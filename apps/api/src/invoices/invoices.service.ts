@@ -14,6 +14,8 @@ import { CreateInvoiceDto, LineItemDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceFiltersDto } from './dto/invoice-filters.dto';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
+import { AuditService } from '../audit/audit.service';
+import { AuditContext } from '../common/audit/audit.context';
 
 interface LineItemWithAmount extends LineItemDto {
   amount: number;
@@ -60,9 +62,14 @@ export class InvoicesService {
     private readonly invoiceNumberService: InvoiceNumberService,
     private readonly invoicePdfService: InvoicePdfService,
     private readonly invoiceEmailService: InvoiceEmailService,
+    private readonly auditService: AuditService,
   ) {}
 
-  async create(dto: CreateInvoiceDto, userId: string): Promise<SerializedInvoice> {
+  async create(
+    dto: CreateInvoiceDto,
+    userId: string,
+    auditCtx: AuditContext,
+  ): Promise<SerializedInvoice> {
     const invoiceNumber = await this.invoiceNumberService.generate();
     const taxRate = dto.taxRate ?? 0;
     const { subtotal, taxAmount, total, lineItemsWithAmounts } =
@@ -87,7 +94,16 @@ export class InvoicesService {
       },
     });
 
-    return this.serializeInvoice(invoice);
+    const serialized = this.serializeInvoice(invoice);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.created',
+      entityType: 'Invoice',
+      entityId: invoice.id,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async findAll(filters: InvoiceFiltersDto): Promise<PaginatedInvoices> {
@@ -161,8 +177,13 @@ export class InvoicesService {
     };
   }
 
-  async update(id: string, dto: UpdateInvoiceDto): Promise<SerializedInvoice> {
+  async update(
+    id: string,
+    dto: UpdateInvoiceDto,
+    auditCtx: AuditContext,
+  ): Promise<SerializedInvoice> {
     const existing = await this.getInvoiceOrThrow(id);
+    const before = this.serializeInvoice(existing);
 
     if (existing.status !== InvoiceStatus.DRAFT) {
       throw new BadRequestException(
@@ -195,13 +216,24 @@ export class InvoicesService {
       },
     });
 
-    return this.serializeInvoice(invoice);
+    const serialized = this.serializeInvoice(invoice);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.updated',
+      entityType: 'Invoice',
+      entityId: id,
+      previousValue: before,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async send(
     id: string,
     userId: string,
     dto: SendInvoiceDto,
+    auditCtx: AuditContext,
   ): Promise<SerializedInvoice> {
     void userId;
     const existing = await this.getInvoiceOrThrow(id);
@@ -239,7 +271,16 @@ export class InvoicesService {
       },
     });
 
-    return this.serializeInvoice(invoice);
+    const serialized = this.serializeInvoice(invoice);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.sent',
+      entityType: 'Invoice',
+      entityId: id,
+      newValue: serialized,
+    });
+
+    return serialized;
   }
 
   async generatePdf(id: string): Promise<{ buffer: Buffer; invoiceNumber: string }> {
@@ -248,8 +289,12 @@ export class InvoicesService {
     return { buffer, invoiceNumber: invoice.invoiceNumber };
   }
 
-  async softDelete(id: string): Promise<{ message: string }> {
+  async softDelete(
+    id: string,
+    auditCtx: AuditContext,
+  ): Promise<{ message: string }> {
     const existing = await this.getInvoiceOrThrow(id);
+    const before = this.serializeInvoice(existing);
 
     if (existing.status === InvoiceStatus.PAID) {
       throw new BadRequestException('Paid invoices cannot be deleted');
@@ -258,6 +303,14 @@ export class InvoicesService {
     await this.prisma.invoice.update({
       where: { id },
       data: { deletedAt: new Date() },
+    });
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.deleted',
+      entityType: 'Invoice',
+      entityId: id,
+      previousValue: before,
     });
 
     return { message: 'Invoice deleted' };

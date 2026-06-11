@@ -10,6 +10,10 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentFiltersDto } from './dto/payment-filters.dto';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptEmailService } from './receipt-email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditContext } from '../common/audit/audit.context';
+import { NotificationType, Role } from '@prisma/client';
 
 export interface SerializedPayment {
   id: string;
@@ -35,12 +39,15 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly receiptPdfService: ReceiptPdfService,
     private readonly receiptEmailService: ReceiptEmailService,
+    private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService,
   ) {}
 
   async recordPayment(
     invoiceId: string,
     dto: CreatePaymentDto,
     userId: string,
+    auditCtx: AuditContext,
   ) {
     const result = await this.prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.findFirst({
@@ -129,8 +136,33 @@ export class PaymentsService {
       });
     }
 
+    const alreadyPaid = result.invoice.payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+    const remaining = Number(result.invoice.total) - alreadyPaid;
+
+    this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+      type: NotificationType.PAYMENT_RECEIVED,
+      title: `Payment received — ${result.invoice.invoiceNumber}`,
+      body: `$${dto.amount.toFixed(2)} recorded against invoice ${result.invoice.invoiceNumber}. ${result.isFullyPaid ? 'Invoice fully paid.' : `Remaining: $${remaining.toFixed(2)}.`}`,
+      link: `/finance/invoices/${result.invoice.id}`,
+    });
+
+    const serializedPayment = this.serializePayment(
+      result.payment,
+      result.invoice,
+    );
+    this.auditService.log({
+      ...auditCtx,
+      action: 'payment.recorded',
+      entityType: 'Payment',
+      entityId: result.payment.id,
+      newValue: serializedPayment,
+    });
+
     return {
-      payment: this.serializePayment(result.payment, result.invoice),
+      payment: serializedPayment,
       invoice: result.invoice,
     };
   }

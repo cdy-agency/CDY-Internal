@@ -10,6 +10,7 @@ import {
   Building2,
   BarChart3,
   BadgeDollarSign,
+  ShieldCheck,
   LogOut,
   Menu,
   X,
@@ -76,6 +77,12 @@ const navItems: NavItem[] = [
     href: '/finance/commissions',
     icon: BadgeDollarSign,
     roles: [Role.CEO, Role.FINANCE_MANAGER, Role.SALES_AGENT],
+  },
+  {
+    label: 'Audit Log',
+    href: '/finance/audit',
+    icon: ShieldCheck,
+    roles: [Role.CEO],
   },
 ];
 

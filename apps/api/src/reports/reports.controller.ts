@@ -1,6 +1,10 @@
 import {
   Controller,
   Get,
+  Post,
+  Delete,
+  Body,
+  Param,
   Query,
   Res,
   HttpStatus,
@@ -11,11 +15,17 @@ import { Response } from 'express';
 import { format } from 'date-fns';
 import { ReportsService } from './reports.service';
 import { ReportPdfService } from './report-pdf.service';
+import { CashFlowService } from './cash-flow.service';
+import { BalanceSheetService } from './balance-sheet.service';
 import { PlReportFiltersDto } from './dto/pl-report-filters.dto';
 import { AgeingReportFiltersDto } from './dto/ageing-report-filters.dto';
 import { ExpenseReportFiltersDto } from './dto/expense-report-filters.dto';
+import { CashFlowFiltersDto } from './dto/cash-flow-filters.dto';
+import { CreateCashFlowAdjustmentDto } from './dto/create-cash-flow-adjustment.dto';
+import { BalanceSheetFiltersDto } from './dto/balance-sheet-filters.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
 import { Role } from '@cdy/shared';
 
 @ApiTags('reports')
@@ -26,6 +36,8 @@ export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
     private readonly reportPdfService: ReportPdfService,
+    private readonly cashFlowService: CashFlowService,
+    private readonly balanceSheetService: BalanceSheetService,
   ) {}
 
   @Get('pl')
@@ -114,6 +126,96 @@ export class ReportsController {
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="CDY-Report-Expenses-${dateLabel}.pdf"`,
+    );
+    res.send(buffer);
+  }
+
+  @Get('cashflow')
+  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Cash flow forecast' })
+  async getCashFlow(@Query() filters: CashFlowFiltersDto) {
+    const data = await this.cashFlowService.getForecast(filters);
+    return {
+      data,
+      message: 'Cash flow forecast generated',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Get('cashflow/pdf')
+  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Download cash flow forecast PDF' })
+  async downloadCashFlowPdf(
+    @Query() filters: CashFlowFiltersDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const data = await this.cashFlowService.getForecast(filters);
+    const buffer = await this.reportPdfService.generateCashFlowReport(data);
+    const dateLabel = format(new Date(), 'yyyy-MM-dd');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="CDY-Report-CashFlow-${dateLabel}.pdf"`,
+    );
+    res.send(buffer);
+  }
+
+  @Post('cashflow/adjustments')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Add manual cash flow adjustment' })
+  async createCashFlowAdjustment(
+    @Body() dto: CreateCashFlowAdjustmentDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.cashFlowService.createAdjustment(dto, user.sub);
+    return {
+      data,
+      message: 'Adjustment created',
+      statusCode: HttpStatus.CREATED,
+    };
+  }
+
+  @Delete('cashflow/adjustments/:id')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Delete cash flow adjustment' })
+  async deleteCashFlowAdjustment(@Param('id') id: string) {
+    const data = await this.cashFlowService.deleteAdjustment(id);
+    return {
+      data,
+      message: 'Adjustment deleted',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Get('balance-sheet')
+  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Balance sheet as of date' })
+  async getBalanceSheet(@Query() filters: BalanceSheetFiltersDto) {
+    const data = await this.balanceSheetService.getBalanceSheet(filters.date);
+    return {
+      data,
+      message: 'Balance sheet generated',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Get('balance-sheet/pdf')
+  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Download balance sheet PDF' })
+  async downloadBalanceSheetPdf(
+    @Query() filters: BalanceSheetFiltersDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const data = await this.balanceSheetService.getBalanceSheet(filters.date);
+    const buffer = await this.reportPdfService.generateBalanceSheetReport(data);
+    const dateLabel = format(
+      new Date(data.asOf),
+      'yyyy-MM-dd',
+    );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="CDY-Report-BalanceSheet-${dateLabel}.pdf"`,
     );
     res.send(buffer);
   }

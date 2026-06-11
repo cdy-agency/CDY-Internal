@@ -8,8 +8,11 @@ import {
   Query,
   HttpStatus,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Request } from 'express';
+import { buildAuditContext } from '../common/audit/build-audit-context';
 import { CommissionsService } from './commissions.service';
 import {
   CreateCommissionRuleDto,
@@ -64,8 +67,15 @@ export class CommissionsController {
   @Post('calculate')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Calculate commission for a closed deal' })
-  async calculate(@Body() dto: CalculateCommissionDto) {
-    const data = await this.commissionsService.calculate(dto);
+  async calculate(
+    @Body() dto: CalculateCommissionDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.commissionsService.calculate(
+      dto,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: data ? 'Commission calculated' : 'No applicable rule',
@@ -127,8 +137,14 @@ export class CommissionsController {
     @Param('id') id: string,
     @Body() dto: ReviewCommissionDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    const data = await this.commissionsService.review(id, dto, user.sub);
+    const data = await this.commissionsService.review(
+      id,
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
     return { data, message: 'Commission reviewed', statusCode: HttpStatus.OK };
   }
 

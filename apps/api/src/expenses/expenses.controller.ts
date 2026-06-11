@@ -11,7 +11,10 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
+import { buildAuditContext } from '../common/audit/build-audit-context';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
@@ -42,8 +45,14 @@ export class ExpensesController {
     @Body() dto: CreateExpenseDto,
     @UploadedFile() file: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    const data = await this.expensesService.create(dto, user.sub, file);
+    const data = await this.expensesService.create(
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+      file,
+    );
     return {
       data,
       message: 'Expense created',
@@ -52,7 +61,7 @@ export class ExpensesController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @Roles(Role.FINANCE_MANAGER, Role.CEO, Role.PROJECT_MANAGER)
   @ApiOperation({ summary: 'List expenses with filters' })
   async findAll(@Query() filters: ExpenseFiltersDto) {
     const data = await this.expensesService.findAll(filters);
@@ -78,8 +87,17 @@ export class ExpensesController {
   @Patch(':id')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Update expense (24hr window)' })
-  async update(@Param('id') id: string, @Body() dto: UpdateExpenseDto) {
-    const data = await this.expensesService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateExpenseDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.expensesService.update(
+      id,
+      dto,
+      buildAuditContext(user, req),
+    );
     return {
       data,
       message: 'Expense updated',
