@@ -13,6 +13,9 @@ import {
   ShieldCheck,
   ClipboardList,
   GitMerge,
+  RefreshCw,
+  PiggyBank,
+  Percent,
   LogOut,
   Menu,
   X,
@@ -81,6 +84,23 @@ const navItems: NavItem[] = [
     roles: [Role.FINANCE_MANAGER],
   },
   {
+    label: 'Retainers',
+    href: '/finance/retainers',
+    icon: RefreshCw,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Project Budget',
+    href: '/finance/budget',
+    icon: PiggyBank,
+    roles: [
+      Role.CEO,
+      Role.FINANCE_MANAGER,
+      Role.OPERATIONS_MANAGER,
+      Role.PROJECT_MANAGER,
+    ],
+  },
+  {
     label: 'Reports',
     href: '/finance/reports',
     icon: BarChart3,
@@ -97,6 +117,12 @@ const navItems: NavItem[] = [
     href: '/finance/audit',
     icon: ShieldCheck,
     roles: [Role.CEO],
+  },
+  {
+    label: 'Tax Rates',
+    href: '/finance/settings/tax',
+    icon: Percent,
+    roles: [Role.FINANCE_MANAGER],
   },
 ];
 

@@ -19,6 +19,11 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   creditNotesIssuedMTD!: number;
   creditNotesValueMTD!: number;
   pendingReconciliations!: number;
+  totalMRR!: number;
+  activeRetainers!: number;
+  retainersUpForRenewal!: number;
+  taxOwed!: number;
+  blockedProjects!: number;
   cashFlowAlert!: boolean;
   previousMonth!: FinanceSummaryMetrics;
 }

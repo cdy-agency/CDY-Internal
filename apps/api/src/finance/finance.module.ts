@@ -17,6 +17,9 @@ import { ArModule } from '../ar/ar.module';
 import { CreditNotesModule } from '../credit-notes/credit-notes.module';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
 import { ReconciliationModule } from '../reconciliation/reconciliation.module';
+import { TaxModule } from '../tax/tax.module';
+import { RetainersModule } from '../retainers/retainers.module';
+import { BudgetModule } from '../budget/budget.module';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { ReconciliationModule } from '../reconciliation/reconciliation.module';
     CreditNotesModule,
     PaymentPlansModule,
     ReconciliationModule,
+    TaxModule,
+    RetainersModule,
+    BudgetModule,
   ],
 
   controllers: [FinanceController],

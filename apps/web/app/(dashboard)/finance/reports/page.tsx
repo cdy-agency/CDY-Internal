@@ -8,6 +8,7 @@ import {
   Receipt,
   TrendingUp,
   Scale,
+  Landmark,
 } from 'lucide-react';
 import {
   usePlReport,
@@ -16,6 +17,7 @@ import {
   useCashFlowReport,
   useBalanceSheetReport,
 } from '@/hooks/useReports';
+import { useTaxReport } from '@/hooks/useTax';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { buildPlPresets, currentMonthKey } from '@/lib/reportDates';
 import { formatCurrency } from '@/lib/utils';
@@ -37,6 +39,9 @@ export default function ReportsLandingPage(): JSX.Element {
   const { data: cashFlow } = useCashFlowReport({ weeks: 13 });
   const { data: balanceSheet } = useBalanceSheetReport();
   const { data: summary } = useFinanceSummary();
+  const taxFrom = defaultPreset.from;
+  const taxTo = defaultPreset.to;
+  const { data: taxReport } = useTaxReport({ from: taxFrom, to: taxTo });
 
   async function downloadPl(): Promise<void> {
     try {
@@ -80,6 +85,18 @@ export default function ReportsLandingPage(): JSX.Element {
         '/reports/cashflow/pdf?weeks=13',
         `CDY-CashFlow-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
         {},
+      );
+    } catch {
+      toast.error('Failed to download PDF');
+    }
+  }
+
+  async function downloadTax(): Promise<void> {
+    try {
+      await downloadReportPdf(
+        '/tax/report/pdf',
+        `CDY-Tax-Report-${format(new Date(), 'MMM-yyyy')}.pdf`,
+        { from: taxFrom, to: taxTo },
       );
     } catch {
       toast.error('Failed to download PDF');
@@ -178,6 +195,24 @@ export default function ReportsLandingPage(): JSX.Element {
           viewHref="/finance/reports/balance-sheet"
           onDownload={downloadBalanceSheet}
         />
+        <ReportCard
+          icon={Landmark}
+          iconClass="bg-cdy-red/10 text-cdy-red"
+          title="Tax Liability"
+          description="Tax collected, remitted, and net owed for a period"
+          stat={
+            taxReport
+              ? taxReport.netOwed > 0
+                ? `Net owed: ${formatCurrency(taxReport.netOwed)}`
+                : 'Net owed: $0.00 ✓'
+              : 'Loading...'
+          }
+          statClass={
+            taxReport && taxReport.netOwed > 0 ? 'text-cdy-red' : undefined
+          }
+          viewHref="/finance/reports/tax"
+          onDownload={downloadTax}
+        />
       </div>
     </div>
   );
@@ -189,6 +224,7 @@ function ReportCard({
   title,
   description,
   stat,
+  statClass,
   badge,
   viewHref,
   onDownload,
@@ -198,6 +234,7 @@ function ReportCard({
   title: string;
   description: string;
   stat: string;
+  statClass?: string;
   badge?: string;
   viewHref: string;
   onDownload: () => void;
@@ -218,7 +255,7 @@ function ReportCard({
         )}
       </div>
       <p className="mt-1 text-sm text-cdy-muted">{description}</p>
-      <p className="mt-3 text-sm text-cdy-white">{stat}</p>
+      <p className={`mt-3 text-sm ${statClass ?? 'text-cdy-white'}`}>{stat}</p>
       <div className="mt-4 flex gap-2">
         <Button asChild>
           <Link href={viewHref}>View Report</Link>

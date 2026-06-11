@@ -4,8 +4,10 @@ import { InvoicesService } from './invoices.service';
 import { InvoiceNumberService } from './invoice-number.service';
 import { InvoicePdfService } from './invoice-pdf.service';
 import { InvoiceEmailService } from './invoice-email.service';
+import { TaxModule } from '../tax/tax.module';
 
 @Module({
+  imports: [TaxModule],
   controllers: [InvoicesController],
   providers: [
     InvoicesService,
@@ -13,6 +15,11 @@ import { InvoiceEmailService } from './invoice-email.service';
     InvoicePdfService,
     InvoiceEmailService,
   ],
-  exports: [InvoicesService, InvoiceEmailService, InvoiceNumberService],
+  exports: [
+    InvoicesService,
+    InvoiceEmailService,
+    InvoiceNumberService,
+    InvoicePdfService,
+  ],
 })
 export class InvoicesModule {}

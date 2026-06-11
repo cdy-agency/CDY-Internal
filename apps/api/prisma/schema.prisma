@@ -59,19 +59,23 @@ model Invoice {
   writtenOffBy     String?
   writeOffReason   String?
   writeOffCategory WriteOffCategory?
-  creditTermsDays  Int           @default(30)
-  notes            String?
-  serviceType      String        @default("general")
-  createdBy        String
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  deletedAt        DateTime?
+  creditTermsDays      Int           @default(30)
+  notes                String?
+  serviceType          String        @default("general")
+  taxRateId            String?
+  retainerContractId   String?
+  createdBy            String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
 
-  payments    Payment[]
-  reminders   InvoiceReminder[]
-  creditNotes CreditNote[]
-  paymentPlan PaymentPlan?
-  creator     User              @relation(fields: [createdBy], references: [id])
+  payments         Payment[]
+  reminders        InvoiceReminder[]
+  creditNotes      CreditNote[]
+  paymentPlan      PaymentPlan?
+  appliedTaxRate   TaxRate?          @relation(fields: [taxRateId], references: [id])
+  retainerContract RetainerContract? @relation("RetainerInvoices", fields: [retainerContractId], references: [id])
+  creator          User              @relation(fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -79,6 +83,8 @@ model Invoice {
   @@index([clientId])
   @@index([serviceType])
   @@index([paidAt])
+  @@index([taxRateId])
+  @@index([retainerContractId])
 }
 
 enum InvoiceStatus {
@@ -146,11 +152,12 @@ model Expense {
   amount     Decimal         @db.Decimal(12, 2)
   currency   String          @default("USD")
   date       DateTime
-  projectId  String?
-  receiptUrl String?
-  uploadPath String?
-  notes      String?
-  createdBy  String
+  projectId          String?
+  internalHourlyCost Decimal?        @db.Decimal(10, 2)
+  receiptUrl         String?
+  uploadPath         String?
+  notes              String?
+  createdBy          String
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   deletedAt  DateTime?
@@ -448,4 +455,123 @@ model BankTransaction {
   @@index([bankStatementId])
   @@index([matchStatus])
   @@index([transactionDate])
+}
+
+model TaxRate {
+  id            String    @id @default(cuid())
+  name          String
+  ratePercent   Decimal   @db.Decimal(5, 2)
+  country       String
+  serviceType   String?
+  effectiveFrom DateTime  @default(now())
+  isActive      Boolean   @default(true)
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  invoices  Invoice[]
+  retainers RetainerContract[]
+
+  @@index([country])
+  @@index([serviceType])
+  @@index([isActive])
+}
+
+model TaxPayment {
+  id            String   @id @default(cuid())
+  authorityName String
+  amount        Decimal  @db.Decimal(12, 2)
+  currency      String   @default("RWF")
+  paidAt        DateTime
+  reference     String?
+  periodFrom    DateTime
+  periodTo      DateTime
+  notes         String?
+  createdBy     String
+  createdAt     DateTime @default(now())
+
+  @@index([paidAt])
+  @@index([periodFrom])
+}
+
+enum RetainerStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model RetainerContract {
+  id                String         @id @default(cuid())
+  clientId          String
+  serviceName       String
+  description       String?
+  amount            Decimal        @db.Decimal(12, 2)
+  currency          String         @default("USD")
+  billingDayOfMonth Int
+  startDate         DateTime
+  endDate           DateTime?
+  status            RetainerStatus @default(ACTIVE)
+  taxRateId         String?
+  nextBillingDate   DateTime
+  lastBilledAt      DateTime?
+  pausedAt          DateTime?
+  pauseReason       String?
+  endedAt           DateTime?
+  endReason         String?
+  createdBy         String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  taxRate  TaxRate?  @relation(fields: [taxRateId], references: [id])
+  invoices Invoice[] @relation("RetainerInvoices")
+
+  @@index([status])
+  @@index([nextBillingDate])
+  @@index([clientId])
+}
+
+enum BudgetRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProjectBudget {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  projectName       String
+  clientId          String
+  approvedBudget    Decimal   @db.Decimal(12, 2)
+  currency          String    @default("USD")
+  alertThresholdPct Int       @default(80)
+  alertSentAt       DateTime?
+  isBlocked         Boolean   @default(false)
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  increaseRequests BudgetIncreaseRequest[]
+
+  @@index([projectId])
+  @@index([clientId])
+}
+
+model BudgetIncreaseRequest {
+  id              String              @id @default(cuid())
+  projectId       String
+  currentBudget   Decimal             @db.Decimal(12, 2)
+  requestedBudget Decimal             @db.Decimal(12, 2)
+  justification   String
+  requestedBy     String
+  status          BudgetRequestStatus @default(PENDING)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  budget ProjectBudget @relation(fields: [projectId], references: [projectId])
+
+  @@index([projectId])
+  @@index([status])
 }

@@ -153,6 +153,11 @@ export interface FinanceSummary {
   creditNotesIssuedMTD: number;
   creditNotesValueMTD: number;
   pendingReconciliations: number;
+  totalMRR: number;
+  activeRetainers: number;
+  retainersUpForRenewal: number;
+  taxOwed: number;
+  blockedProjects: number;
   cashFlowAlert: boolean;
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
@@ -663,4 +668,135 @@ export interface ReconciliationCompleteResult {
   systemBalance: number;
   bankBalance: number;
   difference: number;
+}
+
+export enum RetainerStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  ENDED = 'ENDED',
+}
+
+export enum BudgetRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export interface TaxRateRecord {
+  id: string;
+  name: string;
+  ratePercent: number;
+  country: string;
+  serviceType: string | null;
+  effectiveFrom: string;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaxPaymentRecord {
+  id: string;
+  authorityName: string;
+  amount: number;
+  currency: string;
+  paidAt: string;
+  reference: string | null;
+  periodFrom: string;
+  periodTo: string;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface TaxLiabilityReport {
+  period: { from: string; to: string };
+  taxCollected: {
+    total: number;
+    byRate: {
+      taxRateId: string | null;
+      rateName: string;
+      ratePercent: number;
+      invoiceCount: number;
+      grossRevenue: number;
+      taxAmount: number;
+    }[];
+  };
+  inputTax: number;
+  totalRemitted: number;
+  netOwed: number;
+  remittances: TaxPaymentRecord[];
+  warning: string | null;
+}
+
+export interface RetainerRecord {
+  id: string;
+  clientId: string;
+  serviceName: string;
+  description: string | null;
+  amount: number;
+  currency: string;
+  billingDayOfMonth: number;
+  startDate: string;
+  endDate: string | null;
+  status: RetainerStatus;
+  taxRateId: string | null;
+  taxRate: { id: string; name: string; ratePercent: number } | null;
+  nextBillingDate: string;
+  lastBilledAt: string | null;
+  pausedAt: string | null;
+  pauseReason: string | null;
+  endedAt: string | null;
+  endReason: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RetainerMRRSummary {
+  activeCount: number;
+  totalMRR: number;
+  totalARR: number;
+  mrrByCurrency: Record<string, number>;
+  upForRenewal: RetainerRecord[];
+  recentChurn: RetainerRecord[];
+  pausedCount: number;
+}
+
+export interface ProjectBudgetStatus {
+  projectId: string;
+  projectName: string;
+  clientId: string;
+  currency: string;
+  approvedBudget: number;
+  totalCosts: number;
+  remainingBudget: number;
+  percentConsumed: number;
+  projectedFinalCost: number;
+  isOverBudget: boolean;
+  isBlocked: boolean;
+  alertThresholdPct: number;
+  pendingRequest: BudgetIncreaseRequestRecord | null;
+  expenses?: {
+    id: string;
+    vendorName: string;
+    category: string;
+    amount: number;
+    date: string;
+  }[];
+}
+
+export interface BudgetIncreaseRequestRecord {
+  id: string;
+  projectId: string;
+  currentBudget: number;
+  requestedBudget: number;
+  justification: string;
+  requestedBy: string;
+  status: BudgetRequestStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  projectName?: string;
 }

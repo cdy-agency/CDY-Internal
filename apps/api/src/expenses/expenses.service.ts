@@ -42,6 +42,18 @@ export class ExpensesService {
       uploadPath = upload.path;
     }
 
+    if (dto.projectId) {
+      const budget = await this.prisma.projectBudget.findUnique({
+        where: { projectId: dto.projectId },
+      });
+
+      if (budget?.isBlocked) {
+        throw new BadRequestException(
+          `Project "${budget.projectName}" is over budget and expense logging is blocked. Submit a budget increase request to continue.`,
+        );
+      }
+    }
+
     const expense = await this.prisma.expense.create({
       data: {
         vendorName: dto.vendorName,

@@ -18,6 +18,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuditContext } from '../common/audit/audit.context';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WriteOffInvoiceDto } from './dto/write-off-invoice.dto';
+import { TaxService } from '../tax/tax.service';
 
 interface LineItemWithAmount extends LineItemDto {
   amount: number;
@@ -69,6 +70,7 @@ export class InvoicesService {
     private readonly invoiceEmailService: InvoiceEmailService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly taxService: TaxService,
   ) {}
 
   async create(
@@ -77,9 +79,28 @@ export class InvoicesService {
     auditCtx: AuditContext,
   ): Promise<SerializedInvoice> {
     const invoiceNumber = await this.invoiceNumberService.generate();
-    const taxRate = dto.taxRate ?? 0;
+
+    let taxRateId: string | null = null;
+    let taxRatePercent = dto.taxRate ?? 0;
+
+    if (dto.taxRateId) {
+      const rate = await this.taxService.findById(dto.taxRateId);
+      taxRateId = dto.taxRateId;
+      taxRatePercent = Number(rate.ratePercent);
+    } else if (dto.country) {
+      const rate = await this.taxService.findApplicableRate(
+        dto.country,
+        dto.serviceType ?? 'general',
+        new Date(),
+      );
+      if (rate) {
+        taxRateId = rate.id;
+        taxRatePercent = Number(rate.ratePercent);
+      }
+    }
+
     const { subtotal, taxAmount, total, lineItemsWithAmounts } =
-      this.calculateTotals(dto.lineItems, taxRate);
+      this.calculateTotals(dto.lineItems, taxRatePercent);
 
     const invoice = await this.prisma.invoice.create({
       data: {
@@ -89,9 +110,10 @@ export class InvoicesService {
         status: InvoiceStatus.DRAFT,
         lineItems: lineItemsWithAmounts as unknown as Prisma.InputJsonValue,
         subtotal,
-        taxRate,
+        taxRate: taxRatePercent,
         taxAmount,
         total,
+        taxRateId,
         currency: dto.currency ?? 'USD',
         dueDate: new Date(dto.dueDate),
         notes: dto.notes,

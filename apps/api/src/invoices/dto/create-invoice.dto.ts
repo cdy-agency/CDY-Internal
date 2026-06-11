@@ -57,4 +57,12 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   serviceType?: string;
+
+  @IsOptional()
+  @IsString()
+  taxRateId?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
 }

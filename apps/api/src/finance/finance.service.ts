@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PaymentPlanStatus, Prisma, ReconciliationStatus } from '@prisma/client';
+import {
+  InvoiceStatus,
+  PaymentPlanStatus,
+  Prisma,
+  ReconciliationStatus,
+  RetainerStatus,
+} from '@prisma/client';
+import { addDays } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashFlowService } from '../reports/cash-flow.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
@@ -74,6 +81,11 @@ export class FinanceService {
       creditNotesIssuedMTD,
       creditNotesValueMTD,
       pendingReconciliations,
+      totalMRR,
+      activeRetainers,
+      retainersUpForRenewal,
+      taxOwed,
+      blockedProjects,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -104,6 +116,11 @@ export class FinanceService {
       this.countCreditNotesIssuedMTD(currentMonthStart, currentMonthEnd),
       this.sumCreditNotesValueMTD(currentMonthStart, currentMonthEnd),
       this.countPendingReconciliations(),
+      this.sumActiveRetainerMRR(),
+      this.countActiveRetainers(),
+      this.countRetainersUpForRenewal(),
+      this.computeCurrentMonthTaxOwed(currentMonthStart, currentMonthEnd),
+      this.countBlockedProjects(),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -146,6 +163,11 @@ export class FinanceService {
       creditNotesIssuedMTD,
       creditNotesValueMTD,
       pendingReconciliations,
+      totalMRR,
+      activeRetainers,
+      retainersUpForRenewal,
+      taxOwed,
+      blockedProjects,
       cashFlowAlert,
       previousMonth: previousMetrics,
     };
@@ -325,6 +347,66 @@ export class FinanceService {
   private async countPendingReconciliations(): Promise<number> {
     return this.prisma.bankStatement.count({
       where: { status: ReconciliationStatus.IN_PROGRESS },
+    });
+  }
+
+  private async sumActiveRetainerMRR(): Promise<number> {
+    const result = await this.prisma.retainerContract.aggregate({
+      where: { status: RetainerStatus.ACTIVE },
+      _sum: { amount: true },
+    });
+    return this.toNumber(result._sum.amount);
+  }
+
+  private async countActiveRetainers(): Promise<number> {
+    return this.prisma.retainerContract.count({
+      where: { status: RetainerStatus.ACTIVE },
+    });
+  }
+
+  private async countRetainersUpForRenewal(): Promise<number> {
+    const thirtyDaysFromNow = addDays(new Date(), 30);
+    return this.prisma.retainerContract.count({
+      where: {
+        status: RetainerStatus.ACTIVE,
+        endDate: { lte: thirtyDaysFromNow, not: null },
+      },
+    });
+  }
+
+  private async computeCurrentMonthTaxOwed(
+    from: Date,
+    to: Date,
+  ): Promise<number> {
+    const taxCollected = await this.prisma.invoice.aggregate({
+      where: {
+        status: InvoiceStatus.PAID,
+        paidAt: { gte: from, lte: to },
+        taxAmount: { gt: 0 },
+        deletedAt: null,
+      },
+      _sum: { taxAmount: true },
+    });
+
+    const remittances = await this.prisma.taxPayment.findMany({
+      where: {
+        periodFrom: { lte: to },
+        periodTo: { gte: from },
+      },
+    });
+
+    const totalCollected = this.toNumber(taxCollected._sum.taxAmount);
+    const totalRemitted = remittances.reduce(
+      (s, r) => s + Number(r.amount),
+      0,
+    );
+
+    return Number((totalCollected - totalRemitted).toFixed(2));
+  }
+
+  private async countBlockedProjects(): Promise<number> {
+    return this.prisma.projectBudget.count({
+      where: { isBlocked: true },
     });
   }
 
