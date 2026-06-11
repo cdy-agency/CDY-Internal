@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS development
 COPY apps/api/ ./apps/api/
 RUN pnpm --filter @cdy/shared build && pnpm --filter api prisma:generate
-EXPOSE 3001
+EXPOSE 3251
 
 # ─── Build ────────────────────────────────────────────────────
 FROM deps AS builder
@@ -37,4 +37,4 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 RUN mkdir -p /app/uploads/receipts
 
 CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && node dist/main.js"]
-EXPOSE 3001
+EXPOSE 3251

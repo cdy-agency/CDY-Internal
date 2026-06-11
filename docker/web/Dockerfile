@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS development
 COPY apps/web/ ./apps/web/
 RUN pnpm --filter @cdy/shared build
-EXPOSE 3000
+EXPOSE 3250
 
 # ─── Build ────────────────────────────────────────────────────
 FROM deps AS builder
@@ -31,4 +31,4 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 CMD ["node", "apps/web/server.js"]
-EXPOSE 3000
+EXPOSE 3250

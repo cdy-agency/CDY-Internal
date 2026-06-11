@@ -19,9 +19,10 @@ pnpm db:seed
 
 Services available:
 
-- Web app: http://localhost:3000
-- API: http://localhost:3001
-- API docs: http://localhost:3001/api/docs
+- Web app: http://localhost:3250
+- API: http://localhost:3251
+- API docs: http://localhost:3251/api/docs
+- PostgreSQL (host): localhost:5433
 - Adminer: http://localhost:8080
 
 ## Reset everything (wipe database)

@@ -36,7 +36,7 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
       FRONTEND_URL: ${FRONTEND_URL}
       NODE_ENV: production
-      PORT: 3001
+      PORT: 3251
       UPLOAD_DIR: /app/uploads
       SENTRY_DSN: ${SENTRY_DSN}
     volumes:
@@ -58,6 +58,7 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NODE_ENV: production
+      PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
     depends_on:
       - api

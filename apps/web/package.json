@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @cdy/shared build && next dev -p 3000",
+    "dev": "pnpm --filter @cdy/shared build && next dev -p 3250",
     "build": "pnpm --filter @cdy/shared build && next build",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

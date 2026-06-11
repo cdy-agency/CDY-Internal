@@ -23,7 +23,7 @@ async function bootstrap(): Promise<void> {
   app.useStaticAssets(uploadDir, { prefix: '/uploads' });
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3250',
     credentials: true,
   });
 
@@ -49,7 +49,7 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT ?? 3001;
+  const port = process.env.PORT ?? 3251;
   await app.listen(port);
   logger.log(`API running on http://localhost:${port}`);
 }

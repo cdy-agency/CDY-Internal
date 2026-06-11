@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cdy_password}
       POSTGRES_DB: ${POSTGRES_DB:-cdy_system}
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - cdy_postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -37,13 +37,13 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-finance@cdy.com}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3250}
       NODE_ENV: development
-      PORT: 3001
+      PORT: 3251
       UPLOAD_DIR: /app/uploads
       SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
-      - '3001:3001'
+      - '3251:3251'
     volumes:
       - ./apps/api:/app/apps/api
       - ./packages:/app/packages
@@ -65,12 +65,13 @@ services:
     container_name: cdy_web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3251/api/v1}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret}
       NODE_ENV: development
+      PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     ports:
-      - '3000:3000'
+      - '3250:3250'
     volumes:
       - ./apps/web:/app/apps/web
       - ./packages:/app/packages

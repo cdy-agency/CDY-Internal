@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AUTH_COOKIE_NAME } from '@/lib/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3251/api/v1';
 
 async function proxyRequest(
   request: NextRequest,

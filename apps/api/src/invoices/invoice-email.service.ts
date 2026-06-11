@@ -45,7 +45,7 @@ export class InvoiceEmailService {
     const fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') ?? 'finance@cdy.com';
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3250';
 
     const lineItems = invoice.lineItems as unknown as LineItem[];
     const currency = invoice.currency;
@@ -176,7 +176,7 @@ export class InvoiceEmailService {
     const fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') ?? 'finance@cdy.com';
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3250';
     const formattedTotal = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: invoice.currency,

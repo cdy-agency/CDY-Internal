@@ -48,9 +48,9 @@ pnpm --filter api prisma:seed
 pnpm dev
 ```
 
-- **Web:** http://localhost:3000
-- **API:** http://localhost:3001
-- **Swagger:** http://localhost:3001/api/docs
+- **Web:** http://localhost:3250
+- **API:** http://localhost:3251
+- **Swagger:** http://localhost:3251/api/docs
 
 ## Seed Users
 
@@ -64,8 +64,8 @@ pnpm dev
 
 ```
 apps/
-  api/     NestJS backend (port 3001)
-  web/     Next.js frontend (port 3000)
+  api/     NestJS backend (port 3251)
+  web/     Next.js frontend (port 3250)
 packages/
   shared/  Shared TypeScript types
 ```
