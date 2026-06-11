@@ -94,6 +94,18 @@ export class InvoicesController {
     };
   }
 
+  @Post(':id/send-reminder')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Send manual payment reminder' })
+  async sendReminder(@Param('id') id: string) {
+    const data = await this.invoicesService.sendManualReminder(id);
+    return {
+      data,
+      message: 'Reminder sent to client',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
   @Post(':id/send')
   @Roles(Role.FINANCE_MANAGER)
   @ApiOperation({ summary: 'Send invoice via email' })

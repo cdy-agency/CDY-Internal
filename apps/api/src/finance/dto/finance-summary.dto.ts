@@ -13,5 +13,7 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   totalBillsOverdue!: number;
   paymentsReceivedToday!: number;
   expensesThisWeek!: number;
+  commissionsPending!: number;
+  commissionsPendingValue!: number;
   previousMonth!: FinanceSummaryMetrics;
 }

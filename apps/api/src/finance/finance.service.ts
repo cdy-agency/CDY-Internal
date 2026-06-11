@@ -64,6 +64,8 @@ export class FinanceService {
       previousBillsOverdue,
       previousPaymentsToday,
       previousExpensesWeek,
+      commissionsPending,
+      commissionsPendingValue,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -88,6 +90,8 @@ export class FinanceService {
         new Date(lastMonthEnd.getTime() - 7 * 24 * 60 * 60 * 1000),
         lastMonthEnd,
       ),
+      this.countPendingCommissions(),
+      this.sumPendingCommissionValue(),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -122,8 +126,35 @@ export class FinanceService {
       ...currentMetrics,
       totalDraftInvoices,
       totalSentInvoices,
+      commissionsPending,
+      commissionsPendingValue,
       previousMonth: previousMetrics,
     };
+  }
+
+  private currentMonthKey(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private async countPendingCommissions(): Promise<number> {
+    return this.prisma.commissionRecord.count({
+      where: {
+        month: this.currentMonthKey(),
+        status: 'PENDING',
+      },
+    });
+  }
+
+  private async sumPendingCommissionValue(): Promise<number> {
+    const result = await this.prisma.commissionRecord.aggregate({
+      _sum: { calculatedAmount: true },
+      where: {
+        month: this.currentMonthKey(),
+        status: 'PENDING',
+      },
+    });
+    return this.toNumber(result._sum.calculatedAmount);
   }
 
   private async sumBillsPending(asOf?: Date): Promise<number> {

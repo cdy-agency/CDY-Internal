@@ -82,6 +82,7 @@ export class InvoicesService {
         currency: dto.currency ?? 'USD',
         dueDate: new Date(dto.dueDate),
         notes: dto.notes,
+        serviceType: dto.serviceType ?? 'general',
         createdBy: userId,
       },
     });
@@ -289,6 +290,48 @@ export class InvoicesService {
     );
 
     return { subtotal, taxAmount, total, lineItemsWithAmounts };
+  }
+
+  async sendManualReminder(id: string): Promise<{ sent: boolean; reminderNumber: number }> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, deletedAt: null },
+      include: { reminders: true },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    if (
+      invoice.status === InvoiceStatus.PAID ||
+      invoice.status === InvoiceStatus.DRAFT ||
+      invoice.status === InvoiceStatus.WRITTEN_OFF
+    ) {
+      throw new BadRequestException(
+        'Reminders can only be sent for unpaid sent invoices',
+      );
+    }
+
+    const nextReminderNumber = invoice.reminders.length + 1;
+    if (nextReminderNumber > 3) {
+      throw new BadRequestException('Maximum of 3 reminders already sent');
+    }
+
+    await this.invoiceEmailService.sendReminder(invoice, nextReminderNumber);
+
+    await this.prisma.invoiceReminder.create({
+      data: {
+        invoiceId: invoice.id,
+        reminderNumber: nextReminderNumber,
+        emailAddress: invoice.clientId,
+      },
+    });
+
+    this.logger.log(
+      `Manual reminder ${nextReminderNumber} sent for ${invoice.invoiceNumber}`,
+    );
+
+    return { sent: true, reminderNumber: nextReminderNumber };
   }
 
   private async getInvoiceOrThrow(id: string): Promise<Invoice> {

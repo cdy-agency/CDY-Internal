@@ -11,12 +11,18 @@ import { PaymentsModule } from '../payments/payments.module';
 import { ExpensesModule } from '../expenses/expenses.module';
 
 import { BillsModule } from '../bills/bills.module';
-
-
+import { ReportsModule } from '../reports/reports.module';
+import { CommissionsModule } from '../commissions/commissions.module';
 
 @Module({
-
-  imports: [InvoicesModule, PaymentsModule, ExpensesModule, BillsModule],
+  imports: [
+    InvoicesModule,
+    PaymentsModule,
+    ExpensesModule,
+    BillsModule,
+    ReportsModule,
+    CommissionsModule,
+  ],
 
   controllers: [FinanceController],
 

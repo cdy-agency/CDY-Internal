@@ -1,0 +1,486 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
+import {
+  CommissionRule,
+  CommissionRecord,
+  CommissionStatus,
+  Prisma,
+} from '@prisma/client';
+import { format } from 'date-fns';
+import { Role } from '@cdy/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateCommissionRuleDto, UpdateCommissionRuleDto } from './dto/create-commission-rule.dto';
+import { CalculateCommissionDto } from './dto/calculate-commission.dto';
+import { ReviewCommissionDto } from './dto/review-commission.dto';
+import { CommissionFiltersDto } from './dto/commission-filters.dto';
+
+@Injectable()
+export class CommissionsService {
+  private readonly logger = new Logger(CommissionsService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createRule(dto: CreateCommissionRuleDto, createdBy: string) {
+    const rule = await this.prisma.commissionRule.create({
+      data: {
+        agentId: dto.agentId,
+        serviceType: dto.serviceType ?? null,
+        ratePercent: dto.ratePercent,
+        effectiveFrom: dto.effectiveFrom ? new Date(dto.effectiveFrom) : new Date(),
+        effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null,
+        createdBy,
+      },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+    return this.serializeRule(rule);
+  }
+
+  async findAllRules() {
+    const rules = await this.prisma.commissionRule.findMany({
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+    return rules.map((r) => this.serializeRule(r));
+  }
+
+  async updateRule(id: string, dto: UpdateCommissionRuleDto) {
+    const existing = await this.prisma.commissionRule.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Commission rule not found');
+
+    const rule = await this.prisma.commissionRule.update({
+      where: { id },
+      data: {
+        ...(dto.ratePercent !== undefined ? { ratePercent: dto.ratePercent } : {}),
+        ...(dto.effectiveTo !== undefined
+          ? { effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null }
+          : {}),
+      },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+    return this.serializeRule(rule);
+  }
+
+  private async getRateForAgent(
+    agentId: string,
+    serviceType: string,
+    date: Date,
+  ): Promise<CommissionRule | null> {
+    const rules = await this.prisma.commissionRule.findMany({
+      where: {
+        agentId,
+        OR: [{ serviceType }, { serviceType: null }],
+        effectiveFrom: { lte: date },
+        AND: [
+          {
+            OR: [{ effectiveTo: null }, { effectiveTo: { gte: date } }],
+          },
+        ],
+      },
+      orderBy: [{ effectiveFrom: 'desc' }],
+    });
+
+    const specific = rules.find((r) => r.serviceType === serviceType);
+    if (specific) return specific;
+
+    const catchAll = rules.find((r) => r.serviceType === null);
+    return catchAll ?? null;
+  }
+
+  async calculate(dto: CalculateCommissionDto) {
+    const rule = await this.getRateForAgent(
+      dto.agentId,
+      dto.serviceType,
+      new Date(),
+    );
+
+    if (!rule) {
+      this.logger.warn(
+        `No commission rule for agent ${dto.agentId} service ${dto.serviceType}`,
+      );
+      return null;
+    }
+
+    const existing = await this.prisma.commissionRecord.findUnique({
+      where: { dealId: dto.dealId },
+    });
+
+    if (existing) {
+      this.logger.warn(`Commission already exists for deal ${dto.dealId}`);
+      return this.serializeRecord(existing);
+    }
+
+    const month = format(new Date(), 'yyyy-MM');
+    const calculatedAmount = Number(
+      ((dto.dealValue * Number(rule.ratePercent)) / 100).toFixed(2),
+    );
+
+    const commission = await this.prisma.commissionRecord.create({
+      data: {
+        agentId: dto.agentId,
+        dealId: dto.dealId,
+        dealValue: dto.dealValue,
+        serviceType: dto.serviceType,
+        ratePercent: rule.ratePercent,
+        calculatedAmount,
+        month,
+        status: CommissionStatus.PENDING,
+      },
+      include: { agent: { select: { id: true, firstName: true, lastName: true, role: true } } },
+    });
+
+    this.logger.log(
+      `Commission created: agent=${dto.agentId} deal=${dto.dealId} amount=${calculatedAmount}`,
+    );
+
+    return this.serializeRecord(commission);
+  }
+
+  async findAll(filters: CommissionFiltersDto) {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 25;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CommissionRecordWhereInput = {
+      month: filters.month,
+      ...(filters.agentId ? { agentId: filters.agentId } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+    };
+
+    const [records, total, summary] = await Promise.all([
+      this.prisma.commissionRecord.findMany({
+        where,
+        include: {
+          agent: {
+            select: { id: true, firstName: true, lastName: true, role: true },
+          },
+        },
+        orderBy: [{ agentId: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.commissionRecord.count({ where }),
+      this.getMonthSummary(filters.month),
+    ]);
+
+    return {
+      data: records.map((r) => this.serializeRecord(r)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      summary,
+    };
+  }
+
+  async findMyCommissions(agentId: string, filters: CommissionFiltersDto) {
+    return this.findAll({ ...filters, agentId });
+  }
+
+  async findOne(id: string) {
+    const record = await this.prisma.commissionRecord.findUnique({
+      where: { id },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, role: true },
+        },
+      },
+    });
+    if (!record) throw new NotFoundException('Commission not found');
+    return this.serializeRecord(record);
+  }
+
+  async review(id: string, dto: ReviewCommissionDto, reviewerId: string) {
+    const commission = await this.prisma.commissionRecord.findUnique({
+      where: { id },
+    });
+
+    if (!commission) throw new NotFoundException('Commission not found');
+
+    if (commission.status !== CommissionStatus.PENDING) {
+      throw new BadRequestException(
+        `Commission is already ${commission.status.toLowerCase()} and cannot be reviewed again`,
+      );
+    }
+
+    if (dto.status === CommissionStatus.APPROVED) {
+      if (dto.adjustedAmount !== undefined && !dto.adjustmentReason) {
+        throw new BadRequestException(
+          'adjustmentReason is required when adjusting the commission amount',
+        );
+      }
+
+      const updated = await this.prisma.commissionRecord.update({
+        where: { id },
+        data: {
+          status: CommissionStatus.APPROVED,
+          adjustedAmount: dto.adjustedAmount ?? null,
+          adjustmentReason: dto.adjustmentReason ?? null,
+          approvedBy: reviewerId,
+          approvedAt: new Date(),
+        },
+        include: {
+          agent: {
+            select: { id: true, firstName: true, lastName: true, role: true },
+          },
+        },
+      });
+      return this.serializeRecord(updated);
+    }
+
+    if (!dto.rejectionReason) {
+      throw new BadRequestException(
+        'rejectionReason is required when rejecting a commission',
+      );
+    }
+
+    const updated = await this.prisma.commissionRecord.update({
+      where: { id },
+      data: {
+        status: CommissionStatus.REJECTED,
+        rejectedBy: reviewerId,
+        rejectedAt: new Date(),
+        rejectionReason: dto.rejectionReason,
+      },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true, role: true },
+        },
+      },
+    });
+    return this.serializeRecord(updated);
+  }
+
+  async approveAll(month: string, reviewerId: string) {
+    const pending = await this.prisma.commissionRecord.findMany({
+      where: { month, status: CommissionStatus.PENDING },
+    });
+
+    if (pending.length === 0) {
+      return { approved: 0, totalValue: 0 };
+    }
+
+    await this.prisma.commissionRecord.updateMany({
+      where: { month, status: CommissionStatus.PENDING },
+      data: {
+        status: CommissionStatus.APPROVED,
+        approvedBy: reviewerId,
+        approvedAt: new Date(),
+      },
+    });
+
+    const totalValue = pending.reduce(
+      (s, c) => s + Number(c.calculatedAmount),
+      0,
+    );
+
+    this.logger.log(`Approved ${pending.length} commissions for ${month}`);
+
+    return { approved: pending.length, totalValue };
+  }
+
+  async getMySummary(agentId: string, month: string) {
+    const commissions = await this.prisma.commissionRecord.findMany({
+      where: { agentId, month },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const dealsCount = commissions.length;
+    const totalDealValue = commissions.reduce(
+      (s, c) => s + Number(c.dealValue),
+      0,
+    );
+    const pendingCommission = commissions
+      .filter((c) => c.status === CommissionStatus.PENDING)
+      .reduce((s, c) => s + Number(c.calculatedAmount), 0);
+    const approvedCommission = commissions
+      .filter((c) => c.status === CommissionStatus.APPROVED)
+      .reduce(
+        (s, c) =>
+          s + Number(c.adjustedAmount ?? c.calculatedAmount),
+        0,
+      );
+    const totalCommission = commissions
+      .filter(
+        (c) =>
+          c.status === CommissionStatus.PENDING ||
+          c.status === CommissionStatus.APPROVED,
+      )
+      .reduce((s, c) => s + Number(c.calculatedAmount), 0);
+
+    return {
+      month,
+      dealsCount,
+      totalDealValue,
+      totalCommission,
+      approvedCommission,
+      pendingCommission,
+      commissions: commissions.map((c) => this.serializeRecord(c)),
+    };
+  }
+
+  async getPayrollSummary(month: string) {
+    const records = await this.prisma.commissionRecord.findMany({
+      where: { month, status: CommissionStatus.APPROVED },
+      include: {
+        agent: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { agentId: 'asc' },
+    });
+
+    const agentMap = new Map<
+      string,
+      {
+        agentId: string;
+        agentName: string;
+        totalCommission: number;
+        commissionCount: number;
+        commissions: ReturnType<CommissionsService['serializeRecord']>[];
+      }
+    >();
+
+    for (const record of records) {
+      const key = record.agentId;
+      const amount = Number(record.adjustedAmount ?? record.calculatedAmount);
+      const existing = agentMap.get(key);
+      const serialized = this.serializeRecord(record);
+
+      if (existing) {
+        existing.totalCommission += amount;
+        existing.commissionCount += 1;
+        existing.commissions.push(serialized);
+      } else {
+        agentMap.set(key, {
+          agentId: key,
+          agentName: `${record.agent.firstName} ${record.agent.lastName}`,
+          totalCommission: amount,
+          commissionCount: 1,
+          commissions: [serialized],
+        });
+      }
+    }
+
+    return { agents: Array.from(agentMap.values()) };
+  }
+
+  async assertAgentAccess(requestingAgentId: string, targetAgentId: string) {
+    if (requestingAgentId !== targetAgentId) {
+      throw new ForbiddenException('You can only access your own commissions');
+    }
+  }
+
+  private async getMonthSummary(month: string) {
+    const [pending, approved, rejected, pendingAgg, approvedAgg] =
+      await Promise.all([
+        this.prisma.commissionRecord.count({
+          where: { month, status: CommissionStatus.PENDING },
+        }),
+        this.prisma.commissionRecord.count({
+          where: { month, status: CommissionStatus.APPROVED },
+        }),
+        this.prisma.commissionRecord.count({
+          where: { month, status: CommissionStatus.REJECTED },
+        }),
+        this.prisma.commissionRecord.aggregate({
+          _sum: { calculatedAmount: true },
+          where: { month, status: CommissionStatus.PENDING },
+        }),
+        this.prisma.commissionRecord.aggregate({
+          _sum: { calculatedAmount: true },
+          where: { month, status: CommissionStatus.APPROVED },
+        }),
+      ]);
+
+    return {
+      pending,
+      approved,
+      rejected,
+      pendingValue: Number(pendingAgg._sum.calculatedAmount ?? 0),
+      approvedValue: Number(approvedAgg._sum.calculatedAmount ?? 0),
+    };
+  }
+
+  private serializeRule(
+    rule: CommissionRule & {
+      agent?: { id: string; firstName: string; lastName: string; email: string };
+    },
+  ) {
+    return {
+      id: rule.id,
+      agentId: rule.agentId,
+      serviceType: rule.serviceType,
+      ratePercent: Number(rule.ratePercent),
+      effectiveFrom: rule.effectiveFrom.toISOString(),
+      effectiveTo: rule.effectiveTo?.toISOString() ?? null,
+      createdBy: rule.createdBy,
+      createdAt: rule.createdAt.toISOString(),
+      updatedAt: rule.updatedAt.toISOString(),
+      agent: rule.agent,
+    };
+  }
+
+  private serializeRecord(
+    record: CommissionRecord & {
+      agent?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        role?: string;
+      };
+    },
+  ) {
+    const agent =
+      'agent' in record && record.agent
+        ? {
+            id: record.agent.id,
+            firstName: record.agent.firstName,
+            lastName: record.agent.lastName,
+            role: record.agent.role ?? Role.SALES_AGENT,
+          }
+        : undefined;
+
+    return {
+      id: record.id,
+      agentId: record.agentId,
+      dealId: record.dealId,
+      dealValue: Number(record.dealValue),
+      serviceType: record.serviceType,
+      ratePercent: Number(record.ratePercent),
+      calculatedAmount: Number(record.calculatedAmount),
+      adjustedAmount:
+        record.adjustedAmount !== null
+          ? Number(record.adjustedAmount)
+          : null,
+      adjustmentReason: record.adjustmentReason,
+      month: record.month,
+      status: record.status,
+      approvedBy: record.approvedBy,
+      approvedAt: record.approvedAt?.toISOString() ?? null,
+      rejectedBy: record.rejectedBy,
+      rejectedAt: record.rejectedAt?.toISOString() ?? null,
+      rejectionReason: record.rejectionReason,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+      agent,
+      finalAmount: Number(record.adjustedAmount ?? record.calculatedAmount),
+    };
+  }
+}

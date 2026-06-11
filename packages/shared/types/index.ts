@@ -40,6 +40,13 @@ export enum BillStatus {
   PAID = 'PAID',
 }
 
+export enum CommissionStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PAID = 'PAID',
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -65,6 +72,8 @@ export interface FinanceSummaryMetrics {
   totalBillsOverdue: number;
   paymentsReceivedToday: number;
   expensesThisWeek: number;
+  commissionsPending?: number;
+  commissionsPendingValue?: number;
 }
 
 export interface FinanceSummary {
@@ -80,6 +89,8 @@ export interface FinanceSummary {
   totalBillsOverdue: number;
   paymentsReceivedToday: number;
   expensesThisWeek: number;
+  commissionsPending: number;
+  commissionsPendingValue: number;
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
     totalSentInvoices?: number;
@@ -111,6 +122,7 @@ export interface InvoiceRecord {
   writtenOffAt: string | null;
   writtenOffBy: string | null;
   notes: string | null;
+  serviceType: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -236,4 +248,131 @@ export interface ApiResponse<T> {
   data: T;
   message: string;
   statusCode: number;
+}
+
+export interface PlReportData {
+  period: { from: string; to: string };
+  revenue: {
+    total: number;
+    byServiceType: { serviceType: string; amount: number }[];
+  };
+  costOfServices: {
+    total: number;
+    byCategory: { category: ExpenseCategory; amount: number }[];
+  };
+  grossProfit: number;
+  grossMargin: number;
+  operatingExpenses: {
+    total: number;
+    byCategory: { category: ExpenseCategory; amount: number }[];
+  };
+  netProfit: number;
+  netMargin: number;
+  previousPeriod: {
+    totalRevenue: number;
+    revenueByServiceType: { serviceType: string; amount: number }[];
+    totalCOGS: number;
+    cogsByCategory: { category: ExpenseCategory; amount: number }[];
+    grossProfit: number;
+    grossMargin: number;
+    totalOpex: number;
+    opexByCategory: { category: ExpenseCategory; amount: number }[];
+    netProfit: number;
+    netMargin: number;
+  };
+}
+
+export interface AgeingBucketData {
+  count: number;
+  total: number;
+  invoices: {
+    id: string;
+    invoiceNumber: string;
+    clientId: string;
+    total: number;
+    remaining: number;
+    dueDate: string;
+    daysOverdue: number;
+    status: InvoiceStatus;
+  }[];
+}
+
+export interface AgeingReportData {
+  asOf: string;
+  totalOutstanding: number;
+  buckets: {
+    current: AgeingBucketData;
+    days1_30: AgeingBucketData;
+    days31_60: AgeingBucketData;
+    days61_90: AgeingBucketData;
+    days90plus: AgeingBucketData;
+  };
+}
+
+export interface ExpenseReportData {
+  month: string;
+  monthKey: string;
+  totalAmount: number;
+  previousMonthTotal: number;
+  momChangePercent: number;
+  byCategory: {
+    category: ExpenseCategory;
+    amount: number;
+    count: number;
+    previousAmount: number;
+    changePercent: number;
+  }[];
+  expenses: {
+    id: string;
+    vendorName: string;
+    category: ExpenseCategory;
+    amount: number;
+    currency: string;
+    date: string;
+    projectId: string | null;
+    receiptUrl: string | null;
+  }[];
+}
+
+export interface CommissionRecord {
+  id: string;
+  agentId: string;
+  dealId: string;
+  dealValue: number;
+  serviceType: string;
+  ratePercent: number;
+  calculatedAmount: number;
+  adjustedAmount: number | null;
+  adjustmentReason: string | null;
+  month: string;
+  status: CommissionStatus;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectedBy: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  finalAmount: number;
+  agent?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: Role;
+  };
+}
+
+export interface PaginatedCommissions {
+  data: CommissionRecord[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  summary: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    pendingValue: number;
+    approvedValue: number;
+  };
 }

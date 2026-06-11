@@ -13,6 +13,7 @@ export interface MetricCardProps {
   icon: LucideIcon;
   iconColor: string;
   isLoading: boolean;
+  subLabel?: string;
 }
 
 export function MetricCard({
@@ -23,6 +24,7 @@ export function MetricCard({
   icon: Icon,
   iconColor,
   isLoading,
+  subLabel,
 }: MetricCardProps): JSX.Element {
   if (isLoading) {
     return (
@@ -50,6 +52,9 @@ export function MetricCard({
       </div>
       <p className="mb-1 text-sm text-cdy-muted">{label}</p>
       <p className="mb-2 text-2xl font-medium text-cdy-white">{value}</p>
+      {subLabel && (
+        <p className="mb-2 text-sm text-cdy-muted">{subLabel} pending value</p>
+      )}
       <div
         className={cn(
           'flex items-center gap-1 text-sm',

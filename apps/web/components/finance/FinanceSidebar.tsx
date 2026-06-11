@@ -9,6 +9,7 @@ import {
   Receipt,
   Building2,
   BarChart3,
+  BadgeDollarSign,
   LogOut,
   Menu,
   X,
@@ -17,20 +18,65 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { UserProfile } from '@cdy/shared';
+import { Role } from '@cdy/shared';
 
 interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
+  roles: Role[];
 }
 
 const navItems: NavItem[] = [
-  { label: 'Overview', href: '/finance', icon: LayoutDashboard },
-  { label: 'Invoices', href: '/finance/invoices', icon: FileText },
-  { label: 'Payments', href: '/finance/payments', icon: CreditCard },
-  { label: 'Expenses', href: '/finance/expenses', icon: Receipt },
-  { label: 'Bills', href: '/finance/bills', icon: Building2 },
-  { label: 'Reports', href: '/finance/reports', icon: BarChart3 },
+  {
+    label: 'Overview',
+    href: '/finance',
+    icon: LayoutDashboard,
+    roles: [
+      Role.CEO,
+      Role.FINANCE_MANAGER,
+      Role.SALES_AGENT,
+      Role.PROJECT_MANAGER,
+      Role.OPERATIONS_MANAGER,
+      Role.TEAM_MEMBER,
+    ],
+  },
+  {
+    label: 'Invoices',
+    href: '/finance/invoices',
+    icon: FileText,
+    roles: [Role.CEO, Role.FINANCE_MANAGER, Role.PROJECT_MANAGER],
+  },
+  {
+    label: 'Payments',
+    href: '/finance/payments',
+    icon: CreditCard,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Expenses',
+    href: '/finance/expenses',
+    icon: Receipt,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Bills',
+    href: '/finance/bills',
+    icon: Building2,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Reports',
+    href: '/finance/reports',
+    icon: BarChart3,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Commissions',
+    href: '/finance/commissions',
+    icon: BadgeDollarSign,
+    roles: [Role.CEO, Role.FINANCE_MANAGER, Role.SALES_AGENT],
+  },
 ];
 
 interface FinanceSidebarProps {
@@ -43,18 +89,35 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function isActive(href: string): boolean {
-    return href === '/finance' ? pathname === '/finance' : pathname.startsWith(href);
+    if (href === '/finance/commissions' && user?.role === Role.SALES_AGENT) {
+      return pathname.startsWith('/finance/commissions');
+    }
+    return href === '/finance'
+      ? pathname === '/finance'
+      : pathname.startsWith(href);
   }
+
+  function resolveHref(item: NavItem): string {
+    if (item.label === 'Commissions' && user?.role === Role.SALES_AGENT) {
+      return '/finance/commissions/my';
+    }
+    return item.href;
+  }
+
+  const visibleItems = navItems.filter(
+    (item) => user && item.roles.includes(user.role),
+  );
 
   const navLinks = (
     <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
+        const href = resolveHref(item);
         const active = isActive(item.href);
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={item.label}
+            href={href}
             onClick={() => setMobileOpen(false)}
             title={item.label}
             className={cn(
@@ -95,7 +158,9 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-cdy-navy-light transition-transform md:static',
           'max-lg:w-10 max-lg:overflow-hidden',
-          mobileOpen ? 'translate-x-0 max-md:w-60' : '-translate-x-full max-md:-translate-x-full md:translate-x-0 max-lg:translate-x-0',
+          mobileOpen
+            ? 'translate-x-0 max-md:w-60'
+            : '-translate-x-full max-md:-translate-x-full md:translate-x-0 max-lg:translate-x-0',
         )}
       >
         <div className="border-b border-cdy-navy-border p-4 max-lg:hidden max-md:block">

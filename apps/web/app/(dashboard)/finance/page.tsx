@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -11,7 +12,11 @@ import {
   Plus,
   Building2,
   AlertOctagon,
+  BadgeDollarSign,
 } from 'lucide-react';
+import api from '@/lib/api';
+import type { ApiResponse, UserProfile } from '@cdy/shared';
+import { Role } from '@cdy/shared';
 import { MetricCard } from '@/components/finance/MetricCard';
 import { Button } from '@/components/ui/button';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
@@ -19,6 +24,17 @@ import { calculateDelta, formatCurrency } from '@/lib/utils';
 
 export default function FinanceOverviewPage(): JSX.Element {
   const { data, isLoading, isError, refetch } = useFinanceSummary();
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    api
+      .get<ApiResponse<UserProfile>>('/auth/me')
+      .then((res) => setUser(res.data.data))
+      .catch(() => undefined);
+  }, []);
+
+  const showCommissionsCard =
+    user?.role === Role.CEO || user?.role === Role.FINANCE_MANAGER;
 
   const metrics = data
     ? [
@@ -87,6 +103,18 @@ export default function FinanceOverviewPage(): JSX.Element {
           icon: AlertOctagon,
           iconColor: 'bg-red-500/10 text-[var(--cdy-danger)]',
         },
+        ...(showCommissionsCard
+          ? [
+              {
+                label: 'Commissions Pending',
+                value: String(data.commissionsPending),
+                delta: 0,
+                icon: BadgeDollarSign,
+                iconColor: 'bg-amber-500/10 text-[var(--cdy-warning)]',
+                subLabel: formatCurrency(data.commissionsPendingValue),
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -105,7 +133,7 @@ export default function FinanceOverviewPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading
-          ? Array.from({ length: 8 }).map((_, index) => (
+          ? Array.from({ length: showCommissionsCard ? 9 : 8 }).map((_, index) => (
               <MetricCard
                 key={`skeleton-${index}`}
                 label=""
@@ -123,10 +151,11 @@ export default function FinanceOverviewPage(): JSX.Element {
                 label={metric.label}
                 value={metric.value}
                 delta={metric.delta}
-                deltaLabel="vs last month"
+                deltaLabel={'subLabel' in metric && metric.subLabel ? 'total value' : 'vs last month'}
                 icon={metric.icon}
                 iconColor={metric.iconColor}
                 isLoading={false}
+                subLabel={'subLabel' in metric ? metric.subLabel : undefined}
               />
             ))}
       </div>

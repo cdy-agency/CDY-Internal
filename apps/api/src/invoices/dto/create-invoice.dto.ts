@@ -53,4 +53,8 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @IsOptional()
+  @IsString()
+  serviceType?: string;
 }

@@ -5,6 +5,7 @@ import {
   PaymentMethod,
   ExpenseCategory,
   BillStatus,
+  CommissionStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -14,6 +15,9 @@ async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash('CDY@2026!', 10);
 
   await prisma.payment.deleteMany();
+  await prisma.invoiceReminder.deleteMany();
+  await prisma.commissionRecord.deleteMany();
+  await prisma.commissionRule.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.expense.deleteMany();
   await prisma.bill.deleteMany();
@@ -67,6 +71,7 @@ async function main(): Promise<void> {
       taxAmount: 0,
       total: 5000,
       dueDate: new Date(now.getFullYear(), now.getMonth() + 1, 15),
+      serviceType: 'branding',
       createdBy: financeManager.id,
       createdAt: currentMonthStart,
     },
@@ -86,6 +91,7 @@ async function main(): Promise<void> {
       total: 15000,
       dueDate: new Date(now.getFullYear(), now.getMonth(), 28),
       sentAt: currentMonthStart,
+      serviceType: 'software_dev',
       createdBy: financeManager.id,
       createdAt: currentMonthStart,
     },
@@ -106,6 +112,7 @@ async function main(): Promise<void> {
       dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 15),
       sentAt: lastMonthStart,
       paidAt: new Date(now.getFullYear(), now.getMonth(), 5),
+      serviceType: 'marketing',
       createdBy: financeManager.id,
       createdAt: currentMonthStart,
     },
@@ -125,6 +132,7 @@ async function main(): Promise<void> {
       total: 8000,
       dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 10),
       sentAt: lastMonthStart,
+      serviceType: 'sales_services',
       createdBy: financeManager.id,
       createdAt: lastMonthStart,
     },
@@ -144,9 +152,56 @@ async function main(): Promise<void> {
       total: 20000,
       dueDate: new Date(now.getFullYear(), now.getMonth(), 20),
       sentAt: currentMonthStart,
+      serviceType: 'software_dev',
       createdBy: financeManager.id,
       createdAt: currentMonthStart,
     },
+  });
+
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  await prisma.commissionRule.createMany({
+    data: [
+      {
+        agentId: salesAgent.id,
+        serviceType: 'marketing',
+        ratePercent: 8,
+        createdBy: financeManager.id,
+      },
+      {
+        agentId: salesAgent.id,
+        serviceType: null,
+        ratePercent: 5,
+        createdBy: financeManager.id,
+      },
+    ],
+  });
+
+  await prisma.commissionRecord.createMany({
+    data: [
+      {
+        agentId: salesAgent.id,
+        dealId: 'deal-001',
+        dealValue: 25000,
+        serviceType: 'marketing',
+        ratePercent: 8,
+        calculatedAmount: 2000,
+        month: monthKey,
+        status: CommissionStatus.PENDING,
+      },
+      {
+        agentId: salesAgent.id,
+        dealId: 'deal-002',
+        dealValue: 15000,
+        serviceType: 'software_dev',
+        ratePercent: 5,
+        calculatedAmount: 750,
+        month: monthKey,
+        status: CommissionStatus.APPROVED,
+        approvedBy: financeManager.id,
+        approvedAt: now,
+      },
+    ],
   });
 
   await prisma.payment.createMany({
@@ -185,6 +240,7 @@ async function main(): Promise<void> {
         category: ExpenseCategory.SOFTWARE,
         amount: 450,
         date: new Date(now.getFullYear(), now.getMonth(), 2),
+        projectId: 'proj-001',
         createdBy: financeManager.id,
       },
       {
@@ -202,11 +258,12 @@ async function main(): Promise<void> {
         createdBy: financeManager.id,
       },
       {
-        vendorName: 'Travel Express',
-        category: ExpenseCategory.TRAVEL,
-        amount: 1800,
-        date: new Date(now.getFullYear(), now.getMonth(), 8),
-        createdBy: ceo.id,
+        vendorName: 'Freelance Dev',
+        category: ExpenseCategory.SUPPLIER,
+        amount: 2600,
+        date: new Date(now.getFullYear(), now.getMonth(), 6),
+        projectId: 'proj-002',
+        createdBy: financeManager.id,
       },
     ],
   });
