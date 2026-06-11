@@ -71,12 +71,12 @@ services:
       dockerfile: Dockerfile
     container_name: cdy_nginx
     restart: always
+    # Bind to localhost only — host nginx terminates TLS and proxies here.
+    # Do NOT map 80:80 or 443:443 or you will conflict with system nginx.
     ports:
-      - '81:80'
-      - '444:443'
+      - '127.0.0.1:${CDY_NGINX_HOST_PORT:-8081}:80'
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - cdy_ssl:/etc/ssl/cdy
     depends_on:
       - api
       - web
@@ -87,8 +87,6 @@ volumes:
   cdy_postgres_data_prod:
     driver: local
   cdy_uploads_prod:
-    driver: local
-  cdy_ssl:
     driver: local
 
 networks:

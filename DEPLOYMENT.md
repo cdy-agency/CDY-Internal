@@ -6,7 +6,7 @@
 - [ ] RESEND_API_KEY set with production sending domain verified
 - [ ] JWT_SECRET is at least 32 characters and not the dev default
 - [ ] DATABASE_URL points to production PostgreSQL
-- [ ] FRONTEND_URL set to production domain
+- [ ] FRONTEND_URL=https://inhouse.cdyagency.com
 
 ## Deploy steps
 
@@ -51,6 +51,15 @@ railway run npx prisma migrate deploy
 git tag v2.0.0-finance
 git push origin main --tags
 ```
+
+### Docker production (with host nginx)
+
+Public URL: **https://inhouse.cdyagency.com**
+
+1. Copy env: `cp .env.docker.prod.example .env.docker` and fill secrets.
+2. Start stack: `docker compose -f docker-compose.prod.yml --env-file .env.docker up -build -d`
+3. Install host nginx site from `docker/nginx/host-nginx.example.conf`.
+4. Run migrations: `docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy`
 
 CI/CD pipeline handles the rest automatically.
 
