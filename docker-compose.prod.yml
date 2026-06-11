@@ -42,7 +42,7 @@ services:
     volumes:
       - cdy_uploads_prod:/app/uploads
     ports:
-      - '127.0.0.1:3251:3251'
+      - '3251:3251'
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,7 +63,7 @@ services:
       PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
     ports:
-      - '127.0.0.1:3250:3250'
+      - '3250:3250'
     depends_on:
       - api
     networks:
