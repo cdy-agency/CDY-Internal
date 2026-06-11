@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { PaymentPlanStatus, Prisma, ReconciliationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashFlowService } from '../reports/cash-flow.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
@@ -70,6 +70,10 @@ export class FinanceService {
       previousExpensesWeek,
       commissionsPending,
       commissionsPendingValue,
+      activePaymentPlans,
+      creditNotesIssuedMTD,
+      creditNotesValueMTD,
+      pendingReconciliations,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -96,6 +100,10 @@ export class FinanceService {
       ),
       this.countPendingCommissions(),
       this.sumPendingCommissionValue(),
+      this.countActivePaymentPlans(),
+      this.countCreditNotesIssuedMTD(currentMonthStart, currentMonthEnd),
+      this.sumCreditNotesValueMTD(currentMonthStart, currentMonthEnd),
+      this.countPendingReconciliations(),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -134,6 +142,10 @@ export class FinanceService {
       totalSentInvoices,
       commissionsPending,
       commissionsPendingValue,
+      activePaymentPlans,
+      creditNotesIssuedMTD,
+      creditNotesValueMTD,
+      pendingReconciliations,
       cashFlowAlert,
       previousMonth: previousMetrics,
     };
@@ -277,6 +289,43 @@ export class FinanceService {
     `;
 
     return this.toNumber(result[0]?.total ?? 0);
+  }
+
+  private async countActivePaymentPlans(): Promise<number> {
+    return this.prisma.paymentPlan.count({
+      where: { status: PaymentPlanStatus.ACTIVE },
+    });
+  }
+
+  private async countCreditNotesIssuedMTD(
+    from: Date,
+    to: Date,
+  ): Promise<number> {
+    return this.prisma.creditNote.count({
+      where: {
+        deletedAt: null,
+        status: { not: 'VOID' },
+        issuedAt: { gte: from, lte: to },
+      },
+    });
+  }
+
+  private async sumCreditNotesValueMTD(from: Date, to: Date): Promise<number> {
+    const result = await this.prisma.creditNote.aggregate({
+      where: {
+        deletedAt: null,
+        status: { not: 'VOID' },
+        issuedAt: { gte: from, lte: to },
+      },
+      _sum: { amount: true },
+    });
+    return this.toNumber(result._sum.amount);
+  }
+
+  private async countPendingReconciliations(): Promise<number> {
+    return this.prisma.bankStatement.count({
+      where: { status: ReconciliationStatus.IN_PROGRESS },
+    });
   }
 
   private toNumber(value: Prisma.Decimal | number | null | undefined): number {

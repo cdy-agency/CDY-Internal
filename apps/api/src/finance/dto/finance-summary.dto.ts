@@ -15,6 +15,10 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   expensesThisWeek!: number;
   commissionsPending!: number;
   commissionsPendingValue!: number;
+  activePaymentPlans!: number;
+  creditNotesIssuedMTD!: number;
+  creditNotesValueMTD!: number;
+  pendingReconciliations!: number;
   cashFlowAlert!: boolean;
   previousMonth!: FinanceSummaryMetrics;
 }

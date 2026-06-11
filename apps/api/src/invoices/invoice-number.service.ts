@@ -33,4 +33,30 @@ export class InvoiceNumberService {
       return invoiceNumber;
     });
   }
+
+  async generateCreditNoteNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `CDY-CN-${year}-`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`credit-note-seq-${year}`}))`;
+
+      const latest = await tx.creditNote.findFirst({
+        where: { creditNoteNumber: { startsWith: prefix } },
+        orderBy: { creditNoteNumber: 'desc' },
+        select: { creditNoteNumber: true },
+      });
+
+      let nextSequence = 1;
+      if (latest) {
+        const parts = latest.creditNoteNumber.split('-');
+        const seqPart = parts[3];
+        nextSequence = parseInt(seqPart ?? '0', 10) + 1;
+      }
+
+      const number = `${prefix}${String(nextSequence).padStart(4, '0')}`;
+      this.logger.debug(`Generated credit note number: ${number}`);
+      return number;
+    });
+  }
 }

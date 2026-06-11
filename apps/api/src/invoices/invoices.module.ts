@@ -13,6 +13,6 @@ import { InvoiceEmailService } from './invoice-email.service';
     InvoicePdfService,
     InvoiceEmailService,
   ],
-  exports: [InvoicesService, InvoiceEmailService],
+  exports: [InvoicesService, InvoiceEmailService, InvoiceNumberService],
 })
 export class InvoicesModule {}

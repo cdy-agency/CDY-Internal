@@ -11,6 +11,8 @@ import {
   BarChart3,
   BadgeDollarSign,
   ShieldCheck,
+  ClipboardList,
+  GitMerge,
   LogOut,
   Menu,
   X,
@@ -65,6 +67,18 @@ const navItems: NavItem[] = [
     href: '/finance/bills',
     icon: Building2,
     roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'AR Ledger',
+    href: '/finance/ar',
+    icon: ClipboardList,
+    roles: [Role.CEO, Role.FINANCE_MANAGER],
+  },
+  {
+    label: 'Reconciliation',
+    href: '/finance/reconciliation',
+    icon: GitMerge,
+    roles: [Role.FINANCE_MANAGER],
   },
   {
     label: 'Reports',

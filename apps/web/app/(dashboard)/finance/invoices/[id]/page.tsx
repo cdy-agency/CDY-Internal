@@ -13,21 +13,46 @@ import {
   CreditCard,
   FileText,
   Receipt,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { downloadInvoicePdf } from '@/lib/invoicePdf';
+import { downloadCreditNotePdf } from '@/lib/creditNotePdf';
 import { useInvoice } from '@/hooks/useInvoice';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { InvoiceDrawer } from '@/components/finance/invoiceDrawer/InvoiceDrawer';
 import { RecordPaymentModal } from '@/components/finance/payments/RecordPaymentModal';
+import { WriteOffModal } from '@/components/finance/invoices/WriteOffModal';
+import { CreditNoteDrawer } from '@/components/finance/creditNotes/CreditNoteDrawer';
+import { PaymentPlanDrawer } from '@/components/finance/paymentPlans/PaymentPlanDrawer';
+import { PayInstalmentModal } from '@/components/finance/paymentPlans/PayInstalmentModal';
 import { NotFound } from '@/components/finance/NotFound';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
-import { InvoiceStatus } from '@cdy/shared';
+import {
+  InstalmentStatus,
+  InvoiceStatus,
+  PaymentPlanStatus,
+} from '@cdy/shared';
+import type { PaymentPlanInstalment } from '@cdy/shared';
 import type { AxiosError } from 'axios';
+
+const UNPAID_STATUSES: InvoiceStatus[] = [
+  InvoiceStatus.SENT,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.OVERDUE,
+];
+
+const CREDIT_NOTE_STATUSES: InvoiceStatus[] = [
+  InvoiceStatus.SENT,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.PAID,
+  InvoiceStatus.OVERDUE,
+];
 
 export default function InvoiceDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
@@ -36,12 +61,18 @@ export default function InvoiceDetailPage(): JSX.Element {
   const { data: invoice, isLoading, isError, error } = useInvoice(params.id);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [writeOffOpen, setWriteOffOpen] = useState(false);
+  const [creditNoteOpen, setCreditNoteOpen] = useState(false);
+  const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
+  const [payInstalment, setPayInstalment] =
+    useState<PaymentPlanInstalment | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sendLoading, setSendLoading] = useState(false);
+  const [cnPdfLoading, setCnPdfLoading] = useState<string | null>(null);
+  const [cancelPlanLoading, setCancelPlanLoading] = useState(false);
 
   const is404 =
-    isError &&
-    (error as AxiosError)?.response?.status === 404;
+    isError && (error as AxiosError)?.response?.status === 404;
 
   async function handleSend(): Promise<void> {
     if (!invoice) return;
@@ -81,6 +112,35 @@ export default function InvoiceDetailPage(): JSX.Element {
     }
   }
 
+  async function handleCreditNotePdf(
+    creditNoteId: string,
+    creditNoteNumber: string,
+  ): Promise<void> {
+    setCnPdfLoading(creditNoteId);
+    try {
+      await downloadCreditNotePdf(creditNoteId, creditNoteNumber);
+    } catch {
+      toast.error('Failed to download credit note PDF');
+    } finally {
+      setCnPdfLoading(null);
+    }
+  }
+
+  async function handleCancelPlan(): Promise<void> {
+    if (!invoice?.paymentPlan) return;
+    setCancelPlanLoading(true);
+    try {
+      await api.delete(`/payment-plans/${invoice.paymentPlan.id}`);
+      toast.success('Payment plan cancelled');
+      await queryClient.invalidateQueries({ queryKey: ['invoice', invoice.id] });
+      await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
+    } catch {
+      /* interceptor */
+    } finally {
+      setCancelPlanLoading(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -104,6 +164,22 @@ export default function InvoiceDetailPage(): JSX.Element {
   }
 
   const fmt = (n: number): string => formatCurrency(n, invoice.currency);
+  const plan = invoice.paymentPlan;
+  const hasActivePlan =
+    plan && plan.status === PaymentPlanStatus.ACTIVE;
+  const anyInstalmentPaid =
+    plan?.instalments.some((i) => i.status === InstalmentStatus.PAID) ?? false;
+  const remainingPlanBalance =
+    plan?.instalments
+      .filter((i) => i.status !== InstalmentStatus.PAID)
+      .reduce((s, i) => s + i.amount, 0) ?? 0;
+
+  const canWriteOff = UNPAID_STATUSES.includes(invoice.status);
+  const canCreditNote = CREDIT_NOTE_STATUSES.includes(invoice.status);
+  const canPaymentPlan =
+    UNPAID_STATUSES.includes(invoice.status) && !plan;
+  const showRecordPayment =
+    UNPAID_STATUSES.includes(invoice.status) && !hasActivePlan;
 
   const timelineEvents: { date: Date | null; label: string; done: boolean }[] = [
     { date: new Date(invoice.createdAt), label: 'Invoice created', done: true },
@@ -141,6 +217,14 @@ export default function InvoiceDetailPage(): JSX.Element {
     });
   }
 
+  if (invoice.writtenOffAt) {
+    timelineEvents.push({
+      date: new Date(invoice.writtenOffAt),
+      label: `Invoice written off${invoice.writeOffReason ? ` — ${invoice.writeOffReason}` : ''}`,
+      done: true,
+    });
+  }
+
   timelineEvents.sort(
     (a, b) => (a.date?.getTime() ?? 0) - (b.date?.getTime() ?? 0),
   );
@@ -174,6 +258,7 @@ export default function InvoiceDetailPage(): JSX.Element {
                   <span>
                     Due: {format(new Date(invoice.dueDate), 'MMM d, yyyy')}
                   </span>
+                  <span>Terms: Net {invoice.creditTermsDays}</span>
                 </div>
               </div>
               <InvoiceStatusBadge status={invoice.status} />
@@ -222,7 +307,8 @@ export default function InvoiceDetailPage(): JSX.Element {
 
             <div className="mt-4 space-y-1 text-right text-sm">
               <p className="text-cdy-muted">
-                Subtotal: <span className="text-cdy-white">{fmt(invoice.subtotal)}</span>
+                Subtotal:{' '}
+                <span className="text-cdy-white">{fmt(invoice.subtotal)}</span>
               </p>
               {invoice.taxRate > 0 && (
                 <p className="text-cdy-muted">
@@ -235,6 +321,147 @@ export default function InvoiceDetailPage(): JSX.Element {
               </p>
             </div>
           </div>
+
+          {plan && (
+            <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-medium text-cdy-white">
+                  Payment Plan — {plan.status}
+                </h3>
+                <Calendar className="h-4 w-4 text-cdy-muted" />
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                    <th className="pb-2 font-medium">#</th>
+                    <th className="pb-2 font-medium text-right">Amount</th>
+                    <th className="pb-2 font-medium">Due Date</th>
+                    <th className="pb-2 font-medium">Status</th>
+                    <th className="pb-2 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plan.instalments.map((inst) => (
+                    <tr
+                      key={inst.id}
+                      className="border-b border-cdy-navy-border/50"
+                    >
+                      <td className="py-2 text-cdy-white">
+                        {inst.instalmentNumber}
+                      </td>
+                      <td className="py-2 text-right text-cdy-white">
+                        {fmt(inst.amount)}
+                      </td>
+                      <td className="py-2 text-cdy-muted">
+                        {format(new Date(inst.dueDate), 'MMM d, yyyy')}
+                      </td>
+                      <td className="py-2">
+                        {inst.status === InstalmentStatus.PAID ? (
+                          <span className="text-[var(--cdy-success)]">
+                            ✅ PAID
+                          </span>
+                        ) : inst.status === InstalmentStatus.OVERDUE ? (
+                          <span className="text-cdy-red">⚠ OVERDUE</span>
+                        ) : (
+                          <span className="text-amber-400">⏳ PENDING</span>
+                        )}
+                      </td>
+                      <td className="py-2">
+                        {inst.status !== InstalmentStatus.PAID &&
+                          plan.status === PaymentPlanStatus.ACTIVE && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPayInstalment(inst)}
+                            >
+                              Mark as Paid
+                            </Button>
+                          )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-sm text-cdy-muted">
+                Remaining:{' '}
+                <span className="font-medium text-cdy-white">
+                  {fmt(remainingPlanBalance)}
+                </span>
+              </p>
+              {plan.status === PaymentPlanStatus.ACTIVE &&
+                !anyInstalmentPaid && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 text-cdy-muted"
+                    onClick={handleCancelPlan}
+                    disabled={cancelPlanLoading}
+                  >
+                    {cancelPlanLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Cancel Plan'
+                    )}
+                  </Button>
+                )}
+            </div>
+          )}
+
+          {invoice.creditNotes.length > 0 && (
+            <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
+              <h3 className="mb-4 font-medium text-cdy-white">Credit Notes</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                    <th className="pb-2 font-medium">Number</th>
+                    <th className="pb-2 font-medium text-right">Amount</th>
+                    <th className="pb-2 font-medium">Reason</th>
+                    <th className="pb-2 font-medium">Issued</th>
+                    <th className="pb-2 font-medium">Status</th>
+                    <th className="pb-2 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoice.creditNotes.map((cn) => (
+                    <tr
+                      key={cn.id}
+                      className="border-b border-cdy-navy-border/50"
+                    >
+                      <td className="py-2 font-mono text-cdy-white">
+                        {cn.creditNoteNumber}
+                      </td>
+                      <td className="py-2 text-right text-cdy-white">
+                        {fmt(cn.amount)}
+                      </td>
+                      <td className="py-2 text-cdy-muted">
+                        {cn.reason.replace(/_/g, ' ')}
+                      </td>
+                      <td className="py-2 text-cdy-muted">
+                        {format(new Date(cn.issuedAt), 'MMM d, yyyy')}
+                      </td>
+                      <td className="py-2 text-cdy-muted">{cn.status}</td>
+                      <td className="py-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleCreditNotePdf(cn.id, cn.creditNoteNumber)
+                          }
+                          disabled={cnPdfLoading === cn.id}
+                        >
+                          {cnPdfLoading === cn.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            'View PDF'
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -266,51 +493,71 @@ export default function InvoiceDetailPage(): JSX.Element {
                 </>
               )}
 
-              {(invoice.status === InvoiceStatus.SENT ||
-                invoice.status === InvoiceStatus.OVERDUE) && (
+              {UNPAID_STATUSES.includes(invoice.status) && (
                 <>
-                  <Button onClick={() => setPaymentModalOpen(true)}>
-                    <CreditCard className="h-4 w-4" />
-                    Record Payment
-                  </Button>
-                  <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
+                  {showRecordPayment && (
+                    <Button onClick={() => setPaymentModalOpen(true)}>
+                      <CreditCard className="h-4 w-4" />
+                      Record Payment
+                    </Button>
+                  )}
+                  {canPaymentPlan && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setPaymentPlanOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      Create Payment Plan
+                    </Button>
+                  )}
+                  {canCreditNote && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setCreditNoteOpen(true)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Raise Credit Note
+                    </Button>
+                  )}
+                  {canWriteOff && (
+                    <Button
+                      variant="outline"
+                      className="text-cdy-red hover:text-cdy-red"
+                      onClick={() => setWriteOffOpen(true)}
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Write Off Invoice
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadPdf}
+                    disabled={pdfLoading}
+                  >
                     {pdfLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Download className="h-4 w-4" />
                     )}
                     Download PDF
-                  </Button>
-                  <Button variant="outline" disabled title="Coming in Sprint 5">
-                    <FileText className="h-4 w-4" />
-                    Credit Note
-                  </Button>
-                </>
-              )}
-
-              {invoice.status === InvoiceStatus.PARTIALLY_PAID && (
-                <>
-                  <Button onClick={() => setPaymentModalOpen(true)}>
-                    <CreditCard className="h-4 w-4" />
-                    Record Payment
-                  </Button>
-                  <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
-                    {pdfLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
-                    Download PDF
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a href="#payments">View Payment History</a>
                   </Button>
                 </>
               )}
 
               {invoice.status === InvoiceStatus.PAID && (
                 <>
-                  <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreditNoteOpen(true)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Raise Credit Note
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadPdf}
+                    disabled={pdfLoading}
+                  >
                     {pdfLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -318,11 +565,26 @@ export default function InvoiceDetailPage(): JSX.Element {
                     )}
                     Download PDF
                   </Button>
-                  <Button variant="outline" disabled title="Coming in Sprint 3">
+                  <Button variant="outline" disabled title="Coming soon">
                     <Receipt className="h-4 w-4" />
                     Download Receipt
                   </Button>
                 </>
+              )}
+
+              {invoice.status === InvoiceStatus.WRITTEN_OFF && (
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadPdf}
+                  disabled={pdfLoading}
+                >
+                  {pdfLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Download PDF
+                </Button>
               )}
             </div>
           </div>
@@ -407,6 +669,35 @@ export default function InvoiceDetailPage(): JSX.Element {
         onClose={() => setPaymentModalOpen(false)}
         invoice={invoice}
       />
+
+      <WriteOffModal
+        open={writeOffOpen}
+        onClose={() => setWriteOffOpen(false)}
+        invoice={invoice}
+      />
+
+      <CreditNoteDrawer
+        open={creditNoteOpen}
+        onClose={() => setCreditNoteOpen(false)}
+        invoice={invoice}
+      />
+
+      <PaymentPlanDrawer
+        open={paymentPlanOpen}
+        onClose={() => setPaymentPlanOpen(false)}
+        invoice={invoice}
+      />
+
+      {plan && payInstalment && (
+        <PayInstalmentModal
+          open={Boolean(payInstalment)}
+          onClose={() => setPayInstalment(null)}
+          plan={plan}
+          instalment={payInstalment}
+          currency={invoice.currency}
+          invoiceId={invoice.id}
+        />
+      )}
     </div>
   );
 }

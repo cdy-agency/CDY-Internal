@@ -20,6 +20,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceFiltersDto } from './dto/invoice-filters.dto';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
+import { WriteOffInvoiceDto } from './dto/write-off-invoice.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
@@ -140,6 +141,28 @@ export class InvoicesController {
     return {
       data,
       message: 'Invoice sent',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Post(':id/write-off')
+  @Roles(Role.FINANCE_MANAGER)
+  @ApiOperation({ summary: 'Write off an unpaid invoice' })
+  async writeOff(
+    @Param('id') id: string,
+    @Body() dto: WriteOffInvoiceDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.invoicesService.writeOff(
+      id,
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
+    return {
+      data,
+      message: 'Invoice written off',
       statusCode: HttpStatus.OK,
     };
   }

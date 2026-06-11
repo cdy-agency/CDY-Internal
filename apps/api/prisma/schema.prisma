@@ -25,6 +25,7 @@ model User {
   commissionRules CommissionRule[] @relation("AgentCommissionRules")
   commissions     CommissionRecord[] @relation("AgentCommissions")
   notifications   Notification[]
+  creditNotes     CreditNote[]
 
   @@index([role])
 }
@@ -54,18 +55,23 @@ model Invoice {
   dueDate       DateTime
   sentAt        DateTime?
   paidAt        DateTime?
-  writtenOffAt  DateTime?
-  writtenOffBy  String?
-  notes         String?
-  serviceType   String        @default("general")
-  createdBy     String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deletedAt     DateTime?
+  writtenOffAt     DateTime?
+  writtenOffBy     String?
+  writeOffReason   String?
+  writeOffCategory WriteOffCategory?
+  creditTermsDays  Int           @default(30)
+  notes            String?
+  serviceType      String        @default("general")
+  createdBy        String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
 
-  payments  Payment[]
-  reminders InvoiceReminder[]
-  creator   User              @relation(fields: [createdBy], references: [id])
+  payments    Payment[]
+  reminders   InvoiceReminder[]
+  creditNotes CreditNote[]
+  paymentPlan PaymentPlan?
+  creator     User              @relation(fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -82,6 +88,14 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   WRITTEN_OFF
+}
+
+enum WriteOffCategory {
+  CLIENT_DISPUTE
+  CLIENT_INSOLVENT
+  AGREED_WRITE_OFF
+  UNCOLLECTABLE
+  OTHER
 }
 
 model InvoiceReminder {
@@ -299,4 +313,139 @@ model CashFlowAdjustment {
   deletedAt DateTime?
 
   @@index([date])
+}
+
+enum CreditNoteReason {
+  OVERCHARGE
+  SERVICE_NOT_DELIVERED
+  DISCOUNT_AGREED
+  REFUND_APPROVED
+  OTHER
+}
+
+enum CreditNoteStatus {
+  ISSUED
+  REFUND_PENDING
+  REFUND_PAID
+  VOID
+}
+
+model CreditNote {
+  id               String           @id @default(cuid())
+  creditNoteNumber String           @unique
+  invoiceId        String
+  amount           Decimal          @db.Decimal(12, 2)
+  reason           CreditNoteReason
+  description      String
+  status           CreditNoteStatus @default(ISSUED)
+  issuedAt         DateTime         @default(now())
+  refundDue        Boolean          @default(false)
+  refundPaidAt     DateTime?
+  createdBy        String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@index([invoiceId])
+  @@index([createdAt])
+}
+
+enum PaymentPlanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum InstalmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+model PaymentPlan {
+  id          String            @id @default(cuid())
+  invoiceId   String            @unique
+  totalAmount Decimal           @db.Decimal(12, 2)
+  status      PaymentPlanStatus @default(ACTIVE)
+  createdBy   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  invoice     Invoice           @relation(fields: [invoiceId], references: [id])
+  instalments PaymentPlanItem[]
+}
+
+model PaymentPlanItem {
+  id               String           @id @default(cuid())
+  paymentPlanId    String
+  instalmentNumber Int
+  amount           Decimal          @db.Decimal(12, 2)
+  dueDate          DateTime
+  status           InstalmentStatus @default(PENDING)
+  paidAt           DateTime?
+  paymentId        String?
+
+  plan PaymentPlan @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
+
+  @@index([paymentPlanId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+enum ReconciliationStatus {
+  IN_PROGRESS
+  COMPLETED
+  DISCREPANCY
+}
+
+enum TransactionMatchStatus {
+  MATCHED
+  UNMATCHED
+  MANUALLY_RESOLVED
+  IGNORED
+}
+
+model BankStatement {
+  id               String               @id @default(cuid())
+  periodFrom       DateTime
+  periodTo         DateTime
+  importedAt       DateTime             @default(now())
+  importedBy       String
+  status           ReconciliationStatus @default(IN_PROGRESS)
+  completedAt      DateTime?
+  openingBalance   Decimal              @db.Decimal(12, 2)
+  closingBalance   Decimal              @db.Decimal(12, 2)
+  transactionCount Int
+  matchedCount     Int                  @default(0)
+  unmatchedCount   Int                  @default(0)
+
+  transactions BankTransaction[]
+
+  @@index([periodFrom])
+}
+
+model BankTransaction {
+  id                String                 @id @default(cuid())
+  bankStatementId   String
+  transactionDate   DateTime
+  description       String
+  debitAmount       Decimal?               @db.Decimal(12, 2)
+  creditAmount      Decimal?               @db.Decimal(12, 2)
+  balance           Decimal                @db.Decimal(12, 2)
+  reference         String?
+  matchStatus       TransactionMatchStatus @default(UNMATCHED)
+  matchedEntityType String?
+  matchedEntityId   String?
+  resolvedBy        String?
+  resolvedAt        DateTime?
+  resolvedNote      String?
+
+  statement BankStatement @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+
+  @@index([bankStatementId])
+  @@index([matchStatus])
+  @@index([transactionDate])
 }

@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { Invoice, InvoiceStatus, Prisma } from '@prisma/client';
+import { Invoice, InvoiceStatus, NotificationType, Prisma, Role, WriteOffCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceNumberService } from './invoice-number.service';
 import { InvoicePdfService } from './invoice-pdf.service';
@@ -16,6 +16,8 @@ import { InvoiceFiltersDto } from './dto/invoice-filters.dto';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuditContext } from '../common/audit/audit.context';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WriteOffInvoiceDto } from './dto/write-off-invoice.dto';
 
 interface LineItemWithAmount extends LineItemDto {
   amount: number;
@@ -38,6 +40,9 @@ export interface SerializedInvoice {
   paidAt: Date | null;
   writtenOffAt: Date | null;
   writtenOffBy: string | null;
+  writeOffReason: string | null;
+  writeOffCategory: WriteOffCategory | null;
+  creditTermsDays: number;
   notes: string | null;
   createdBy: string;
   createdAt: Date;
@@ -63,6 +68,7 @@ export class InvoicesService {
     private readonly invoicePdfService: InvoicePdfService,
     private readonly invoiceEmailService: InvoiceEmailService,
     private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -156,13 +162,30 @@ export class InvoicesService {
     };
   }
 
-  async findOne(id: string): Promise<SerializedInvoice & { payments: ReturnType<InvoicesService['serializePayment']>[] }> {
+  async findOne(
+    id: string,
+  ): Promise<
+    SerializedInvoice & {
+      payments: ReturnType<InvoicesService['serializePayment']>[];
+      creditNotes: ReturnType<InvoicesService['serializeCreditNote']>[];
+      paymentPlan: ReturnType<InvoicesService['serializePaymentPlan']> | null;
+    }
+  > {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, deletedAt: null },
       include: {
         payments: {
           where: { deletedAt: null },
           orderBy: { paidAt: 'asc' },
+        },
+        creditNotes: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+        paymentPlan: {
+          include: {
+            instalments: { orderBy: { instalmentNumber: 'asc' } },
+          },
         },
       },
     });
@@ -174,6 +197,10 @@ export class InvoicesService {
     return {
       ...this.serializeInvoice(invoice),
       payments: invoice.payments.map((p) => this.serializePayment(p)),
+      creditNotes: invoice.creditNotes.map((cn) => this.serializeCreditNote(cn)),
+      paymentPlan: invoice.paymentPlan
+        ? this.serializePaymentPlan(invoice.paymentPlan)
+        : null,
     };
   }
 
@@ -316,6 +343,66 @@ export class InvoicesService {
     return { message: 'Invoice deleted' };
   }
 
+  async writeOff(
+    id: string,
+    dto: WriteOffInvoiceDto,
+    userId: string,
+    auditCtx: AuditContext,
+  ): Promise<SerializedInvoice> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    const allowedStatuses: InvoiceStatus[] = [
+      InvoiceStatus.SENT,
+      InvoiceStatus.PARTIALLY_PAID,
+      InvoiceStatus.OVERDUE,
+    ];
+
+    if (!allowedStatuses.includes(invoice.status)) {
+      throw new BadRequestException(
+        `Cannot write off an invoice with status ${invoice.status}. Only SENT, PARTIALLY_PAID, or OVERDUE invoices can be written off.`,
+      );
+    }
+
+    const before = this.serializeInvoice(invoice);
+
+    const updated = await this.prisma.invoice.update({
+      where: { id },
+      data: {
+        status: InvoiceStatus.WRITTEN_OFF,
+        writtenOffAt: new Date(),
+        writtenOffBy: userId,
+        writeOffReason: dto.reason,
+        writeOffCategory: dto.category,
+      },
+    });
+
+    const serialized = this.serializeInvoice(updated);
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.written_off',
+      entityType: 'Invoice',
+      entityId: id,
+      previousValue: before,
+      newValue: serialized,
+    });
+
+    this.notificationsService.createForRoleAsync(Role.CEO, {
+      type: NotificationType.SYSTEM,
+      title: `Invoice written off — ${invoice.invoiceNumber}`,
+      body: `Invoice ${invoice.invoiceNumber} has been written off. Reason: ${dto.reason}`,
+      link: `/finance/invoices/${id}`,
+    });
+
+    return serialized;
+  }
+
   private calculateTotals(
     lineItems: LineItemDto[],
     taxRate: number,
@@ -407,6 +494,68 @@ export class InvoicesService {
       taxAmount: Number(invoice.taxAmount),
       total: Number(invoice.total),
       lineItems: invoice.lineItems as unknown as LineItemWithAmount[],
+    };
+  }
+
+  private serializeCreditNote(creditNote: {
+    id: string;
+    creditNoteNumber: string;
+    invoiceId: string;
+    amount: Prisma.Decimal;
+    reason: string;
+    description: string;
+    status: string;
+    issuedAt: Date;
+    refundDue: boolean;
+    refundPaidAt: Date | null;
+    createdAt: Date;
+  }) {
+    return {
+      id: creditNote.id,
+      creditNoteNumber: creditNote.creditNoteNumber,
+      invoiceId: creditNote.invoiceId,
+      amount: Number(creditNote.amount),
+      reason: creditNote.reason,
+      description: creditNote.description,
+      status: creditNote.status,
+      issuedAt: creditNote.issuedAt.toISOString(),
+      refundDue: creditNote.refundDue,
+      refundPaidAt: creditNote.refundPaidAt?.toISOString() ?? null,
+      createdAt: creditNote.createdAt.toISOString(),
+    };
+  }
+
+  private serializePaymentPlan(plan: {
+    id: string;
+    invoiceId: string;
+    totalAmount: Prisma.Decimal;
+    status: string;
+    createdAt: Date;
+    instalments: {
+      id: string;
+      instalmentNumber: number;
+      amount: Prisma.Decimal;
+      dueDate: Date;
+      status: string;
+      paidAt: Date | null;
+      paymentId: string | null;
+    }[];
+  }) {
+    return {
+      id: plan.id,
+      invoiceId: plan.invoiceId,
+      totalAmount: Number(plan.totalAmount),
+      status: plan.status,
+      createdAt: plan.createdAt.toISOString(),
+      instalments: plan.instalments.map((item) => ({
+        id: item.id,
+        instalmentNumber: item.instalmentNumber,
+        amount: Number(item.amount),
+        dueDate: item.dueDate.toISOString(),
+        status: item.status,
+        paidAt: item.paidAt?.toISOString() ?? null,
+        paymentId: item.paymentId,
+      })),
     };
   }
 

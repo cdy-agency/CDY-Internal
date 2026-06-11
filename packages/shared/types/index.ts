@@ -47,6 +47,64 @@ export enum CommissionStatus {
   PAID = 'PAID',
 }
 
+export enum WriteOffCategory {
+  CLIENT_DISPUTE = 'CLIENT_DISPUTE',
+  CLIENT_INSOLVENT = 'CLIENT_INSOLVENT',
+  AGREED_WRITE_OFF = 'AGREED_WRITE_OFF',
+  UNCOLLECTABLE = 'UNCOLLECTABLE',
+  OTHER = 'OTHER',
+}
+
+export enum CreditNoteReason {
+  OVERCHARGE = 'OVERCHARGE',
+  SERVICE_NOT_DELIVERED = 'SERVICE_NOT_DELIVERED',
+  DISCOUNT_AGREED = 'DISCOUNT_AGREED',
+  REFUND_APPROVED = 'REFUND_APPROVED',
+  OTHER = 'OTHER',
+}
+
+export enum CreditNoteStatus {
+  ISSUED = 'ISSUED',
+  REFUND_PENDING = 'REFUND_PENDING',
+  REFUND_PAID = 'REFUND_PAID',
+  VOID = 'VOID',
+}
+
+export enum PaymentPlanStatus {
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum InstalmentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+}
+
+export enum ReconciliationStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  DISCREPANCY = 'DISCREPANCY',
+}
+
+export enum TransactionMatchStatus {
+  MATCHED = 'MATCHED',
+  UNMATCHED = 'UNMATCHED',
+  MANUALLY_RESOLVED = 'MANUALLY_RESOLVED',
+  IGNORED = 'IGNORED',
+}
+
+export enum TransactionResolution {
+  LINK_PAYMENT = 'LINK_PAYMENT',
+  LINK_EXPENSE = 'LINK_EXPENSE',
+  CREATE_EXPENSE = 'CREATE_EXPENSE',
+  BANK_CHARGE = 'BANK_CHARGE',
+  IGNORE = 'IGNORE',
+}
+
+export type ArRiskLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'CURRENT';
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -91,6 +149,10 @@ export interface FinanceSummary {
   expensesThisWeek: number;
   commissionsPending: number;
   commissionsPendingValue: number;
+  activePaymentPlans: number;
+  creditNotesIssuedMTD: number;
+  creditNotesValueMTD: number;
+  pendingReconciliations: number;
   cashFlowAlert: boolean;
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
@@ -232,6 +294,9 @@ export interface InvoiceRecord {
   paidAt: string | null;
   writtenOffAt: string | null;
   writtenOffBy: string | null;
+  writeOffReason: string | null;
+  writeOffCategory: WriteOffCategory | null;
+  creditTermsDays: number;
   notes: string | null;
   serviceType: string;
   createdBy: string;
@@ -255,6 +320,8 @@ export interface InvoicePayment {
 
 export interface InvoiceDetail extends InvoiceRecord {
   payments: InvoicePayment[];
+  creditNotes: CreditNoteRecord[];
+  paymentPlan: PaymentPlanRecord | null;
 }
 
 export interface PaginatedInvoices {
@@ -486,4 +553,114 @@ export interface PaginatedCommissions {
     pendingValue: number;
     approvedValue: number;
   };
+}
+
+export interface CreditNoteRecord {
+  id: string;
+  creditNoteNumber: string;
+  invoiceId: string;
+  amount: number;
+  reason: CreditNoteReason | string;
+  description: string;
+  status: CreditNoteStatus | string;
+  issuedAt: string;
+  refundDue: boolean;
+  refundPaidAt: string | null;
+  createdAt: string;
+}
+
+export interface PaymentPlanInstalment {
+  id: string;
+  instalmentNumber: number;
+  amount: number;
+  dueDate: string;
+  status: InstalmentStatus | string;
+  paidAt: string | null;
+  paymentId: string | null;
+}
+
+export interface PaymentPlanRecord {
+  id: string;
+  invoiceId: string;
+  totalAmount: number;
+  status: PaymentPlanStatus | string;
+  createdAt: string;
+  instalments: PaymentPlanInstalment[];
+}
+
+export interface ArLedgerInvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  remaining: number;
+  dueDate: string;
+  status: InvoiceStatus;
+  daysOverdue: number;
+}
+
+export interface ArLedgerClientRow {
+  clientId: string;
+  invoiceCount: number;
+  totalOutstanding: number;
+  oldestDueDate: string;
+  daysOldest: number;
+  riskLevel: ArRiskLevel;
+  invoices: ArLedgerInvoiceRow[];
+}
+
+export interface ArLedgerData {
+  asOf: string;
+  totalAR: number;
+  clientCount: number;
+  highRiskCount: number;
+  ledger: ArLedgerClientRow[];
+}
+
+export interface BankStatementRecord {
+  id: string;
+  periodFrom: string;
+  periodTo: string;
+  importedAt: string;
+  importedBy: string;
+  status: ReconciliationStatus;
+  completedAt: string | null;
+  openingBalance: number;
+  closingBalance: number;
+  transactionCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+}
+
+export interface BankTransactionRecord {
+  id: string;
+  transactionDate: string;
+  description: string;
+  debitAmount: number | null;
+  creditAmount: number | null;
+  balance: number;
+  reference: string | null;
+  matchStatus: TransactionMatchStatus;
+  matchedEntityType: string | null;
+  matchedEntityId: string | null;
+  resolvedNote: string | null;
+}
+
+export interface ReconciliationDetail extends BankStatementRecord {
+  transactions: BankTransactionRecord[];
+}
+
+export interface ReconciliationImportResult {
+  statementId: string;
+  transactionCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  periodFrom: string;
+  periodTo: string;
+}
+
+export interface ReconciliationCompleteResult {
+  status: ReconciliationStatus;
+  systemBalance: number;
+  bankBalance: number;
+  difference: number;
 }

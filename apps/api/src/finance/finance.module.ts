@@ -13,6 +13,10 @@ import { ExpensesModule } from '../expenses/expenses.module';
 import { BillsModule } from '../bills/bills.module';
 import { ReportsModule } from '../reports/reports.module';
 import { CommissionsModule } from '../commissions/commissions.module';
+import { ArModule } from '../ar/ar.module';
+import { CreditNotesModule } from '../credit-notes/credit-notes.module';
+import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
+import { ReconciliationModule } from '../reconciliation/reconciliation.module';
 
 @Module({
   imports: [
@@ -22,6 +26,10 @@ import { CommissionsModule } from '../commissions/commissions.module';
     BillsModule,
     ReportsModule,
     CommissionsModule,
+    ArModule,
+    CreditNotesModule,
+    PaymentPlansModule,
+    ReconciliationModule,
   ],
 
   controllers: [FinanceController],
