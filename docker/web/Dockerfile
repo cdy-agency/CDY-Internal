@@ -20,6 +20,7 @@ EXPOSE 3250
 FROM deps AS builder
 COPY apps/web/ ./apps/web/
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN mkdir -p apps/web/public
 RUN pnpm --filter @cdy/shared build && pnpm --filter web build
 
 # ─── Production ───────────────────────────────────────────────
