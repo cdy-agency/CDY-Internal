@@ -103,3 +103,66 @@
 - [ ] Send invoice (Resend delivers to real inbox)
 - [ ] View P&L report — no errors
 - [ ] Sentry receives a test event
+
+---
+
+# CDY Projects Module — QA Checklist (Sprint 17 Sign-off)
+
+## Project lifecycle
+- [ ] Create project → CDY-PRJ-NNN generated atomically
+- [ ] PM auto-added as MANAGER member on creation
+- [ ] Finance budget record created when estimatedBudget provided
+- [ ] TEAM_MEMBER sees only their assigned projects
+- [ ] Complete project with incomplete tasks — warning shown, acknowledge required
+- [ ] Complete project with uninvoiced milestones — warning shown, acknowledge required
+- [ ] CEO and Finance Manager notified on project completion
+- [ ] Handover report only generated for COMPLETED projects (400 otherwise)
+
+## Tasks
+- [ ] Create task → assignee notified
+- [ ] Sub-task creation blocked if parent is itself a sub-task
+- [ ] Move task to BLOCKED → PM notified immediately
+- [ ] Move task to DONE → completedAt set
+- [ ] Import tasks from CSV → correct task count with error list
+
+## Milestones
+- [ ] Milestone approve → Finance draft invoice created
+- [ ] Invoice linked back to milestone (invoiceId populated)
+- [ ] Finance Manager receives notification with invoice link
+- [ ] Milestone status → INVOICED after invoice created
+- [ ] Finance failure does not block milestone approval
+
+## Approvals
+- [ ] Request approval → PM notified
+- [ ] Approve decision → assignee notified, task auto-completes if requiresApproval
+- [ ] Reject without note → 400
+- [ ] Reject with note → assignee notified with client feedback
+
+## Time tracking
+- [ ] Log 0 hours → 400
+- [ ] Log > 24 hours → 400
+- [ ] Labour cost calculation: hours × hourly rate correct
+- [ ] Fallback rate calculated from salary correctly
+- [ ] Profitability gross margin = (revenue - labour - expenses) / revenue
+
+## Profitability
+- [ ] Revenue pulls from Finance invoices linked via milestone
+- [ ] Labour cost sums billable hours × rates across all employees
+- [ ] Direct expenses pull from Finance expenses with matching projectId
+- [ ] Gross margin colour: green ≥ 40%, amber 20-39%, red < 20%
+
+## Reports
+- [ ] Portfolio report counts correct by status
+- [ ] Budget vs actual variance calculated correctly
+- [ ] Over-budget project shown in red
+- [ ] Portfolio report cached — second call returns cached result
+
+## Cron
+- [ ] Deadline cron notifies assignees 48h before due date
+- [ ] Deadline cron sends ONE summary per PM for overdue tasks (not one per task)
+
+## Permissions
+- [ ] TEAM_MEMBER cannot create projects (403)
+- [ ] TEAM_MEMBER cannot access /projects/reports (middleware blocks)
+- [ ] Finance Manager can read projects but cannot update tasks (403)
+- [ ] CEO cannot create or edit projects (403)

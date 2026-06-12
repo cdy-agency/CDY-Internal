@@ -19,6 +19,7 @@ import { RbacModule } from './rbac/rbac.module';
 import { CrmModule } from './crm/crm.module';
 import { HrModule } from './hr/hr.module';
 import { HrSettingsModule } from './hr/settings/hr-settings.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { HrSettingsModule } from './hr/settings/hr-settings.module';
     CrmModule,
     HrModule,
     HrSettingsModule,
+    ProjectsModule,
     AutomationModule,
     DebugModule,
     SettingsModule,
