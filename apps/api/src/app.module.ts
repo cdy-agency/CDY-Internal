@@ -13,9 +13,12 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
 import { SettingsModule } from './settings/settings.module';
 import { SettingsService } from './settings/settings.service';
+import { HrSettingsService } from './hr/settings/hr-settings.service';
 import { CacheModule } from './cache/cache.module';
 import { RbacModule } from './rbac/rbac.module';
 import { CrmModule } from './crm/crm.module';
+import { HrModule } from './hr/hr.module';
+import { HrSettingsModule } from './hr/settings/hr-settings.module';
 
 @Module({
   imports: [
@@ -32,6 +35,8 @@ import { CrmModule } from './crm/crm.module';
     NotificationsModule,
     FinanceModule,
     CrmModule,
+    HrModule,
+    HrSettingsModule,
     AutomationModule,
     DebugModule,
     SettingsModule,
@@ -48,9 +53,13 @@ import { CrmModule } from './crm/crm.module';
   ],
 })
 export class AppModule implements OnApplicationBootstrap {
-  constructor(private readonly settingsService: SettingsService) {}
+  constructor(
+    private readonly settingsService: SettingsService,
+    private readonly hrSettingsService: HrSettingsService,
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     await this.settingsService.seed();
+    await this.hrSettingsService.onApplicationBootstrap();
   }
 }

@@ -174,6 +174,8 @@ export interface FinanceSummary {
     totalIncomeMTD: number;
     totalExpensesMTD: number;
   };
+  totalActiveEmployees: number;
+  totalMonthlyPayroll: number;
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
     totalSentInvoices?: number;
@@ -1393,4 +1395,447 @@ export interface SourceAnalysisReport {
     conversionRate: number;
     avgDealValue: number;
   }>;
+}
+
+// ─── HR Module ─────────────────────────────────────────────────
+
+export enum EmploymentType {
+  FULL_TIME = 'FULL_TIME',
+  PART_TIME = 'PART_TIME',
+  CONTRACT = 'CONTRACT',
+  INTERN = 'INTERN',
+}
+
+export enum EmployeeStatus {
+  ACTIVE = 'ACTIVE',
+  ON_LEAVE = 'ON_LEAVE',
+  SUSPENDED = 'SUSPENDED',
+  RESIGNED = 'RESIGNED',
+  TERMINATED = 'TERMINATED',
+}
+
+export enum LeaveStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum AttendanceStatus {
+  PRESENT = 'PRESENT',
+  ABSENT = 'ABSENT',
+  HALF_DAY = 'HALF_DAY',
+  ON_LEAVE = 'ON_LEAVE',
+  PUBLIC_HOLIDAY = 'PUBLIC_HOLIDAY',
+  WEEKEND = 'WEEKEND',
+}
+
+export interface DepartmentRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  headId: string | null;
+  employeeCount?: number;
+  isActive: boolean;
+}
+
+export interface EmployeeDirectReport {
+  id: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+}
+
+export interface EmployeeRecord {
+  id: string;
+  userId: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  profilePhotoUrl: string | null;
+  jobTitle: string;
+  departmentId: string | null;
+  departmentName: string | null;
+  managerId: string | null;
+  managerName: string | null;
+  employmentType: EmploymentType;
+  status: EmployeeStatus;
+  startDate: string;
+  endDate: string | null;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  directReports: EmployeeDirectReport[];
+  baseSalary?: number;
+  salaryEffectiveFrom?: string;
+  nationalId?: string | null;
+  bankName?: string | null;
+  bankAccount?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  notes?: string | null;
+  createdBy?: string;
+}
+
+export interface EmployeeDirectoryRecord {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  email: string;
+  phone: string | null;
+  departmentName: string | null;
+  profilePhotoUrl: string | null;
+  status: EmployeeStatus;
+}
+
+export interface AvailableUserRecord {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface HrSummary {
+  totalEmployees: number;
+  activeEmployees: number;
+  onLeaveToday: number;
+  newThisMonth: number;
+  byDepartment: Array<{ department: string; count: number }>;
+  byStatus: Record<EmployeeStatus, number>;
+  pendingLeaveRequests: number;
+  attendanceToday: {
+    checkedIn: number;
+    notYetCheckedIn: number;
+    onLeave: number;
+  };
+  upcomingLeave: Array<{
+    employeeId: string;
+    employeeName: string;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+  }>;
+}
+
+export interface LeaveTypeRecord {
+  id: string;
+  name: string;
+  code: string;
+  defaultDaysPerYear: number;
+  isPaid: boolean;
+  requiresApproval: boolean;
+  requiresDocument: boolean;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface LeaveBalanceRecord {
+  id: string;
+  employeeId: string;
+  leaveTypeId: string;
+  year: number;
+  entitled: number;
+  used: number;
+  pending: number;
+  remaining: number;
+  carryOver: number;
+  leaveType: LeaveTypeRecord;
+}
+
+export interface LeaveRequestEmployeeSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeCode: string;
+  departmentId?: string | null;
+  userId?: string;
+}
+
+export interface LeaveRequestRecord {
+  id: string;
+  employeeId: string;
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string | null;
+  documentUrl: string | null;
+  status: LeaveStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  leaveType: LeaveTypeRecord;
+  employee: LeaveRequestEmployeeSummary;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  date: string;
+  checkInAt: string | null;
+  checkOutAt: string | null;
+  status: AttendanceStatus;
+  workingHours: number | null;
+  notes: string | null;
+  recordedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    departmentId: string | null;
+    department?: { name: string } | null;
+  };
+}
+
+export interface AttendanceMonthlyReport {
+  month: string;
+  employeeId: string;
+  summary: {
+    totalWorkingDays: number;
+    present: number;
+    absent: number;
+    halfDay: number;
+    onLeave: number;
+    totalHours: number;
+  };
+  records: AttendanceRecord[];
+}
+
+export interface MyAttendanceResponse {
+  today: AttendanceRecord | null;
+  report: AttendanceMonthlyReport;
+}
+
+export type HrSettings = Record<string, string>;
+
+export interface CreateEmployeePayload {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  profilePhotoUrl?: string;
+  jobTitle: string;
+  departmentId?: string;
+  managerId?: string;
+  employmentType: EmploymentType;
+  startDate: string;
+  baseSalary: number;
+  currency?: string;
+  salaryEffectiveFrom?: string;
+  nationalId?: string;
+  bankName?: string;
+  bankAccount?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  notes?: string;
+}
+
+export interface UpdateEmployeePayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  profilePhotoUrl?: string;
+  jobTitle?: string;
+  departmentId?: string;
+  managerId?: string;
+  employmentType?: EmploymentType;
+  startDate?: string;
+  baseSalary?: number;
+  currency?: string;
+  salaryEffectiveFrom?: string;
+  nationalId?: string;
+  bankName?: string;
+  bankAccount?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  notes?: string;
+}
+
+export interface CreateLeaveRequestPayload {
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  documentUrl?: string;
+}
+
+export interface ReviewLeaveRequestPayload {
+  action: 'APPROVE' | 'REJECT';
+  rejectionReason?: string;
+}
+
+export enum ReviewStatus {
+  DRAFT = 'DRAFT',
+  SELF_ASSESSMENT = 'SELF_ASSESSMENT',
+  MANAGER_REVIEW = 'MANAGER_REVIEW',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  COMPLETED = 'COMPLETED',
+}
+
+export enum OnboardingStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  OVERDUE = 'OVERDUE',
+}
+
+export interface PerformanceReviewEmployeeSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+}
+
+export interface PerformanceReviewRecord {
+  id: string;
+  employeeId: string;
+  reviewerId: string;
+  period: string;
+  reviewDate: string;
+  status: ReviewStatus;
+  goalsSet: unknown;
+  selfAssessment: string | null;
+  selfRating: number | null;
+  managerNotes: string | null;
+  overallRating: number | null;
+  strengths: string | null;
+  improvements: string | null;
+  nextPeriodGoals: unknown;
+  acknowledgedAt: string | null;
+  nextReviewDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  employee?: PerformanceReviewEmployeeSummary;
+}
+
+export interface SalaryHistoryRecord {
+  id: string;
+  previousSalary: number;
+  newSalary: number;
+  currency: string;
+  effectiveFrom: string;
+  reason: string | null;
+  changedBy: string;
+  createdAt: string;
+}
+
+export interface EmployeeSalaryData {
+  current: {
+    baseSalary: number;
+    currency: string;
+    effectiveFrom: string;
+  };
+  history: SalaryHistoryRecord[];
+}
+
+export interface OnboardingItemRecord {
+  id: string;
+  checklistId: string;
+  title: string;
+  description: string | null;
+  category: string;
+  isCompleted: boolean;
+  completedAt: string | null;
+  completedBy: string | null;
+  dueDate: string | null;
+  order: number;
+}
+
+export interface OnboardingChecklistRecord {
+  id: string;
+  employeeId: string;
+  status: OnboardingStatus;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: OnboardingItemRecord[];
+  progress: { completed: number; total: number };
+}
+
+export interface HrAuditLogRecord {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  previousValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface HrHeadcountReport {
+  total: number;
+  active: number;
+  byDepartment: Record<string, number>;
+  byStatus: Record<string, number>;
+  byEmploymentType: Record<string, number>;
+}
+
+export interface HrTurnoverReport {
+  period: { from: string; to: string };
+  newHires: number;
+  terminations: number;
+  turnoverRate: number;
+  avgHeadcount: number;
+  terminated: Array<{
+    name: string;
+    department: string | null;
+    endDate: string | null;
+    status: string;
+  }>;
+}
+
+export interface HrLeaveUtilisationReport {
+  year: number;
+  byType: Array<{
+    leaveType: string;
+    employees: number;
+    totalEntitled: number;
+    totalUsed: number;
+    utilisationRate: number;
+    avgUsedPerEmployee: number;
+  }>;
+}
+
+export interface HrAttendanceSummaryReport {
+  period: { from: string; to: string };
+  summary: Array<{
+    employeeId: string;
+    employeeName: string;
+    present: number;
+    absent: number;
+    halfDay: number;
+    onLeave: number;
+    totalHours: number;
+  }>;
+}
+
+export interface UpdateSalaryPayload {
+  newSalary: number;
+  currency?: string;
+  effectiveFrom: string;
+  reason?: string;
+}
+
+export interface CreatePerformanceReviewPayload {
+  employeeId: string;
+  reviewerId: string;
+  period: string;
+  reviewDate: string;
+  goalsSet?: object[];
+  nextReviewDate?: string;
 }
