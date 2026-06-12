@@ -8,6 +8,7 @@ import { useReconciliationList } from '@/hooks/useReconciliation';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { ReconciliationStatus } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function StatusBadge({ status }: { status: ReconciliationStatus }): JSX.Element {
   const config: Record<
@@ -61,12 +62,14 @@ export default function ReconciliationListPage(): JSX.Element {
         <h1 className="text-2xl font-bold text-cdy-white">
           Bank Reconciliation
         </h1>
-        <Button
-          className="bg-cdy-red hover:bg-cdy-red/90"
-          onClick={() => setImportOpen(true)}
-        >
-          Import Statement
-        </Button>
+        <PermissionGate feature="finance.reconciliation" action="write">
+          <Button
+            className="bg-cdy-red hover:bg-cdy-red/90"
+            onClick={() => setImportOpen(true)}
+          >
+            Import Statement
+          </Button>
+        </PermissionGate>
       </div>
 
       {isLoading && <InvoiceTableSkeleton />}

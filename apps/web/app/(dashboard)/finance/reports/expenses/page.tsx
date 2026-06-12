@@ -18,6 +18,7 @@ import {
 import { formatCurrency, getUploadUrl } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { ExpenseCategory } from '@cdy/shared';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
 
 export default function ExpenseSummaryReportPage(): JSX.Element {
   const [month, setMonth] = useState(currentMonthKey());
@@ -48,6 +49,7 @@ export default function ExpenseSummaryReportPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-6">
       <nav className="text-sm text-cdy-muted">
         <Link href="/finance" className="hover:text-cdy-white">Finance</Link>
@@ -262,5 +264,6 @@ export default function ExpenseSummaryReportPage(): JSX.Element {
         </>
       )}
     </div>
+    </FeatureReadGate>
   );
 }

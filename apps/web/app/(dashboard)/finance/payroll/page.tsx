@@ -86,14 +86,16 @@ export default function PayrollPage(): JSX.Element {
           <Link href="/finance/payroll/salaries">
             <Button variant="outline" size="sm">Employee Salaries</Button>
           </Link>
-          {canWritePayroll && !currentRun && (
-            <Button
-              className="bg-cdy-red hover:bg-cdy-red/90"
-              onClick={() => setConfirmOpen(true)}
-            >
-              Run Payroll
-            </Button>
-          )}
+          <PermissionGate feature="finance.payroll" action="write">
+            {!currentRun && (
+              <Button
+                className="bg-cdy-red hover:bg-cdy-red/90"
+                onClick={() => setConfirmOpen(true)}
+              >
+                Run Payroll
+              </Button>
+            )}
+          </PermissionGate>
         </div>
       </div>
 

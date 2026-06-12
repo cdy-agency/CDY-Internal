@@ -7,5 +7,5 @@
     "skipLibCheck": true,
     "outDir": "./dist"
   },
-  "include": ["prisma/**/*.ts", "src/rbac/run-rbac-seed.ts"]
+  "include": ["prisma/**/*.ts"]
 }

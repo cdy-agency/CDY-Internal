@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function monthRange(year: number, month: number): { from: string; to: string } {
   const d = new Date(year, month, 1);
@@ -42,6 +44,7 @@ export default function TaxReportPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-6">
       <nav className="text-sm text-cdy-muted">
         <Link href="/finance" className="hover:text-cdy-white">Finance</Link>
@@ -54,9 +57,11 @@ export default function TaxReportPage(): JSX.Element {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-cdy-white">Tax Liability Report</h1>
         <div className="flex gap-2">
-          <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setRemittanceOpen(true)}>
-            Record Remittance
-          </Button>
+          <PermissionGate feature="finance.tax" action="write">
+            <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setRemittanceOpen(true)}>
+              Record Remittance
+            </Button>
+          </PermissionGate>
           <Button variant="outline" onClick={downloadPdf}>Download PDF</Button>
         </div>
       </div>
@@ -172,5 +177,6 @@ export default function TaxReportPage(): JSX.Element {
 
       <RecordRemittanceModal open={remittanceOpen} onClose={() => setRemittanceOpen(false)} />
     </div>
+    </FeatureReadGate>
   );
 }

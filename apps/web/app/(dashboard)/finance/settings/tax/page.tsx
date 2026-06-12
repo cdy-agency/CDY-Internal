@@ -10,6 +10,7 @@ import { useTaxRates } from '@/hooks/useTax';
 import { AddTaxRateModal } from '@/components/finance/tax/AddTaxRateModal';
 import { Button } from '@/components/ui/button';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
+import { PermissionGate } from '@/components/PermissionGate';
 
 export default function TaxRatesPage(): JSX.Element {
   const queryClient = useQueryClient();
@@ -42,9 +43,11 @@ export default function TaxRatesPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Tax Rates</h1>
-        <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setModalOpen(true)}>
-          Add Tax Rate
-        </Button>
+        <PermissionGate feature="finance.tax" action="write">
+          <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setModalOpen(true)}>
+            Add Tax Rate
+          </Button>
+        </PermissionGate>
       </div>
 
       {isLoading && <InvoiceTableSkeleton />}
@@ -73,9 +76,11 @@ export default function TaxRatesPage(): JSX.Element {
                     {format(new Date(rate.effectiveFrom), 'MMM d, yyyy')}
                   </td>
                   <td className="px-4 py-3">
-                    <Button variant="outline" size="sm" onClick={() => deactivate(rate.id)}>
-                      Deactivate
-                    </Button>
+                    <PermissionGate feature="finance.tax" action="write">
+                      <Button variant="outline" size="sm" onClick={() => deactivate(rate.id)}>
+                        Deactivate
+                      </Button>
+                    </PermissionGate>
                   </td>
                 </tr>
               ))}

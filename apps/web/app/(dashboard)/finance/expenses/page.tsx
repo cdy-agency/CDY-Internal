@@ -16,6 +16,7 @@ import { formatCurrency, getUploadUrl } from '@/lib/utils';
 import type { ExpenseFilters } from '@/types/expense';
 import type { ExpenseRecord } from '@cdy/shared';
 import { ExpenseCategory } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 export default function ExpensesPage(): JSX.Element {
   const queryClient = useQueryClient();
@@ -72,10 +73,12 @@ export default function ExpensesPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-cdy-white">Expenses</h1>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Log Expense
-        </Button>
+        <PermissionGate feature="finance.expenses" action="write">
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Log Expense
+          </Button>
+        </PermissionGate>
       </div>
 
       {data && (
@@ -131,13 +134,15 @@ export default function ExpensesPage(): JSX.Element {
       )}
 
       {!isLoading && !isError && data && data.data.length === 0 && (
-        <EmptyState
-          icon={Receipt}
-          title="No expenses found"
-          description="Log your first expense to get started"
-          actionLabel="Log Expense"
-          onAction={openCreate}
-        />
+        <PermissionGate feature="finance.expenses" action="write">
+          <EmptyState
+            icon={Receipt}
+            title="No expenses found"
+            description="Log your first expense to get started"
+            actionLabel="Log Expense"
+            onAction={openCreate}
+          />
+        </PermissionGate>
       )}
 
       {!isLoading && data && data.data.length > 0 && (
@@ -191,25 +196,27 @@ export default function ExpensesPage(): JSX.Element {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        {expense.canEdit && (
+                      <PermissionGate feature="finance.expenses" action="write">
+                        <div className="flex justify-end gap-1">
+                          {expense.canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEdit(expense)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openEdit(expense)}
+                            className="text-[var(--cdy-danger)]"
+                            onClick={() => handleDelete(expense)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-[var(--cdy-danger)]"
-                          onClick={() => handleDelete(expense)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                        </div>
+                      </PermissionGate>
                     </td>
                   </tr>
                 ))}

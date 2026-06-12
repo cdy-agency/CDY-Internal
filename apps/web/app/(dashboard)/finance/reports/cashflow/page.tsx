@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import type { CashFlowWeekBucket } from '@cdy/shared';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const WEEK_OPTIONS = [4, 8, 13, 26];
 
@@ -284,6 +286,7 @@ export default function CashFlowPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -403,83 +406,86 @@ export default function CashFlowPage(): JSX.Element {
         </table>
       </div>
 
-      <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-medium text-cdy-white">Manual Adjustments</h2>
-          <Button size="sm" onClick={() => setShowAddForm(!showAddForm)}>
-            + Add Adjustment
-          </Button>
-        </div>
-        {showAddForm && (
-          <div className="mb-4 grid gap-3 rounded-md border border-cdy-navy-border bg-cdy-navy p-4 md:grid-cols-5">
-            <Input
-              placeholder="Label"
-              value={adjLabel}
-              onChange={(e) => setAdjLabel(e.target.value)}
-            />
-            <select
-              value={adjDirection}
-              onChange={(e) =>
-                setAdjDirection(e.target.value as 'IN' | 'OUT')
-              }
-              className="rounded-md border border-cdy-navy-border bg-cdy-navy-light px-3 py-2 text-sm text-cdy-white"
-            >
-              <option value="IN">IN</option>
-              <option value="OUT">OUT</option>
-            </select>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={adjAmount}
-              onChange={(e) => setAdjAmount(e.target.value)}
-            />
-            <Input
-              type="date"
-              value={adjDate}
-              onChange={(e) => setAdjDate(e.target.value)}
-            />
-            <Button onClick={() => void handleAddAdjustment()}>Add</Button>
+      <PermissionGate feature="finance.reports" action="write">
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-medium text-cdy-white">Manual Adjustments</h2>
+            <Button size="sm" onClick={() => setShowAddForm(!showAddForm)}>
+              + Add Adjustment
+            </Button>
           </div>
-        )}
-        {adjustments.length === 0 ? (
-          <p className="text-sm text-cdy-muted">No manual adjustments in range.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-cdy-muted">
-                <th className="pb-2">Label</th>
-                <th className="pb-2">Direction</th>
-                <th className="pb-2">Amount</th>
-                <th className="pb-2">Date</th>
-                <th className="pb-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {adjustments.map((adj) => (
-                <tr key={adj.id} className="border-t border-cdy-navy-border">
-                  <td className="py-2 text-cdy-white">{adj.label}</td>
-                  <td className="py-2 text-cdy-muted">{adj.direction}</td>
-                  <td className="py-2 text-cdy-white">
-                    {formatCurrency(adj.amount)}
-                  </td>
-                  <td className="py-2 text-cdy-muted">
-                    {format(new Date(adj.date), 'MMM d, yyyy')}
-                  </td>
-                  <td className="py-2 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void handleDeleteAdjustment(adj.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+          {showAddForm && (
+            <div className="mb-4 grid gap-3 rounded-md border border-cdy-navy-border bg-cdy-navy p-4 md:grid-cols-5">
+              <Input
+                placeholder="Label"
+                value={adjLabel}
+                onChange={(e) => setAdjLabel(e.target.value)}
+              />
+              <select
+                value={adjDirection}
+                onChange={(e) =>
+                  setAdjDirection(e.target.value as 'IN' | 'OUT')
+                }
+                className="rounded-md border border-cdy-navy-border bg-cdy-navy-light px-3 py-2 text-sm text-cdy-white"
+              >
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+              </select>
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={adjAmount}
+                onChange={(e) => setAdjAmount(e.target.value)}
+              />
+              <Input
+                type="date"
+                value={adjDate}
+                onChange={(e) => setAdjDate(e.target.value)}
+              />
+              <Button onClick={() => void handleAddAdjustment()}>Add</Button>
+            </div>
+          )}
+          {adjustments.length === 0 ? (
+            <p className="text-sm text-cdy-muted">No manual adjustments in range.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-cdy-muted">
+                  <th className="pb-2">Label</th>
+                  <th className="pb-2">Direction</th>
+                  <th className="pb-2">Amount</th>
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {adjustments.map((adj) => (
+                  <tr key={adj.id} className="border-t border-cdy-navy-border">
+                    <td className="py-2 text-cdy-white">{adj.label}</td>
+                    <td className="py-2 text-cdy-muted">{adj.direction}</td>
+                    <td className="py-2 text-cdy-white">
+                      {formatCurrency(adj.amount)}
+                    </td>
+                    <td className="py-2 text-cdy-muted">
+                      {format(new Date(adj.date), 'MMM d, yyyy')}
+                    </td>
+                    <td className="py-2 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void handleDeleteAdjustment(adj.id)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </PermissionGate>
     </div>
+    </FeatureReadGate>
   );
 }

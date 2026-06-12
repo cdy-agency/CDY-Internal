@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { formatMonthKey } from '@/lib/reportDates';
 import { PayrollStatus } from '@cdy/shared';
 import { useCanWrite } from '@/hooks/usePermission';
+import { PermissionGate } from '@/components/PermissionGate';
 import type { ApiResponse, PayrollLineItem, UserProfile } from '@cdy/shared';
 
 function AdjustModal({
@@ -241,29 +242,33 @@ export default function PayrollDetailPage(): JSX.Element {
           </p>
         </div>
         <div className="flex gap-2">
-          {run.status === PayrollStatus.DRAFT && canWritePayroll && (
-            <Button
-              className="bg-cdy-red hover:bg-cdy-red/90"
-              disabled={!canProcess}
-              title={
-                isCreator
-                  ? 'This run was created by you. Another manager must process it.'
-                  : undefined
-              }
-              onClick={() => setConfirmProcess(true)}
-            >
-              Process Payroll
-            </Button>
-          )}
-          {run.status === PayrollStatus.PROCESSED && (
-            <Button
-              variant="outline"
-              disabled={locking}
-              onClick={() => void lockRun()}
-            >
-              {locking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Lock'}
-            </Button>
-          )}
+          <PermissionGate feature="finance.payroll" action="write">
+            {run.status === PayrollStatus.DRAFT && canWritePayroll && (
+              <Button
+                className="bg-cdy-red hover:bg-cdy-red/90"
+                disabled={!canProcess}
+                title={
+                  isCreator
+                    ? 'This run was created by you. Another manager must process it.'
+                    : undefined
+                }
+                onClick={() => setConfirmProcess(true)}
+              >
+                Process Payroll
+              </Button>
+            )}
+          </PermissionGate>
+          <PermissionGate feature="finance.payroll" action="write">
+            {run.status === PayrollStatus.PROCESSED && (
+              <Button
+                variant="outline"
+                disabled={locking}
+                onClick={() => void lockRun()}
+              >
+                {locking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Lock'}
+              </Button>
+            )}
+          </PermissionGate>
         </div>
       </div>
 
@@ -360,13 +365,15 @@ export default function PayrollDetailPage(): JSX.Element {
                         Cannot adjust own record
                       </span>
                     ) : (
-                      <button
-                        type="button"
-                        className="text-cdy-red hover:underline"
-                        onClick={() => setAdjustItem(item)}
-                      >
-                        Adjust
-                      </button>
+                      <PermissionGate feature="finance.payroll" action="write">
+                        <button
+                          type="button"
+                          className="text-cdy-red hover:underline"
+                          onClick={() => setAdjustItem(item)}
+                        >
+                          Adjust
+                        </button>
+                      </PermissionGate>
                     ))}
                 </td>
               </tr>

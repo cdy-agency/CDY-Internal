@@ -172,24 +172,30 @@ export default function FinanceOverviewPage(): JSX.Element {
               </Link>
             </Button>
           </PermissionGate>
-          <Button asChild variant="outline">
-            <Link href="/finance/payments">
-              <Plus className="h-4 w-4" />
-              View Payments
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/finance/expenses">
-              <Plus className="h-4 w-4" />
-              Log Expense
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/finance/bills">
-              <Plus className="h-4 w-4" />
-              Add Bill
-            </Link>
-          </Button>
+          <PermissionGate feature="finance.payments" action="read">
+            <Button asChild variant="outline">
+              <Link href="/finance/payments">
+                <Plus className="h-4 w-4" />
+                View Payments
+              </Link>
+            </Button>
+          </PermissionGate>
+          <PermissionGate feature="finance.expenses" action="write">
+            <Button asChild variant="outline">
+              <Link href="/finance/expenses">
+                <Plus className="h-4 w-4" />
+                Log Expense
+              </Link>
+            </Button>
+          </PermissionGate>
+          <PermissionGate feature="finance.bills" action="write">
+            <Button asChild variant="outline">
+              <Link href="/finance/bills">
+                <Plus className="h-4 w-4" />
+                Add Bill
+              </Link>
+            </Button>
+          </PermissionGate>
         </div>
       </div>
     </div>

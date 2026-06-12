@@ -9,7 +9,7 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "baseUrl": "./",
     "incremental": false,
     "skipLibCheck": true,
@@ -20,6 +20,6 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma/seeds/rbac.seed.ts"],
   "exclude": ["node_modules", "dist", "**/*spec.ts"]
 }

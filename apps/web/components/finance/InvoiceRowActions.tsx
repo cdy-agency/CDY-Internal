@@ -7,6 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { downloadInvoicePdf } from '@/lib/invoicePdf';
+import { PermissionGate } from '@/components/PermissionGate';
+import { usePermissions } from '@/context/PermissionContext';
 import type { InvoiceRecord } from '@cdy/shared';
 import { InvoiceStatus } from '@cdy/shared';
 
@@ -22,6 +24,7 @@ export function InvoiceRowActions({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { canRead } = usePermissions();
 
   useEffect(() => {
     function handleClick(e: MouseEvent): void {
@@ -64,6 +67,10 @@ export function InvoiceRowActions({
     setOpen(false);
   }
 
+  if (!canRead('finance.invoices')) {
+    return <span className="text-cdy-muted">—</span>;
+  }
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -83,27 +90,29 @@ export function InvoiceRowActions({
           >
             <Eye className="h-4 w-4" /> View
           </Link>
-          {invoice.status === InvoiceStatus.DRAFT && (
-            <>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-cdy-white hover:bg-cdy-navy"
-                onClick={() => {
-                  onEdit(invoice);
-                  setOpen(false);
-                }}
-              >
-                <Pencil className="h-4 w-4" /> Edit
-              </button>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-cdy-white hover:bg-cdy-navy"
-                onClick={handleSend}
-              >
-                <Send className="h-4 w-4" /> Send
-              </button>
-            </>
-          )}
+          <PermissionGate feature="finance.invoices" action="write">
+            {invoice.status === InvoiceStatus.DRAFT && (
+              <>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-cdy-white hover:bg-cdy-navy"
+                  onClick={() => {
+                    onEdit(invoice);
+                    setOpen(false);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" /> Edit
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-cdy-white hover:bg-cdy-navy"
+                  onClick={handleSend}
+                >
+                  <Send className="h-4 w-4" /> Send
+                </button>
+              </>
+            )}
+          </PermissionGate>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-cdy-white hover:bg-cdy-navy"
@@ -111,15 +120,17 @@ export function InvoiceRowActions({
           >
             <Download className="h-4 w-4" /> Download PDF
           </button>
-          {invoice.status !== InvoiceStatus.PAID && (
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--cdy-danger)] hover:bg-cdy-navy"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4" /> Delete
-            </button>
-          )}
+          <PermissionGate feature="finance.invoices" action="write">
+            {invoice.status !== InvoiceStatus.PAID && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--cdy-danger)] hover:bg-cdy-navy"
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
+            )}
+          </PermissionGate>
         </div>
       )}
     </div>

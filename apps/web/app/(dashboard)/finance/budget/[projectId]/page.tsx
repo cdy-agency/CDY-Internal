@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import type { AxiosError } from 'axios';
+import { PermissionGate } from '@/components/PermissionGate';
 
 export default function BudgetDetailPage(): JSX.Element {
   const params = useParams<{ projectId: string }>();
@@ -125,6 +126,7 @@ export default function BudgetDetailPage(): JSX.Element {
         </div>
       )}
 
+      <PermissionGate feature="finance.budget" action="write">
       {showRequestForm && (
         <form onSubmit={submitIncreaseRequest} className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5 space-y-4">
           <h3 className="font-medium text-cdy-white">Request Budget Increase</h3>
@@ -140,6 +142,7 @@ export default function BudgetDetailPage(): JSX.Element {
           <Button type="submit" disabled={submitting}>Submit Request</Button>
         </form>
       )}
+      </PermissionGate>
 
       {budget.expenses && budget.expenses.length > 0 && (
         <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">

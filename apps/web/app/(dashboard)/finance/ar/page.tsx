@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import api from '@/lib/api';
 import type { ArLedgerClientRow, ArRiskLevel } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const RISK_STYLES: Record<
   ArRiskLevel,
@@ -75,9 +76,11 @@ function ReminderButton({ invoiceId }: { invoiceId: string }): JSX.Element {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={send} disabled={loading}>
-      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send Reminder'}
-    </Button>
+    <PermissionGate feature="finance.invoices" action="write">
+      <Button variant="outline" size="sm" onClick={send} disabled={loading}>
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send Reminder'}
+      </Button>
+    </PermissionGate>
   );
 }
 
@@ -170,14 +173,16 @@ export default function ArLedgerPage(): JSX.Element {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-cdy-white">AR Ledger</h1>
         {data && data.ledger.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportLedgerCsv(data.ledger)}
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+          <PermissionGate feature="finance.ar" action="read">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportLedgerCsv(data.ledger)}
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </PermissionGate>
         )}
       </div>
 

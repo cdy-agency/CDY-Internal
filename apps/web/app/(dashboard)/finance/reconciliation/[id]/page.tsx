@@ -24,6 +24,7 @@ import {
   TransactionMatchStatus,
 } from '@cdy/shared';
 import type { AxiosError } from 'axios';
+import { PermissionGate } from '@/components/PermissionGate';
 
 type TabFilter = 'all' | 'matched' | 'unmatched';
 
@@ -257,13 +258,15 @@ export default function ReconciliationDetailPage(): JSX.Element {
                 </td>
                 <td className="px-4 py-3">
                   {tx.matchStatus === TransactionMatchStatus.UNMATCHED ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setResolveTx(tx)}
-                    >
-                      Resolve
-                    </Button>
+                    <PermissionGate feature="finance.reconciliation" action="write">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setResolveTx(tx)}
+                      >
+                        Resolve
+                      </Button>
+                    </PermissionGate>
                   ) : tx.matchedEntityId ? (
                     <Button variant="ghost" size="sm" asChild>
                       <Link
@@ -286,15 +289,17 @@ export default function ReconciliationDetailPage(): JSX.Element {
 
       {allResolved &&
         data.status === ReconciliationStatus.IN_PROGRESS && (
-          <div className="flex justify-end">
-            <Button onClick={handleComplete} disabled={completing}>
-              {completing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Complete Reconciliation'
-              )}
-            </Button>
-          </div>
+          <PermissionGate feature="finance.reconciliation" action="write">
+            <div className="flex justify-end">
+              <Button onClick={handleComplete} disabled={completing}>
+                {completing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Complete Reconciliation'
+                )}
+              </Button>
+            </div>
+          </PermissionGate>
         )}
 
       {completeResult && (

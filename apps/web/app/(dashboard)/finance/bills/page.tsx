@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/utils';
 import type { BillFilters } from '@/types/bill';
 import type { BillRecord } from '@cdy/shared';
 import { BillStatus } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function BillStatusBadge({ status }: { status: BillStatus }): JSX.Element {
   const config: Record<BillStatus, { label: string; className: string }> = {
@@ -86,10 +87,12 @@ export default function BillsPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-cdy-white">Bills</h1>
-        <Button onClick={() => { setEditBill(null); setDrawerOpen(true); }}>
-          <Plus className="h-4 w-4" />
-          Add Bill
-        </Button>
+        <PermissionGate feature="finance.bills" action="write">
+          <Button onClick={() => { setEditBill(null); setDrawerOpen(true); }}>
+            <Plus className="h-4 w-4" />
+            Add Bill
+          </Button>
+        </PermissionGate>
       </div>
 
       {data && data.alerts.dueSoonCount > 0 && (
@@ -127,13 +130,15 @@ export default function BillsPage(): JSX.Element {
       )}
 
       {!isLoading && !isError && data && data.data.length === 0 && (
-        <EmptyState
-          icon={Building2}
-          title="No bills found"
-          description="Add your first bill to track upcoming payments"
-          actionLabel="Add Bill"
-          onAction={() => { setEditBill(null); setDrawerOpen(true); }}
-        />
+        <PermissionGate feature="finance.bills" action="write">
+          <EmptyState
+            icon={Building2}
+            title="No bills found"
+            description="Add your first bill to track upcoming payments"
+            actionLabel="Add Bill"
+            onAction={() => { setEditBill(null); setDrawerOpen(true); }}
+          />
+        </PermissionGate>
       )}
 
       {!isLoading && data && data.data.length > 0 && (
@@ -190,25 +195,27 @@ export default function BillsPage(): JSX.Element {
                         {formatDaysLabel(bill)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          {bill.status === BillStatus.UNPAID && (
+                        <PermissionGate feature="finance.bills" action="write">
+                          <div className="flex justify-end gap-1">
+                            {bill.status === BillStatus.UNPAID && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPayBill(bill)}
+                              >
+                                Mark as Paid
+                              </Button>
+                            )}
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => setPayBill(bill)}
+                              className="text-[var(--cdy-danger)]"
+                              onClick={() => handleDelete(bill)}
                             >
-                              Mark as Paid
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[var(--cdy-danger)]"
-                            onClick={() => handleDelete(bill)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                          </div>
+                        </PermissionGate>
                       </td>
                     </tr>
                   );

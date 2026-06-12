@@ -14,6 +14,8 @@ import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import api from '@/lib/api';
 import type { AgeingBucketData, AgeingReportData } from '@cdy/shared';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const BUCKET_CONFIG: {
   key: keyof AgeingReportData['buckets'];
@@ -53,9 +55,11 @@ function ReminderButton({ invoiceId }: { invoiceId: string }): JSX.Element {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={send} disabled={loading}>
-      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send Reminder'}
-    </Button>
+    <PermissionGate feature="finance.invoices" action="write">
+      <Button variant="outline" size="sm" onClick={send} disabled={loading}>
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send Reminder'}
+      </Button>
+    </PermissionGate>
   );
 }
 
@@ -155,6 +159,7 @@ export default function InvoiceAgeingPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-6">
       <nav className="text-sm text-cdy-muted">
         <Link href="/finance" className="hover:text-cdy-white">Finance</Link>
@@ -209,5 +214,6 @@ export default function InvoiceAgeingPage(): JSX.Element {
         </div>
       )}
     </div>
+    </FeatureReadGate>
   );
 }

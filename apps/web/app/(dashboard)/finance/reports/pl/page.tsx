@@ -16,6 +16,7 @@ import {
 } from '@/lib/reportDates';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { ExpenseCategory } from '@cdy/shared';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
 
 const presets = buildPlPresets();
 
@@ -148,6 +149,7 @@ export default function ProfitAndLossPage(): JSX.Element {
   const isEmpty = data && data.revenue.total === 0 && data.costOfServices.total === 0;
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-4">
       <nav className="text-sm text-cdy-muted">
         <Link href="/finance" className="hover:text-cdy-white">Finance</Link>
@@ -193,5 +195,6 @@ export default function ProfitAndLossPage(): JSX.Element {
       {!isLoading && isEmpty && <EmptyReport />}
       {!isLoading && data && !isEmpty && <ReportTable sections={sections} />}
     </div>
+    </FeatureReadGate>
   );
 }

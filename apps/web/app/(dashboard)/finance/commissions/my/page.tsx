@@ -14,12 +14,14 @@ import {
   formatMonthKey,
   serviceTypeLabel,
 } from '@/lib/reportDates';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
 
 export default function MyCommissionsPage(): JSX.Element {
   const [month, setMonth] = useState(currentMonthKey());
   const { data, isLoading } = useCommissions({ month, limit: 50 }, true);
 
   return (
+    <FeatureReadGate feature="finance.commissions.own" featureName="My Commissions">
     <div className="space-y-6">
       <nav className="text-sm text-cdy-muted">
         <Link href="/finance" className="hover:text-cdy-white">Finance</Link>
@@ -97,5 +99,6 @@ export default function MyCommissionsPage(): JSX.Element {
         </div>
       )}
     </div>
+    </FeatureReadGate>
   );
 }

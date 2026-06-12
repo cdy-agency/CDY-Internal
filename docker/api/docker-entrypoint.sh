@@ -14,4 +14,4 @@ else
 fi
 
 echo "Starting API server..."
-exec node dist/main.js
+exec node dist/src/main.js

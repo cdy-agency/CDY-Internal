@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import type { AxiosError } from 'axios';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function ProgressBar({
   percent,
@@ -87,7 +88,9 @@ export default function BudgetListPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Project Budgets</h1>
-        <Button onClick={() => setFormOpen(!formOpen)}>Add Project Budget</Button>
+        <PermissionGate feature="finance.budget" action="write">
+          <Button onClick={() => setFormOpen(!formOpen)}>Add Project Budget</Button>
+        </PermissionGate>
       </div>
 
       {pending && pending.length > 0 && (
@@ -96,6 +99,7 @@ export default function BudgetListPage(): JSX.Element {
         </div>
       )}
 
+      <PermissionGate feature="finance.budget" action="write">
       {formOpen && (
         <form onSubmit={createBudget} className="grid gap-4 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -119,6 +123,7 @@ export default function BudgetListPage(): JSX.Element {
           </div>
         </form>
       )}
+      </PermissionGate>
 
       {isLoading && <InvoiceTableSkeleton />}
 

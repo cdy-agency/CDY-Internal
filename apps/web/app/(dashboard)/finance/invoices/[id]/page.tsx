@@ -40,6 +40,7 @@ import {
 } from '@cdy/shared';
 import type { PaymentPlanInstalment } from '@cdy/shared';
 import type { AxiosError } from 'axios';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const UNPAID_STATUSES: InvoiceStatus[] = [
   InvoiceStatus.SENT,
@@ -367,16 +368,18 @@ export default function InvoiceDetailPage(): JSX.Element {
                         )}
                       </td>
                       <td className="py-2">
-                        {inst.status !== InstalmentStatus.PAID &&
-                          plan.status === PaymentPlanStatus.ACTIVE && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPayInstalment(inst)}
-                            >
-                              Mark as Paid
-                            </Button>
-                          )}
+                        <PermissionGate feature="finance.payment_plans" action="write">
+                          {inst.status !== InstalmentStatus.PAID &&
+                            plan.status === PaymentPlanStatus.ACTIVE && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPayInstalment(inst)}
+                              >
+                                Mark as Paid
+                              </Button>
+                            )}
+                        </PermissionGate>
                       </td>
                     </tr>
                   ))}
@@ -388,22 +391,24 @@ export default function InvoiceDetailPage(): JSX.Element {
                   {fmt(remainingPlanBalance)}
                 </span>
               </p>
-              {plan.status === PaymentPlanStatus.ACTIVE &&
-                !anyInstalmentPaid && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 text-cdy-muted"
-                    onClick={handleCancelPlan}
-                    disabled={cancelPlanLoading}
-                  >
-                    {cancelPlanLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'Cancel Plan'
-                    )}
-                  </Button>
-                )}
+              <PermissionGate feature="finance.payment_plans" action="write">
+                {plan.status === PaymentPlanStatus.ACTIVE &&
+                  !anyInstalmentPaid && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 text-cdy-muted"
+                      onClick={handleCancelPlan}
+                      disabled={cancelPlanLoading}
+                    >
+                      {cancelPlanLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Cancel Plan'
+                      )}
+                    </Button>
+                  )}
+              </PermissionGate>
             </div>
           )}
 
@@ -468,67 +473,77 @@ export default function InvoiceDetailPage(): JSX.Element {
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
             <h3 className="mb-4 font-medium text-cdy-white">Actions</h3>
             <div className="flex flex-col gap-2">
-              {invoice.status === InvoiceStatus.DRAFT && (
-                <>
-                  <Button variant="outline" onClick={() => setDrawerOpen(true)}>
-                    <Pencil className="h-4 w-4" />
-                    Edit Invoice
-                  </Button>
-                  <Button onClick={handleSend} disabled={sendLoading}>
-                    {sendLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                    Send Invoice
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Invoice
-                  </Button>
-                </>
-              )}
+              <PermissionGate feature="finance.invoices" action="write">
+                {invoice.status === InvoiceStatus.DRAFT && (
+                  <>
+                    <Button variant="outline" onClick={() => setDrawerOpen(true)}>
+                      <Pencil className="h-4 w-4" />
+                      Edit Invoice
+                    </Button>
+                    <Button onClick={handleSend} disabled={sendLoading}>
+                      {sendLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      Send Invoice
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Invoice
+                    </Button>
+                  </>
+                )}
+              </PermissionGate>
 
               {UNPAID_STATUSES.includes(invoice.status) && (
                 <>
-                  {showRecordPayment && (
-                    <Button onClick={() => setPaymentModalOpen(true)}>
-                      <CreditCard className="h-4 w-4" />
-                      Record Payment
-                    </Button>
-                  )}
-                  {canPaymentPlan && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setPaymentPlanOpen(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Create Payment Plan
-                    </Button>
-                  )}
-                  {canCreditNote && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setCreditNoteOpen(true)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Raise Credit Note
-                    </Button>
-                  )}
-                  {canWriteOff && (
-                    <Button
-                      variant="outline"
-                      className="text-cdy-red hover:text-cdy-red"
-                      onClick={() => setWriteOffOpen(true)}
-                    >
-                      <AlertTriangle className="h-4 w-4" />
-                      Write Off Invoice
-                    </Button>
-                  )}
+                  <PermissionGate feature="finance.payments" action="write">
+                    {showRecordPayment && (
+                      <Button onClick={() => setPaymentModalOpen(true)}>
+                        <CreditCard className="h-4 w-4" />
+                        Record Payment
+                      </Button>
+                    )}
+                  </PermissionGate>
+                  <PermissionGate feature="finance.payment_plans" action="write">
+                    {canPaymentPlan && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setPaymentPlanOpen(true)}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Create Payment Plan
+                      </Button>
+                    )}
+                  </PermissionGate>
+                  <PermissionGate feature="finance.credit_notes" action="write">
+                    {canCreditNote && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setCreditNoteOpen(true)}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Raise Credit Note
+                      </Button>
+                    )}
+                  </PermissionGate>
+                  <PermissionGate feature="finance.invoices" action="write">
+                    {canWriteOff && (
+                      <Button
+                        variant="outline"
+                        className="text-cdy-red hover:text-cdy-red"
+                        onClick={() => setWriteOffOpen(true)}
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                        Write Off Invoice
+                      </Button>
+                    )}
+                  </PermissionGate>
                   <Button
                     variant="outline"
                     onClick={handleDownloadPdf}
@@ -546,13 +561,15 @@ export default function InvoiceDetailPage(): JSX.Element {
 
               {invoice.status === InvoiceStatus.PAID && (
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreditNoteOpen(true)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Raise Credit Note
-                  </Button>
+                  <PermissionGate feature="finance.credit_notes" action="write">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCreditNoteOpen(true)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Raise Credit Note
+                    </Button>
+                  </PermissionGate>
                   <Button
                     variant="outline"
                     onClick={handleDownloadPdf}

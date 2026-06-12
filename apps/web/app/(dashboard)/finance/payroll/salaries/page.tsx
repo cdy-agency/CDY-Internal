@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { formatCurrency } from '@/lib/utils';
 import type { EmployeeSalary } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function SalaryModal({
   existing,
@@ -164,15 +165,17 @@ export default function EmployeeSalariesPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Employee Salaries</h1>
-        <Button
-          className="bg-cdy-red hover:bg-cdy-red/90"
-          onClick={() => {
-            setEditSalary(undefined);
-            setModalOpen(true);
-          }}
-        >
-          Add Employee Salary
-        </Button>
+        <PermissionGate feature="finance.payroll" action="write">
+          <Button
+            className="bg-cdy-red hover:bg-cdy-red/90"
+            onClick={() => {
+              setEditSalary(undefined);
+              setModalOpen(true);
+            }}
+          >
+            Add Employee Salary
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
@@ -200,16 +203,18 @@ export default function EmployeeSalariesPage(): JSX.Element {
                   {format(new Date(s.effectiveFrom), 'MMM d, yyyy')}
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    className="text-cdy-red hover:underline"
-                    onClick={() => {
-                      setEditSalary(s);
-                      setModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </button>
+                  <PermissionGate feature="finance.payroll" action="write">
+                    <button
+                      type="button"
+                      className="text-cdy-red hover:underline"
+                      onClick={() => {
+                        setEditSalary(s);
+                        setModalOpen(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </PermissionGate>
                 </td>
               </tr>
             ))}

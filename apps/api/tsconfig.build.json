@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "compilerOptions": {
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "prisma/seeds/rbac.seed.ts"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts", "prisma/seed.ts"]
 }

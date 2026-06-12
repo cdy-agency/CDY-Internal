@@ -278,29 +278,31 @@ export default function CommissionsPage(): JSX.Element {
                     <CommissionStatusBadge status={c.status} />
                   </td>
                   <td className="relative px-4 py-3 text-right">
-                    {c.status === CommissionStatus.PENDING && (
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setActivePopover({ id: c.id, mode: 'approve' })
-                          }
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-[var(--cdy-danger)]"
-                          onClick={() =>
-                            setActivePopover({ id: c.id, mode: 'reject' })
-                          }
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    )}
+                    <PermissionGate feature="finance.commissions" action="write">
+                      {c.status === CommissionStatus.PENDING && (
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setActivePopover({ id: c.id, mode: 'approve' })
+                            }
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[var(--cdy-danger)]"
+                            onClick={() =>
+                              setActivePopover({ id: c.id, mode: 'reject' })
+                            }
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </PermissionGate>
                     {activePopover?.id === c.id && (
                       <ReviewPopover
                         commission={c}

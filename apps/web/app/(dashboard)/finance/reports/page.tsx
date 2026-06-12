@@ -24,6 +24,7 @@ import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
 
 const presets = buildPlPresets();
 const defaultPreset = presets[0];
@@ -116,6 +117,7 @@ export default function ReportsLandingPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-cdy-white">Reports</h1>
@@ -215,6 +217,7 @@ export default function ReportsLandingPage(): JSX.Element {
         />
       </div>
     </div>
+    </FeatureReadGate>
   );
 }
 

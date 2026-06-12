@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { serviceTypeLabel } from '@/lib/reportDates';
 import type { ApiResponse, CommissionRule, CommissionRuleGroup } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const SERVICE_TYPES = [
   '',
@@ -187,12 +188,14 @@ export default function CommissionRulesPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Commission Rules</h1>
-        <Button
-          className="bg-cdy-red hover:bg-cdy-red/90"
-          onClick={() => setDrawerOpen(true)}
-        >
-          Add Rule
-        </Button>
+        <PermissionGate feature="finance.commissions" action="write">
+          <Button
+            className="bg-cdy-red hover:bg-cdy-red/90"
+            onClick={() => setDrawerOpen(true)}
+          >
+            Add Rule
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="space-y-8">
@@ -236,20 +239,22 @@ export default function CommissionRulesPage(): JSX.Element {
                         {isRuleActive(rule) ? 'Active' : 'Inactive'}
                       </td>
                       <td className="px-4 py-3">
-                        {isRuleActive(rule) && (
-                          <button
-                            type="button"
-                            className="text-cdy-red hover:underline"
-                            onClick={() =>
-                              setDeactivateTarget({
-                                rule,
-                                agentName: group.agentName,
-                              })
-                            }
-                          >
-                            Deactivate
-                          </button>
-                        )}
+                        <PermissionGate feature="finance.commissions" action="write">
+                          {isRuleActive(rule) && (
+                            <button
+                              type="button"
+                              className="text-cdy-red hover:underline"
+                              onClick={() =>
+                                setDeactivateTarget({
+                                  rule,
+                                  agentName: group.agentName,
+                                })
+                              }
+                            >
+                              Deactivate
+                            </button>
+                          )}
+                        </PermissionGate>
                       </td>
                     </tr>
                   ))}

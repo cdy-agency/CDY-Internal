@@ -14,6 +14,7 @@ import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTabl
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import { RetainerStatus, type RetainerRecord } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function StatusBadge({ status }: { status: RetainerStatus }): JSX.Element {
   const map: Record<RetainerStatus, { label: string; className: string }> = {
@@ -93,20 +94,22 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                 Start: {format(new Date(retainer.startDate), 'MMM d, yyyy')}
                 {retainer.endDate && ` · Ends: ${format(new Date(retainer.endDate), 'MMM d, yyyy')}`}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {retainer.status === RetainerStatus.ACTIVE && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>Amend</Button>
-                    <Button variant="outline" size="sm" onClick={pause} disabled={actionLoading}>Pause</Button>
-                    <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
-                  </>
-                )}
-                {retainer.status === RetainerStatus.PAUSED && (
-                  <Button variant="outline" size="sm" onClick={resume} disabled={actionLoading}>
-                    {actionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Resume'}
-                  </Button>
-                )}
-              </div>
+              <PermissionGate feature="finance.retainers" action="write">
+                <div className="flex flex-wrap gap-2">
+                  {retainer.status === RetainerStatus.ACTIVE && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>Amend</Button>
+                      <Button variant="outline" size="sm" onClick={pause} disabled={actionLoading}>Pause</Button>
+                      <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
+                    </>
+                  )}
+                  {retainer.status === RetainerStatus.PAUSED && (
+                    <Button variant="outline" size="sm" onClick={resume} disabled={actionLoading}>
+                      {actionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Resume'}
+                    </Button>
+                  )}
+                </div>
+              </PermissionGate>
             </div>
           </td>
         </tr>
@@ -131,9 +134,11 @@ export default function RetainersPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Recurring Revenue</h1>
-        <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setDrawerOpen(true)}>
-          Add Retainer
-        </Button>
+        <PermissionGate feature="finance.retainers" action="write">
+          <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setDrawerOpen(true)}>
+            Add Retainer
+          </Button>
+        </PermissionGate>
       </div>
 
       {summary && (

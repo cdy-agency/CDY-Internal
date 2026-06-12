@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { cn } from '@/lib/utils';
 import type { BalanceSheetManualEntry } from '@cdy/shared';
+import { FeatureReadGate } from '@/components/FeatureReadGate';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function pctChange(current: number, previous: number): string {
   if (previous === 0) return current > 0 ? '+100%' : '0%';
@@ -193,6 +195,7 @@ export default function BalanceSheetPage(): JSX.Element {
   }
 
   return (
+    <FeatureReadGate feature="finance.reports" featureName="Financial Reports">
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -272,24 +275,26 @@ export default function BalanceSheetPage(): JSX.Element {
                 <span className="text-right text-cdy-white">
                   {formatCurrency(entry.amount)}
                 </span>
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="text-xs text-cdy-red hover:underline"
-                    onClick={() =>
-                      setEntryModal({ type: 'ASSET', entry })
-                    }
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs text-cdy-muted hover:underline"
-                    onClick={() => void deleteEntry(entry.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
+                <PermissionGate feature="finance.reports" action="write">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="text-xs text-cdy-red hover:underline"
+                      onClick={() =>
+                        setEntryModal({ type: 'ASSET', entry })
+                      }
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-cdy-muted hover:underline"
+                      onClick={() => void deleteEntry(entry.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </PermissionGate>
               </div>
             ))}
 
@@ -299,13 +304,15 @@ export default function BalanceSheetPage(): JSX.Element {
                 {formatCurrency(data.assets.totalAssets)}
               </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEntryModal({ type: 'ASSET' })}
-            >
-              + Add Asset
-            </Button>
+            <PermissionGate feature="finance.reports" action="write">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEntryModal({ type: 'ASSET' })}
+              >
+                + Add Asset
+              </Button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -330,22 +337,24 @@ export default function BalanceSheetPage(): JSX.Element {
                   <span className="text-cdy-white">
                     {formatCurrency(entry.amount)}
                   </span>
-                  <button
-                    type="button"
-                    className="text-xs text-cdy-red hover:underline"
-                    onClick={() =>
-                      setEntryModal({ type: 'LIABILITY', entry })
-                    }
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs text-cdy-muted hover:underline"
-                    onClick={() => void deleteEntry(entry.id)}
-                  >
-                    Delete
-                  </button>
+                  <PermissionGate feature="finance.reports" action="write">
+                    <button
+                      type="button"
+                      className="text-xs text-cdy-red hover:underline"
+                      onClick={() =>
+                        setEntryModal({ type: 'LIABILITY', entry })
+                      }
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-cdy-muted hover:underline"
+                      onClick={() => void deleteEntry(entry.id)}
+                    >
+                      Delete
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
@@ -372,13 +381,15 @@ export default function BalanceSheetPage(): JSX.Element {
                 </span>
               </p>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEntryModal({ type: 'LIABILITY' })}
-            >
-              + Add Liability
-            </Button>
+            <PermissionGate feature="finance.reports" action="write">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEntryModal({ type: 'LIABILITY' })}
+              >
+                + Add Liability
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>
@@ -422,5 +433,6 @@ export default function BalanceSheetPage(): JSX.Element {
         />
       )}
     </div>
+    </FeatureReadGate>
   );
 }

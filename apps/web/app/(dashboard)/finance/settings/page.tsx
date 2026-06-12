@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { PermissionGate } from '@/components/PermissionGate';
 
 type Tab = 'general' | 'invoice' | 'payroll' | 'tax';
 
@@ -182,23 +183,25 @@ export default function FinanceSettingsPage(): JSX.Element {
               ))}
             </select>
           </label>
-          <Button
-            className="bg-cdy-red hover:bg-cdy-red/90"
-            disabled={saving}
-            onClick={() =>
-              void saveKeys([
-                'company_name',
-                'company_address',
-                'company_email',
-                'company_phone',
-                'default_currency',
-                'default_payment_terms',
-                'fiscal_year_start',
-              ])
-            }
-          >
-            Save General Settings
-          </Button>
+          <PermissionGate feature="finance.settings" action="write">
+            <Button
+              className="bg-cdy-red hover:bg-cdy-red/90"
+              disabled={saving}
+              onClick={() =>
+                void saveKeys([
+                  'company_name',
+                  'company_address',
+                  'company_email',
+                  'company_phone',
+                  'default_currency',
+                  'default_payment_terms',
+                  'fiscal_year_start',
+                ])
+              }
+            >
+              Save General Settings
+            </Button>
+          </PermissionGate>
         </div>
       )}
 
@@ -228,15 +231,17 @@ export default function FinanceSettingsPage(): JSX.Element {
               className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-cdy-white"
             />
           </label>
-          <Button
-            className="bg-cdy-red hover:bg-cdy-red/90"
-            disabled={saving}
-            onClick={() =>
-              void saveKeys(['invoice_prefix', 'invoice_footer_note'])
-            }
-          >
-            Save Invoice Settings
-          </Button>
+          <PermissionGate feature="finance.settings" action="write">
+            <Button
+              className="bg-cdy-red hover:bg-cdy-red/90"
+              disabled={saving}
+              onClick={() =>
+                void saveKeys(['invoice_prefix', 'invoice_footer_note'])
+              }
+            >
+              Save Invoice Settings
+            </Button>
+          </PermissionGate>
         </div>
       )}
 
@@ -266,15 +271,17 @@ export default function FinanceSettingsPage(): JSX.Element {
               className="mt-1"
             />
           </label>
-          <Button
-            className="bg-cdy-red hover:bg-cdy-red/90"
-            disabled={saving}
-            onClick={() =>
-              void saveKeys(['payroll_approver_id', 'payroll_tax_rate'])
-            }
-          >
-            Save Payroll Settings
-          </Button>
+          <PermissionGate feature="finance.settings" action="write">
+            <Button
+              className="bg-cdy-red hover:bg-cdy-red/90"
+              disabled={saving}
+              onClick={() =>
+                void saveKeys(['payroll_approver_id', 'payroll_tax_rate'])
+              }
+            >
+              Save Payroll Settings
+            </Button>
+          </PermissionGate>
         </div>
       )}
 
@@ -284,12 +291,14 @@ export default function FinanceSettingsPage(): JSX.Element {
             <p className="text-sm text-cdy-muted">
               Manage tax rates applied to invoices and retainers.
             </p>
-            <Button
-              className="bg-cdy-red hover:bg-cdy-red/90"
-              onClick={() => setTaxModalOpen(true)}
-            >
-              Add Tax Rate
-            </Button>
+            <PermissionGate feature="finance.tax" action="write">
+              <Button
+                className="bg-cdy-red hover:bg-cdy-red/90"
+                onClick={() => setTaxModalOpen(true)}
+              >
+                Add Tax Rate
+              </Button>
+            </PermissionGate>
           </div>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
             <table className="w-full text-sm">
