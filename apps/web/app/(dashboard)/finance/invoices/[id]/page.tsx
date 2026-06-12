@@ -269,7 +269,19 @@ export default function InvoiceDetailPage(): JSX.Element {
               <p className="mb-1 text-xs uppercase tracking-wide text-cdy-muted">
                 Bill To
               </p>
-              <p className="font-medium text-cdy-white">{invoice.clientId}</p>
+              {invoice.client ? (
+                <div className="text-cdy-white">
+                  <p className="font-medium">{invoice.client.companyName}</p>
+                  <p className="text-sm text-cdy-muted">{invoice.client.contactName}</p>
+                  <p className="text-sm text-cdy-muted">{invoice.client.email}</p>
+                  {invoice.client.phone && (
+                    <p className="text-sm text-cdy-muted">{invoice.client.phone}</p>
+                  )}
+                  <p className="text-sm text-cdy-muted">{invoice.client.country}</p>
+                </div>
+              ) : (
+                <p className="font-medium text-cdy-white">{invoice.clientId}</p>
+              )}
             </div>
 
             <div className="overflow-x-auto">

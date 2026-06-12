@@ -8,6 +8,8 @@ import { BillAlertsJob } from './jobs/bill-alerts.job';
 import { PaymentPlanAlertsJob } from './jobs/payment-plan-alerts.job';
 import { RetainerBillingJob } from './jobs/retainer-billing.job';
 import { BudgetAlertsJob } from './jobs/budget-alerts.job';
+import { ProposalExpiryJob } from './jobs/proposal-expiry.job';
+import { CrmFollowUpRemindersJob } from './jobs/crm-follow-up-reminders.job';
 
 @Module({
   imports: [InvoicesModule, RetainersModule, BudgetModule],
@@ -18,6 +20,8 @@ import { BudgetAlertsJob } from './jobs/budget-alerts.job';
     PaymentPlanAlertsJob,
     RetainerBillingJob,
     BudgetAlertsJob,
+    ProposalExpiryJob,
+    CrmFollowUpRemindersJob,
   ],
   exports: [
     OverdueInvoicesJob,
@@ -26,6 +30,8 @@ import { BudgetAlertsJob } from './jobs/budget-alerts.job';
     PaymentPlanAlertsJob,
     RetainerBillingJob,
     BudgetAlertsJob,
+    ProposalExpiryJob,
+    CrmFollowUpRemindersJob,
   ],
 })
 export class AutomationModule {}

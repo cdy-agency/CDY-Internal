@@ -5,6 +5,7 @@ import { ChevronRight, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotificationDrawer } from '@/components/notifications/NotificationDrawer';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
+import { ModuleSwitcher } from '@/components/layout/ModuleSwitcher';
 
 interface FinanceTopbarProps {
   title: string;
@@ -34,6 +35,7 @@ export function FinanceTopbar({
           <h1 className="text-xl font-semibold text-cdy-white">{title}</h1>
         </div>
         <div className="flex items-center gap-3">
+          <ModuleSwitcher />
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}

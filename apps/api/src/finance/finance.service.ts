@@ -89,6 +89,8 @@ export class FinanceService {
       taxOwed,
       blockedProjects,
       venturesMtd,
+      totalClients,
+      newClientsThisMonth,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -125,6 +127,10 @@ export class FinanceService {
       this.computeCurrentMonthTaxOwed(currentMonthStart, currentMonthEnd),
       this.countBlockedProjects(),
       this.venturesService.getMtdTotals(currentMonthStart, currentMonthEnd),
+      this.prisma.client.count({ where: { deletedAt: null } }),
+      this.prisma.client.count({
+        where: { deletedAt: null, createdAt: { gte: currentMonthStart } },
+      }),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -172,6 +178,8 @@ export class FinanceService {
       retainersUpForRenewal,
       taxOwed,
       blockedProjects,
+      totalClients,
+      newClientsThisMonth,
       cashFlowAlert,
       ventures: venturesMtd,
       previousMonth: previousMetrics,
