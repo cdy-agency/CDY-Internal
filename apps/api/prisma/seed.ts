@@ -11,10 +11,23 @@ import {
 import * as bcrypt from 'bcrypt';
 import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
 import { seedHrData } from './seeds/hr.seed';
+import { seedProjectsData } from './seeds/projects.seed';
 
 const prisma = new PrismaClient();
 
 async function clearAllData(): Promise<void> {
+  await prisma.taskComment.deleteMany();
+  await prisma.projectReport.deleteMany();
+  await prisma.deliverableApproval.deleteMany();
+  await prisma.projectActivity.deleteMany();
+  await prisma.hourlyRate.deleteMany();
+  await prisma.taskStatusHistory.deleteMany();
+  await prisma.timeEntry.deleteMany();
+  await prisma.projectFile.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.milestone.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.project.deleteMany();
   await prisma.proposal.deleteMany();
   await prisma.leadActivity.deleteMany();
   await prisma.pipelineStageHistory.deleteMany();
@@ -480,8 +493,14 @@ async function main(): Promise<void> {
     financeManager.id,
   );
 
+  await seedProjectsData(
+    prisma,
+    { ceo, financeManager, salesAgent },
+    ceo.id,
+  );
+
   process.stdout.write(
-    'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com, it@cdy.com (password: CDY@2026!)\n',
+    'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com, it@cdy.com, pm@cdy.com, james@cdy.com, nadia@cdy.com (password: CDY@2026!)\n',
   );
 }
 

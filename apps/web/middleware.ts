@@ -37,6 +37,18 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/hr\/attendance/, feature: 'hr.attendance', action: 'read' },
   { pattern: /^\/hr\/settings/, feature: 'hr.settings', action: 'read' },
   { pattern: /^\/hr/, feature: 'hr.employees', action: 'read' },
+  { pattern: /^\/projects\/time/, feature: 'projects.time', action: 'read' },
+  { pattern: /^\/projects\/workload/, feature: 'projects.reports', action: 'read' },
+  { pattern: /^\/projects\/reports/, feature: 'projects.reports', action: 'read' },
+  { pattern: /^\/projects\/my/, feature: 'projects.own', action: 'read' },
+  { pattern: /^\/projects\/new/, feature: 'projects.all', action: 'write' },
+  { pattern: /^\/projects\/[^/]+\/handover/, feature: 'projects.all', action: 'read' },
+  { pattern: /^\/projects\/[^/]+\/profitability/, feature: 'projects.reports', action: 'read' },
+  { pattern: /^\/projects\/[^/]+\/approvals/, feature: 'projects.approvals', action: 'read' },
+  { pattern: /^\/projects\/[^/]+\/status-report/, feature: 'projects.all', action: 'read' },
+  { pattern: /^\/projects\/[^/]+\/milestones/, feature: 'projects.all', action: 'read' },
+  { pattern: /^\/projects\/[^/]+\/time/, feature: 'projects.time', action: 'read' },
+  { pattern: /^\/projects/, feature: 'projects.all', action: 'read' },
   { pattern: /^\/finance\/invoices/, feature: 'finance.invoices', action: 'read' },
   { pattern: /^\/finance\/payments/, feature: 'finance.payments', action: 'read' },
   { pattern: /^\/finance\/expenses/, feature: 'finance.expenses', action: 'read' },
@@ -79,7 +91,7 @@ export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr'))) {
+  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr') || pathname.startsWith('/projects'))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -124,5 +136,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/login'],
+  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/projects/:path*', '/login'],
 };

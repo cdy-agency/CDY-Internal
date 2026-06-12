@@ -131,6 +131,8 @@ model Invoice {
   updatedAt            DateTime      @updatedAt
   deletedAt            DateTime?
 
+  milestoneId          String?       @unique
+
   payments         Payment[]
   reminders        InvoiceReminder[]
   creditNotes      CreditNote[]
@@ -139,6 +141,7 @@ model Invoice {
   retainerContract RetainerContract? @relation("RetainerInvoices", fields: [retainerContractId], references: [id])
   creator          User              @relation(fields: [createdBy], references: [id])
   client           Client?           @relation("ClientInvoices", fields: [clientId], references: [id])
+  milestone        Milestone?        @relation(fields: [milestoneId], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -766,6 +769,7 @@ model Client {
 
   leads    Lead[]
   invoices Invoice[] @relation("ClientInvoices")
+  projects Project[]
 
   @@index([assignedTo])
   @@index([createdAt])
@@ -1251,4 +1255,334 @@ model HrAuditLog {
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ─── Projects Module (Sprint 15) ────────────────────────────────
+
+model Project {
+  id              String          @id @default(cuid())
+  projectCode     String          @unique
+  name            String
+  description     String?
+  clientId        String?
+  serviceType     String
+  status          ProjectStatus   @default(ACTIVE)
+  priority        ProjectPriority @default(MEDIUM)
+  managerId       String
+  startDate       DateTime
+  endDate         DateTime?
+  estimatedBudget Decimal?        @db.Decimal(12, 2)
+  currency        String          @default("USD")
+  completedAt     DateTime?
+  archivedAt      DateTime?
+  notes           String?
+  createdBy       String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  client      Client?         @relation(fields: [clientId], references: [id])
+  milestones  Milestone[]
+  tasks       Task[]
+  members     ProjectMember[]
+  timeEntries TimeEntry[]
+  files       ProjectFile[]
+  activities  ProjectActivity[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([managerId])
+  @@index([startDate])
+  @@index([status, createdAt])
+  @@index([clientId, status])
+  @@index([managerId, status])
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model ProjectMember {
+  id         String     @id @default(cuid())
+  projectId  String
+  employeeId String
+  role       MemberRole @default(MEMBER)
+  joinedAt   DateTime   @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, employeeId])
+  @@index([projectId])
+  @@index([employeeId])
+}
+
+enum MemberRole {
+  MANAGER
+  MEMBER
+  OBSERVER
+}
+
+model Milestone {
+  id            String          @id @default(cuid())
+  projectId     String
+  name          String
+  description   String?
+  dueDate       DateTime?
+  billingAmount Decimal?        @db.Decimal(12, 2)
+  currency      String          @default("USD")
+  status        MilestoneStatus @default(PENDING)
+  approvedAt    DateTime?
+  approvedBy    String?
+  order         Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+  invoice Invoice?
+
+  @@index([projectId])
+  @@index([status])
+  @@index([projectId, status])
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  APPROVED
+  INVOICED
+}
+
+model Task {
+  id               String          @id @default(cuid())
+  projectId        String
+  milestoneId      String?
+  parentTaskId     String?
+  title            String
+  description      String?
+  assigneeId       String?
+  priority         TaskPriority    @default(MEDIUM)
+  status           TaskStatus      @default(TODO)
+  dueDate          DateTime?
+  estimatedHours   Decimal?        @db.Decimal(6, 2)
+  completedAt      DateTime?
+  requiresApproval Boolean         @default(false)
+  approvalStatus   ApprovalStatus?
+  approvalNote     String?
+  order            Int             @default(0)
+  tags             String[]
+  createdBy        String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
+
+  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone     Milestone?          @relation(fields: [milestoneId], references: [id])
+  subTasks      Task[]              @relation("SubTasks")
+  parentTask    Task?               @relation("SubTasks", fields: [parentTaskId], references: [id])
+  statusHistory TaskStatusHistory[]
+  timeEntries   TimeEntry[]
+  comments      TaskComment[]
+  approvals     DeliverableApproval[]
+
+  @@index([projectId])
+  @@index([milestoneId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, status])
+  @@index([projectId, assigneeId, status])
+  @@index([assigneeId, dueDate])
+  @@index([milestoneId, status])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ApprovalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+model TaskStatusHistory {
+  id         String      @id @default(cuid())
+  taskId     String
+  fromStatus TaskStatus?
+  toStatus   TaskStatus
+  changedBy  String
+  note       String?
+  changedAt  DateTime    @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([changedAt])
+}
+
+model TaskComment {
+  id        String    @id @default(cuid())
+  taskId    String
+  authorId  String
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  projectId   String
+  taskId      String?
+  employeeId  String
+  date        DateTime
+  hours       Decimal  @db.Decimal(6, 2)
+  description String?
+  isBillable  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+  task    Task?   @relation(fields: [taskId], references: [id])
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([employeeId])
+  @@index([date])
+  @@index([projectId, date])
+  @@index([employeeId, date])
+  @@index([projectId, isBillable])
+}
+
+model ProjectFile {
+  id         String   @id @default(cuid())
+  projectId  String
+  taskId     String?
+  name       String
+  url        String
+  size       Int
+  mimeType   String
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([taskId])
+}
+
+// ─── Sprint 16: Approvals, Activity, Profitability ─────────────
+
+model DeliverableApproval {
+  id           String         @id @default(cuid())
+  taskId       String
+  projectId    String
+  title        String
+  description  String?
+  fileUrl      String?
+  status       ApprovalStatus @default(PENDING_APPROVAL)
+  requestedBy  String
+  requestedAt  DateTime       @default(now())
+  reviewedAt   DateTime?
+  reviewerNote String?
+  approvedBy   String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model ProjectActivity {
+  id        String            @id @default(cuid())
+  projectId String
+  userId    String
+  type      ActivityEventType
+  summary   String
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+  @@index([projectId, type])
+  @@index([projectId, createdAt])
+}
+
+enum ActivityEventType {
+  PROJECT_CREATED
+  PROJECT_STATUS_CHANGED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  MILESTONE_CREATED
+  MILESTONE_COMPLETED
+  MILESTONE_APPROVED
+  TASK_CREATED
+  TASK_STATUS_CHANGED
+  TASK_ASSIGNED
+  TASK_COMMENTED
+  TIME_LOGGED
+  FILE_UPLOADED
+  APPROVAL_REQUESTED
+  APPROVAL_GIVEN
+  APPROVAL_REJECTED
+}
+
+model HourlyRate {
+  id            String   @id @default(cuid())
+  employeeId    String   @unique
+  ratePerHour   Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD")
+  effectiveFrom DateTime @default(now())
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+// ─── Sprint 17: Project Reports ─────────────────────────────────
+
+model ProjectReport {
+  id          String   @id @default(cuid())
+  projectId   String
+  type        String
+  generatedAt DateTime @default(now())
+  generatedBy String
+  data        Json
+
+  @@index([projectId])
+  @@index([type])
 }

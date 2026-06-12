@@ -1752,3 +1752,705 @@ export interface CreatePerformanceReviewPayload {
   goalsSet?: object[];
   nextReviewDate?: string;
 }
+
+// ─── Projects Module (Sprint 15) ───────────────────────────────
+
+export enum ProjectStatus {
+  ACTIVE = 'ACTIVE',
+  ON_HOLD = 'ON_HOLD',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum ProjectPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+export enum TaskStatus {
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  BLOCKED = 'BLOCKED',
+  IN_REVIEW = 'IN_REVIEW',
+  DONE = 'DONE',
+}
+
+export enum TaskPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+export enum MilestoneStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  APPROVED = 'APPROVED',
+  INVOICED = 'INVOICED',
+}
+
+export enum MemberRole {
+  MANAGER = 'MANAGER',
+  MEMBER = 'MEMBER',
+  OBSERVER = 'OBSERVER',
+}
+
+export enum ApprovalStatus {
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
+  CHANGES_REQUESTED = 'CHANGES_REQUESTED',
+}
+
+export interface ProjectClientSummary {
+  companyName: string;
+  contactName: string;
+}
+
+export interface ProjectMemberSummary {
+  employeeId: string;
+  role: MemberRole;
+}
+
+export interface ProjectEmployeeSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  departmentName?: string | null;
+}
+
+export interface ProjectMilestoneSummary {
+  id: string;
+  status: MilestoneStatus;
+  name: string;
+}
+
+export interface ProjectRecord {
+  id: string;
+  projectCode: string;
+  name: string;
+  description: string | null;
+  clientId: string | null;
+  serviceType: string;
+  status: ProjectStatus;
+  priority: ProjectPriority;
+  managerId: string;
+  startDate: string;
+  endDate: string | null;
+  estimatedBudget: number | null;
+  currency: string;
+  completedAt: string | null;
+  archivedAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  client?: ProjectClientSummary | null;
+  manager?: ProjectEmployeeSummary;
+  members?: ProjectMemberSummary[];
+  milestones?: ProjectMilestoneSummary[];
+  _count?: { tasks: number };
+}
+
+export interface ProjectProgress {
+  totalTasks: number;
+  done: number;
+  inProgress: number;
+  blocked: number;
+  todo: number;
+  progressPercent: number;
+  milestones: Array<{
+    id: string;
+    name: string;
+    status: MilestoneStatus;
+    taskCount: number;
+    dueDate: string | null;
+  }>;
+}
+
+export interface UpcomingDeadline {
+  taskId: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  dueDate: string;
+  assigneeName: string;
+  priority: TaskPriority;
+}
+
+export interface MilestoneAwaitingApproval {
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  billingAmount: number;
+  currency: string;
+}
+
+export interface ProjectSummary {
+  totalProjects: number;
+  activeProjects: number;
+  onHold: number;
+  completedThisMonth: number;
+  totalTasks: number;
+  overdueTasks: number;
+  blockedTasks: number;
+  tasksCompletedThisWeek: number;
+  milestonesAwaitingApproval: number;
+  projectsByStatus: Record<ProjectStatus, number>;
+  projectsByServiceType: Record<string, number>;
+  upcomingDeadlines: UpcomingDeadline[];
+  milestonesPendingApproval: MilestoneAwaitingApproval[];
+}
+
+export interface MilestoneRecord {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  dueDate: string | null;
+  billingAmount: number | null;
+  currency: string;
+  status: MilestoneStatus;
+  invoiceId: string | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { tasks: number };
+  completedTaskCount?: number;
+}
+
+export interface TaskCommentRecord {
+  id: string;
+  taskId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author?: { firstName: string; lastName: string };
+}
+
+export interface TaskRecord {
+  id: string;
+  projectId: string;
+  milestoneId: string | null;
+  parentTaskId: string | null;
+  title: string;
+  description: string | null;
+  assigneeId: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate: string | null;
+  estimatedHours: number | null;
+  completedAt: string | null;
+  requiresApproval: boolean;
+  approvalStatus: ApprovalStatus | null;
+  approvalNote: string | null;
+  order: number;
+  tags: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  assignee?: ProjectEmployeeSummary | null;
+  milestone?: { id: string; name: string } | null;
+  subTasks?: TaskRecord[];
+  comments?: TaskCommentRecord[];
+  _count?: { comments: number; timeEntries: number };
+  loggedHours?: number;
+}
+
+export interface TaskStatusHistoryRecord {
+  id: string;
+  taskId: string;
+  fromStatus: TaskStatus | null;
+  toStatus: TaskStatus;
+  changedBy: string;
+  note: string | null;
+  changedAt: string;
+}
+
+export interface TimeEntryRecord {
+  id: string;
+  projectId: string;
+  taskId: string | null;
+  employeeId: string;
+  date: string;
+  hours: number;
+  description: string | null;
+  isBillable: boolean;
+  createdAt: string;
+  updatedAt: string;
+  task?: { id: string; title: string } | null;
+  employee?: ProjectEmployeeSummary;
+  project?: { id: string; name: string; projectCode: string };
+}
+
+export interface ProjectTimeSummary {
+  totalHours: number;
+  billableHours: number;
+  byEmployee: Record<string, number>;
+  entries: TimeEntryRecord[];
+}
+
+export interface MyTasksOverview {
+  overdue: number;
+  dueToday: number;
+  dueThisWeek: number;
+  totalOpen: number;
+}
+
+export interface MyTaskGroup {
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  tasks: TaskRecord[];
+}
+
+export interface MyTasksResponse {
+  overview: MyTasksOverview;
+  groups: MyTaskGroup[];
+}
+
+export interface CreateProjectPayload {
+  name: string;
+  description?: string;
+  clientId?: string;
+  serviceType: string;
+  priority?: ProjectPriority;
+  managerId: string;
+  startDate: string;
+  endDate?: string;
+  estimatedBudget?: number;
+  currency?: string;
+  notes?: string;
+  memberIds?: string[];
+}
+
+export interface UpdateProjectPayload {
+  name?: string;
+  description?: string;
+  clientId?: string | null;
+  serviceType?: string;
+  status?: ProjectStatus;
+  priority?: ProjectPriority;
+  managerId?: string;
+  startDate?: string;
+  endDate?: string | null;
+  estimatedBudget?: number | null;
+  currency?: string;
+  notes?: string | null;
+}
+
+export interface CreateMilestonePayload {
+  name: string;
+  description?: string;
+  dueDate?: string;
+  billingAmount?: number;
+  currency?: string;
+  order?: number;
+}
+
+export interface UpdateMilestonePayload {
+  name?: string;
+  description?: string;
+  dueDate?: string | null;
+  billingAmount?: number | null;
+  currency?: string;
+  order?: number;
+  status?: MilestoneStatus;
+}
+
+export interface CreateTaskPayload {
+  projectId: string;
+  milestoneId?: string;
+  parentTaskId?: string;
+  title: string;
+  description?: string;
+  assigneeId?: string;
+  priority?: TaskPriority;
+  dueDate?: string;
+  estimatedHours?: number;
+  requiresApproval?: boolean;
+  tags?: string[];
+}
+
+export interface UpdateTaskPayload {
+  title?: string;
+  description?: string;
+  milestoneId?: string | null;
+  assigneeId?: string | null;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+  estimatedHours?: number | null;
+  requiresApproval?: boolean;
+  tags?: string[];
+}
+
+export interface UpdateTaskStatusPayload {
+  status: TaskStatus;
+  note?: string;
+}
+
+export interface CreateTaskCommentPayload {
+  content: string;
+}
+
+export interface CreateTimeEntryPayload {
+  projectId: string;
+  taskId?: string;
+  employeeId: string;
+  date: string;
+  hours: number;
+  description?: string;
+  isBillable?: boolean;
+}
+
+export enum ActivityEventType {
+  PROJECT_CREATED = 'PROJECT_CREATED',
+  PROJECT_STATUS_CHANGED = 'PROJECT_STATUS_CHANGED',
+  MEMBER_ADDED = 'MEMBER_ADDED',
+  MEMBER_REMOVED = 'MEMBER_REMOVED',
+  MILESTONE_CREATED = 'MILESTONE_CREATED',
+  MILESTONE_COMPLETED = 'MILESTONE_COMPLETED',
+  MILESTONE_APPROVED = 'MILESTONE_APPROVED',
+  TASK_CREATED = 'TASK_CREATED',
+  TASK_STATUS_CHANGED = 'TASK_STATUS_CHANGED',
+  TASK_ASSIGNED = 'TASK_ASSIGNED',
+  TASK_COMMENTED = 'TASK_COMMENTED',
+  TIME_LOGGED = 'TIME_LOGGED',
+  FILE_UPLOADED = 'FILE_UPLOADED',
+  APPROVAL_REQUESTED = 'APPROVAL_REQUESTED',
+  APPROVAL_GIVEN = 'APPROVAL_GIVEN',
+  APPROVAL_REJECTED = 'APPROVAL_REJECTED',
+}
+
+export enum ApprovalDecision {
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+}
+
+export interface DeliverableApprovalRecord {
+  id: string;
+  taskId: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  fileUrl: string | null;
+  status: ApprovalStatus;
+  requestedBy: string;
+  requestedAt: string;
+  reviewedAt: string | null;
+  reviewerNote: string | null;
+  approvedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  taskTitle: string;
+  requestedByName?: string;
+}
+
+export interface ProjectActivityRecord {
+  id: string;
+  projectId: string;
+  userId: string;
+  userName: string;
+  type: ActivityEventType;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ProjectProfitability {
+  projectId: string;
+  projectName: string;
+  revenue: {
+    invoiced: number;
+    collected: number;
+    outstanding: number;
+  };
+  costs: {
+    labour: number;
+    directExpenses: number;
+    total: number;
+  };
+  time: {
+    totalHours: number;
+    billableHours: number;
+    utilisation: number;
+  };
+  profitability: {
+    grossProfit: number;
+    grossMargin: number;
+    isHealthy: boolean;
+  };
+  budget: {
+    approved: number;
+    consumed: number;
+    remaining: number;
+    percentConsumed: number | null;
+    alertThresholdPct: number;
+    isBlocked: boolean;
+  } | null;
+  milestones: Array<{
+    id: string;
+    name: string;
+    billingAmount: number;
+    status: MilestoneStatus;
+    invoiceId: string | null;
+    invoiceNumber: string | null;
+  }>;
+  milestoneBilling: {
+    total: number;
+    invoiced: number;
+    percentInvoiced: number;
+  };
+}
+
+export interface WorkloadTaskItem {
+  id: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  priority: TaskPriority;
+  dueDate: string | null;
+  status: TaskStatus;
+  estimatedHours: number | null;
+}
+
+export interface WorkloadEmployeeItem {
+  employeeId: string;
+  employeeName: string;
+  departmentName: string | null;
+  taskCount: number;
+  overdueCount: number;
+  urgentCount: number;
+  estimatedHours: number;
+  load: 'HIGH' | 'MEDIUM' | 'NORMAL';
+  tasks: WorkloadTaskItem[];
+}
+
+export interface TeamWorkloadResponse {
+  totalActiveTasks: number;
+  assignedEmployees: number;
+  overdueTasks: number;
+  blockedTasks: number;
+  workload: WorkloadEmployeeItem[];
+}
+
+export interface ProjectStatusReport {
+  generatedAt: string;
+  project: {
+    code: string;
+    name: string;
+    client: string | null;
+    status: ProjectStatus;
+    startDate: string;
+    endDate: string | null;
+  };
+  progress: {
+    overall: number;
+    taskBreakdown: {
+      total: number;
+      done: number;
+      inProgress: number;
+      blocked: number;
+      todo: number;
+    };
+  };
+  milestones: Array<{
+    name: string;
+    status: MilestoneStatus;
+    dueDate: string | null;
+    tasksDone: number;
+    tasksTotal: number;
+    billingAmount: number | null;
+  }>;
+  financials: {
+    invoicedRevenue: number;
+    collectedRevenue: number;
+    totalCosts: number;
+    grossMargin: number;
+  };
+  blockedItems: Array<{ title: string; dueDate: string | null }>;
+  upcomingDeadlines: Array<{
+    title: string;
+    dueDate: string | null;
+    priority: TaskPriority;
+  }>;
+  recentActivity: Array<{ summary: string; createdAt: string }>;
+}
+
+export interface RequestApprovalPayload {
+  title: string;
+  description?: string;
+  fileUrl?: string;
+}
+
+export interface RecordApprovalPayload {
+  decision: ApprovalDecision;
+  note?: string;
+}
+
+export interface HourlyRateRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  ratePerHour: number;
+  currency: string;
+  effectiveFrom: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Sprint 17: Reports & Completion ───────────────────────────
+
+export type ProjectHealth = 'ON_TRACK' | 'NEEDS_ATTENTION' | 'AT_RISK';
+
+export interface PortfolioReportFilters {
+  status?: ProjectStatus;
+  serviceType?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface PortfolioHealthProject {
+  projectId: string;
+  projectCode: string;
+  name: string;
+  client: string | null;
+  serviceType: string;
+  progress: number;
+  totalTasks: number;
+  overdueTaskCount: number;
+  blockedTasks: number;
+  endDate: string | null;
+  health: ProjectHealth;
+}
+
+export interface PortfolioReport {
+  generatedAt: string;
+  filters: PortfolioReportFilters;
+  summary: {
+    totalProjects: number;
+    byStatus: {
+      active: number;
+      onHold: number;
+      completed: number;
+      cancelled: number;
+    };
+    byServiceType: Record<string, number>;
+    serviceRevenue: Record<string, number>;
+    totalRevenuePotential: number;
+    totalRevenueInvoiced: number;
+  };
+  activeProjects: {
+    onTrack: number;
+    needsAttention: number;
+    atRisk: number;
+    projects: PortfolioHealthProject[];
+  };
+}
+
+export interface BudgetVsActualRow {
+  projectId: string;
+  projectCode: string | null;
+  name: string | null;
+  client: string | null;
+  serviceType: string | null;
+  status: ProjectStatus | null;
+  approvedBudget: number;
+  actualCosts: number;
+  labourCost: number;
+  directCosts: number;
+  variance: number;
+  variancePercent: number;
+  isOverBudget: boolean;
+  isBlocked: boolean;
+}
+
+export interface BudgetVsActualReport {
+  generatedAt: string;
+  totals: {
+    totalApprovedBudget: number;
+    totalActualCosts: number;
+    totalVariance: number;
+    projectsOverBudget: number;
+  };
+  projects: BudgetVsActualRow[];
+}
+
+export interface CompleteProjectPayload {
+  acknowledgeIncompleteTasks?: boolean;
+  acknowledgeUninvoicedMilestones?: boolean;
+  completionNotes?: string;
+}
+
+export interface TaskImportResult {
+  imported: number;
+  errors: string[];
+}
+
+export interface HandoverReport {
+  type: 'handover';
+  generatedAt: string;
+  generatedBy: string;
+  project: {
+    code: string;
+    name: string;
+    description: string | null;
+    serviceType: string;
+    startDate: string;
+    completedAt: string | null;
+    totalDuration: number | null;
+  };
+  client: {
+    company: string;
+    contact: string | null;
+    email: string;
+  } | null;
+  deliverables: {
+    milestones: Array<{
+      name: string;
+      status: MilestoneStatus;
+      billingAmount: number | null;
+      taskCount: number;
+      tasksCompleted: number;
+      tasks: Array<{
+        title: string;
+        status: TaskStatus;
+        completedAt: string | null;
+      }>;
+    }>;
+    approvedDeliverables: Array<{
+      title: string;
+      task: string;
+      approvedAt: string | null;
+      fileUrl: string | null;
+    }>;
+    files: Array<{
+      name: string;
+      url: string;
+      uploadedAt: string;
+    }>;
+  };
+  financials: {
+    totalBudget: number;
+    totalInvoiced: number;
+    totalCollected: number;
+    totalCosts: number;
+    grossMargin: number;
+  };
+  teamSummary: {
+    totalHours: number;
+    billableHours: number;
+    totalLabourCost: number;
+    teamSize: number;
+  };
+  notes: string | null;
+}
