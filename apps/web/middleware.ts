@@ -16,6 +16,14 @@ const ROUTE_PERMISSIONS: Array<{
   feature: string;
   action: 'read' | 'write';
 }> = [
+  { pattern: /^\/crm\/pipeline/, feature: 'crm.pipeline', action: 'read' },
+  { pattern: /^\/crm\/leads/, feature: 'crm.leads', action: 'read' },
+  { pattern: /^\/crm\/proposals/, feature: 'crm.proposals', action: 'read' },
+  { pattern: /^\/crm\/clients/, feature: 'crm.clients', action: 'read' },
+  { pattern: /^\/crm\/reports/, feature: 'crm.reports', action: 'read' },
+  { pattern: /^\/crm\/settings/, feature: 'crm.reports', action: 'read' },
+  { pattern: /^\/crm\/audit/, feature: 'crm.reports', action: 'read' },
+  { pattern: /^\/crm/, feature: 'crm.pipeline', action: 'read' },
   { pattern: /^\/finance\/invoices/, feature: 'finance.invoices', action: 'read' },
   { pattern: /^\/finance\/payments/, feature: 'finance.payments', action: 'read' },
   { pattern: /^\/finance\/expenses/, feature: 'finance.expenses', action: 'read' },
@@ -59,7 +67,7 @@ export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it'))) {
+  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm'))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -104,5 +112,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/finance/:path*', '/it/:path*', '/login'],
+  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/login'],
 };

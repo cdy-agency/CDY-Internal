@@ -15,6 +15,7 @@ import { SettingsModule } from './settings/settings.module';
 import { SettingsService } from './settings/settings.service';
 import { CacheModule } from './cache/cache.module';
 import { RbacModule } from './rbac/rbac.module';
+import { CrmModule } from './crm/crm.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RbacModule } from './rbac/rbac.module';
     AuditModule,
     NotificationsModule,
     FinanceModule,
+    CrmModule,
     AutomationModule,
     DebugModule,
     SettingsModule,

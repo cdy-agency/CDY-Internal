@@ -24,6 +24,8 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   retainersUpForRenewal!: number;
   taxOwed!: number;
   blockedProjects!: number;
+  totalClients!: number;
+  newClientsThisMonth!: number;
   cashFlowAlert!: boolean;
   ventures!: {
     count: number;

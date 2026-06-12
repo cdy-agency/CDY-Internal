@@ -1,4 +1,4 @@
-export enum Role {
+﻿export enum Role {
   CEO = 'CEO',
   FINANCE_MANAGER = 'FINANCE_MANAGER',
   SALES_AGENT = 'SALES_AGENT',
@@ -166,6 +166,8 @@ export interface FinanceSummary {
   retainersUpForRenewal: number;
   taxOwed: number;
   blockedProjects: number;
+  totalClients: number;
+  newClientsThisMonth: number;
   cashFlowAlert: boolean;
   ventures: {
     count: number;
@@ -396,6 +398,15 @@ export interface InvoiceRecord {
   id: string;
   invoiceNumber: string;
   clientId: string;
+  client?: {
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+    country: string;
+    city: string | null;
+    address: string | null;
+  } | null;
   projectId: string | null;
   status: InvoiceStatus;
   lineItems: LineItem[];
@@ -991,4 +1002,395 @@ export interface AllVenturesSummary {
     totalNetProfit: number;
   };
   ventures: VentureCardSummary[];
+}
+
+export enum LeadSource {
+  WEBSITE = 'WEBSITE',
+  REFERRAL = 'REFERRAL',
+  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
+  COLD_OUTREACH = 'COLD_OUTREACH',
+  EVENT = 'EVENT',
+  PARTNER = 'PARTNER',
+  RETURNING_CLIENT = 'RETURNING_CLIENT',
+  OTHER = 'OTHER',
+}
+
+export enum PipelineStage {
+  NEW = 'NEW',
+  CONTACTED = 'CONTACTED',
+  PROPOSAL_SENT = 'PROPOSAL_SENT',
+  NEGOTIATION = 'NEGOTIATION',
+  CLOSED_WON = 'CLOSED_WON',
+  CLOSED_LOST = 'CLOSED_LOST',
+}
+
+export enum ActivityType {
+  CALL = 'CALL',
+  EMAIL = 'EMAIL',
+  MEETING = 'MEETING',
+  WHATSAPP = 'WHATSAPP',
+  NOTE = 'NOTE',
+}
+
+export enum ProposalStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+}
+
+export interface LeadRecord {
+  id: string;
+  contactName: string;
+  companyName: string;
+  email: string;
+  phone: string | null;
+  country: string;
+  serviceInterest: string;
+  source: LeadSource;
+  estimatedValue: number | null;
+  currency: string;
+  stage: PipelineStage;
+  qualityScore: number | null;
+  assignedTo: string | null;
+  clientId: string | null;
+  notes: string | null;
+  lostReason: string | null;
+  convertedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadActivityRecord {
+  id: string;
+  leadId: string;
+  type: ActivityType;
+  summary: string;
+  outcome: string | null;
+  nextAction: string | null;
+  nextActionDate: string | null;
+  duration: number | null;
+  performedBy: string;
+  performedAt: string;
+  createdAt: string;
+}
+
+export interface ProposalRecord {
+  id: string;
+  leadId: string;
+  title: string;
+  serviceType: string;
+  estimatedValue: number;
+  currency: string;
+  status: ProposalStatus;
+  sentAt: string | null;
+  expiresAt: string | null;
+  acceptedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  lead?: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    assignedTo: string | null;
+  };
+}
+
+export interface ClientRecord {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string | null;
+  country: string;
+  city: string | null;
+  address: string | null;
+  website: string | null;
+  industry: string | null;
+  notes: string | null;
+  assignedTo: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  financeSummary?: {
+    totalInvoiced: number;
+    invoiceCount: number;
+    outstanding: number;
+  };
+}
+
+export interface ClientSearchResult {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  country: string;
+}
+
+export interface PipelineColumn {
+  stage: PipelineStage;
+  leads: LeadRecord[];
+  totalValue: number;
+  count: number;
+}
+
+export interface CrmSummary {
+  totalLeads: number;
+  totalLeadsThisMonth: number;
+  totalInPipeline: number;
+  totalClosedWonThisMonth: number;
+  totalClosedLostThisMonth: number;
+  totalPipelineValue: number;
+  conversionRate: number;
+  totalClients: number;
+  averageQualityScore: number;
+  leadsByStage: Record<PipelineStage, number>;
+  leadsBySource: Record<LeadSource, number>;
+  topAgents: Array<{
+    agentId: string;
+    agentName: string;
+    closedWon: number;
+    totalValue: number;
+  }>;
+  recentActivities: Array<{
+    id: string;
+    leadId: string;
+    type: ActivityType;
+    summary: string;
+    performedAt: string;
+    companyName: string;
+    performedByName: string;
+  }>;
+  overdueFollowUps: Array<{
+    leadId: string;
+    companyName: string;
+    nextAction: string;
+    nextActionDate: string;
+  }>;
+  proposalsSent: number;
+  proposalsAccepted: number;
+  proposalAcceptanceRate: number;
+  leadsWithOverdueFollowUp: number;
+  avgDaysToClose: number;
+  pipelineValueByStage: Record<PipelineStage, number>;
+}
+
+export interface PipelineStageHistoryRecord {
+  id: string;
+  leadId: string;
+  fromStage: PipelineStage | null;
+  toStage: PipelineStage;
+  movedBy: string;
+  movedByName?: string;
+  movedAt: string;
+  daysInPrev: number | null;
+}
+
+export interface LeadOverdueFollowUp {
+  nextAction: string;
+  nextActionDate: string;
+  daysOverdue: number;
+}
+
+export interface AgentDashboard {
+  month: string;
+  target: SalesTargetRecord | null;
+  performance: {
+    revenueWon: number;
+    dealsWon: number;
+    revenueProgress: number | null;
+    dealsProgress: number | null;
+  };
+  closedDeals: Array<{
+    id: string;
+    companyName: string;
+    estimatedValue: number | null;
+    convertedAt: string | null;
+    serviceInterest: string;
+  }>;
+  pipeline: {
+    openLeads: number;
+    pipelineValue: number;
+  };
+  commission: {
+    total: number;
+    approved: number;
+    pending: number;
+    records: Array<{
+      id: string;
+      dealId: string;
+      dealValue: number;
+      ratePercent: number;
+      calculatedAmount: number;
+      adjustedAmount: number | null;
+      status: string;
+      companyName: string;
+    }>;
+  };
+  activities: number;
+  activitiesByType: Record<string, number>;
+  overdueFollowUps: number;
+  overdueItems: Array<{
+    leadId: string;
+    companyName: string;
+    nextAction: string;
+    nextActionDate: string;
+  }>;
+}
+
+export interface SalesTargetRecord {
+  id: string;
+  agentId: string;
+  month: string;
+  revenueTarget: number;
+  dealsTarget: number;
+  currency: string;
+  setBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthlyTargetPerformance extends SalesTargetRecord {
+  agentName: string;
+  actual: { dealsWon: number; revenueWon: number };
+  revenueProgress: number;
+  dealsProgress: number;
+  commissionTotal: number;
+}
+
+export interface ConversionReport {
+  period: { from: string; to: string };
+  funnel: {
+    totalCreated: number;
+    byStage: Partial<Record<PipelineStage, number>>;
+    closedWon: number;
+    closedLost: number;
+  };
+  metrics: {
+    conversionRate: number;
+    totalRevenue: number;
+    avgDealValue: number;
+    totalClosed: number;
+    avgDaysToClose: number;
+  };
+  lostReasons: Array<{ reason: string; count: number }>;
+  bySource: Array<{
+    source: LeadSource;
+    count: number;
+    revenue: number;
+  }>;
+  agentPerformance: Array<{
+    agentId: string;
+    agentName: string;
+    dealsWon: number;
+    revenue: number;
+  }>;
+}
+
+export interface ClientActivityRecord extends LeadActivityRecord {
+  performedByName: string;
+  leadCompanyName: string;
+}
+
+export interface ClientInvoiceSummary {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  status: string;
+  dueDate: string;
+  currency: string;
+  createdAt: string;
+}
+
+export interface CrmAuditLogRecord {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  previousValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface CrmAuditLogResponse {
+  data: CrmAuditLogRecord[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface SavedFilterRecord {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, unknown>;
+  module: string;
+  createdAt: string;
+}
+
+export interface CrmScoreWeights {
+  source: number;
+  value: number;
+  contact: number;
+  engagement: number;
+}
+
+export interface SalesPerformanceReport {
+  period: { from: string; to: string };
+  totals: {
+    totalRevenue: number;
+    totalDealsWon: number;
+    totalCommission: number;
+    avgConversionRate: number;
+  };
+  agents: Array<{
+    agentId: string;
+    agentName: string;
+    email: string;
+    performance: {
+      dealsWon: number;
+      dealsLost: number;
+      totalRevenue: number;
+      avgDealValue: number;
+      conversionRate: number;
+      activitiesCount: number;
+      proposalsSent: number;
+      totalCommission: number;
+    };
+    target: {
+      revenueTarget: number;
+      dealsTarget: number;
+      revenueProgress: number | null;
+      dealsProgress: number | null;
+    } | null;
+    deals: Array<{
+      serviceType: string;
+      value: number;
+      source: LeadSource;
+      closedAt: string | null;
+    }>;
+  }>;
+}
+
+export interface SourceAnalysisReport {
+  period: { from: string; to: string };
+  sources: Array<{
+    source: LeadSource;
+    totalLeads: number;
+    dealsWon: number;
+    dealsLost: number;
+    totalRevenue: number;
+    conversionRate: number;
+    avgDealValue: number;
+  }>;
 }

@@ -72,3 +72,34 @@ Execute every item in the Production smoke test section of QA_CHECKLIST.md
 ### 5. Rollback (if needed)
 - Railway: Dashboard → Deployments → previous deployment → Redeploy
 - Vercel: Dashboard → Deployments → previous deployment → Promote to Production
+
+## v1.0.0-crm Release
+
+### New in v1.0.0-crm
+
+- Full CRM pipeline from lead to closed deal
+- Automatic Finance integration on deal closure
+- Sales agent personal dashboards with target tracking
+- Conversion reports, sales performance, source analysis
+- Proposal tracking, bulk lead actions, CSV export
+- CRM settings (lost reasons, score weights)
+
+### Migration
+
+```bash
+railway run npx prisma migrate deploy
+```
+
+### Seed CRM settings (once)
+
+```bash
+# CRM settings seed on bootstrap — no manual step needed
+# onApplicationBootstrap() seeds defaults automatically
+```
+
+### Tag and deploy
+
+```bash
+git tag v1.0.0-crm
+git push origin main --tags
+```
