@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   CommissionStatus,
+  EmployeeStatus,
   PayrollRun,
   PayrollStatus,
   Prisma,
@@ -47,9 +48,7 @@ export class PayrollService {
       );
     }
 
-    const salaries = await this.prisma.employeeSalary.findMany({
-      where: { isActive: true },
-    });
+    const salaries = await this.getActivePayrollSalaries(month);
 
     if (salaries.length === 0) {
       throw new BadRequestException(
@@ -348,10 +347,20 @@ export class PayrollService {
   }
 
   async findAllSalaries() {
-    const salaries = await this.prisma.employeeSalary.findMany({
-      orderBy: { employeeName: 'asc' },
-    });
-    return salaries.map((s) => this.serializeSalary(s));
+    const salaries = await this.getActivePayrollSalaries();
+    return salaries.map((s) => ({
+      id: s.employeeId,
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
+      employeeEmail: s.employeeEmail,
+      baseSalary: Number(s.baseSalary),
+      currency: s.currency,
+      effectiveFrom: s.effectiveFrom.toISOString(),
+      isActive: true,
+      createdBy: 'hr',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
   }
 
   async updateSalary(id: string, dto: UpdateEmployeeSalaryDto) {
@@ -381,9 +390,7 @@ export class PayrollService {
   }
 
   async getPayrollPreview(month: string) {
-    const salaries = await this.prisma.employeeSalary.findMany({
-      where: { isActive: true },
-    });
+    const salaries = await this.getActivePayrollSalaries();
     const commissions = await this.prisma.commissionRecord.findMany({
       where: { month, status: CommissionStatus.APPROVED },
     });
@@ -418,6 +425,71 @@ export class PayrollService {
       agentCount,
       estimatedTotalNet: Number(estimatedNet.toFixed(2)),
     };
+  }
+
+  private parseMonthEnd(month: string): Date {
+    const [yearStr, monthStr] = month.split('-');
+    const year = Number(yearStr);
+    const m = Number(monthStr);
+    return new Date(year, m, 0, 23, 59, 59, 999);
+  }
+
+  private async getActivePayrollSalaries(month?: string): Promise<
+    Array<{
+      employeeId: string;
+      employeeName: string;
+      employeeEmail: string;
+      baseSalary: number;
+      currency: string;
+      effectiveFrom: Date;
+    }>
+  > {
+    const monthEnd = month ? this.parseMonthEnd(month) : new Date();
+
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        status: EmployeeStatus.ACTIVE,
+        deletedAt: null,
+      },
+      include: {
+        salaryHistory: {
+          where: { effectiveFrom: { lte: monthEnd } },
+          orderBy: { effectiveFrom: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (employees.length > 0) {
+      return employees.map((e) => {
+        const latestHistory = e.salaryHistory[0];
+        const effectiveSalary = latestHistory
+          ? Number(latestHistory.newSalary)
+          : Number(e.baseSalary);
+
+        return {
+          employeeId: e.userId,
+          employeeName: `${e.firstName} ${e.lastName}`,
+          employeeEmail: e.email,
+          baseSalary: effectiveSalary,
+          currency: latestHistory?.currency ?? e.currency,
+          effectiveFrom: latestHistory?.effectiveFrom ?? e.salaryEffectiveFrom,
+        };
+      });
+    }
+
+    const legacy = await this.prisma.employeeSalary.findMany({
+      where: { isActive: true },
+    });
+
+    return legacy.map((s) => ({
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
+      employeeEmail: s.employeeEmail,
+      baseSalary: Number(s.baseSalary),
+      currency: s.currency,
+      effectiveFrom: s.effectiveFrom,
+    }));
   }
 
   private async recalculateRunTotals(runId: string): Promise<void> {

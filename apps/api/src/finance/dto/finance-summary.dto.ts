@@ -32,5 +32,7 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
     totalIncomeMTD: number;
     totalExpensesMTD: number;
   };
+  totalActiveEmployees!: number;
+  totalMonthlyPayroll!: number;
   previousMonth!: FinanceSummaryMetrics;
 }

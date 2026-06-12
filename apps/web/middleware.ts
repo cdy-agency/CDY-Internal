@@ -24,6 +24,19 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/crm\/settings/, feature: 'crm.reports', action: 'read' },
   { pattern: /^\/crm\/audit/, feature: 'crm.reports', action: 'read' },
   { pattern: /^\/crm/, feature: 'crm.pipeline', action: 'read' },
+  { pattern: /^\/hr\/performance\/my/, feature: 'hr.attendance', action: 'read' },
+  { pattern: /^\/hr\/performance\/[^/]+$/, feature: 'hr.attendance', action: 'read' },
+  { pattern: /^\/hr\/performance$/, feature: 'hr.performance', action: 'read' },
+  { pattern: /^\/hr\/reports/, feature: 'hr.employees', action: 'read' },
+  { pattern: /^\/hr\/audit/, feature: 'hr.settings', action: 'read' },
+  { pattern: /^\/hr\/employees\/new/, feature: 'hr.employees', action: 'write' },
+  { pattern: /^\/hr\/employees/, feature: 'hr.employees', action: 'read' },
+  { pattern: /^\/hr\/leave\/my/, feature: 'hr.attendance', action: 'read' },
+  { pattern: /^\/hr\/leave/, feature: 'hr.attendance', action: 'read' },
+  { pattern: /^\/hr\/attendance\/my/, feature: 'hr.attendance', action: 'write' },
+  { pattern: /^\/hr\/attendance/, feature: 'hr.attendance', action: 'read' },
+  { pattern: /^\/hr\/settings/, feature: 'hr.settings', action: 'read' },
+  { pattern: /^\/hr/, feature: 'hr.employees', action: 'read' },
   { pattern: /^\/finance\/invoices/, feature: 'finance.invoices', action: 'read' },
   { pattern: /^\/finance\/payments/, feature: 'finance.payments', action: 'read' },
   { pattern: /^\/finance\/expenses/, feature: 'finance.expenses', action: 'read' },
@@ -67,7 +80,7 @@ export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm'))) {
+  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr'))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -112,5 +125,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/login'],
+  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/login'],
 };

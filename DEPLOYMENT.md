@@ -103,3 +103,35 @@ railway run npx prisma migrate deploy
 git tag v1.0.0-crm
 git push origin main --tags
 ```
+
+## v1.0.0-hr Release
+
+### New in v1.0.0-hr
+
+- Performance review system (quarterly reviews, self-assessment, manager completion, acknowledgement)
+- Salary history tracking with payroll effective-date integration
+- Onboarding checklist (12 default items, auto-init on employee create)
+- HR audit log (fire-and-forget, wired into all HR write operations)
+- HR reports: headcount, turnover, leave utilisation, attendance summary
+- Finance summary: `totalActiveEmployees` and `totalMonthlyPayroll` from HR
+- Team productivity stub endpoint (attendance data until Projects module)
+- Frontend: performance pages, reports, audit log, employee profile tabs
+
+### Migrations
+
+```bash
+railway run npx prisma migrate deploy
+# or locally:
+docker compose exec api npx prisma migrate deploy
+docker compose exec api npx prisma generate
+```
+
+Sprint 14 migration: `20260610100000_sprint14_hr_performance_salary_history`
+
+### Tag and deploy
+
+```bash
+git tag v1.0.0-hr
+git push origin feature/hr --tags
+# Railway + Vercel auto-deploy on push
+```
