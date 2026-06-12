@@ -135,3 +135,36 @@ git tag v1.0.0-hr
 git push origin feature/hr --tags
 # Railway + Vercel auto-deploy on push
 ```
+
+## v1.0.0-projects Release
+
+### New in v1.0.0-projects
+
+- Portfolio report with project health matrix and service breakdown
+- Budget vs actual report with variance tracking and CSV export
+- Project handover report (saved as `ProjectReport` snapshot)
+- Project completion workflow with incomplete task / uninvoiced milestone acknowledgement
+- Project on-hold and reactivate status transitions
+- Bulk task import from CSV (milestone name + assignee email resolution)
+- Redis caching on portfolio, budget, profitability, and workload endpoints
+- Composite indexes on all Projects module tables
+- Frontend: reports landing, portfolio/budget pages, completion modal, CSV import modal, handover page
+
+### Migrations
+
+```bash
+railway run npx prisma migrate deploy
+# or locally:
+docker compose exec api npx prisma migrate deploy
+docker compose exec api npx prisma generate
+```
+
+Sprint 17 migration: `20260710100000_sprint17_projects_completion_indexes`
+
+### Tag and deploy
+
+```bash
+git tag v1.0.0-projects
+git push origin feature/projects --tags
+# Railway + Vercel auto-deploy on push
+```

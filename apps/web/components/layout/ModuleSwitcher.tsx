@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Coins, UserCircle, Users } from 'lucide-react';
+import { Briefcase, Coins, UserCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/context/PermissionContext';
 
@@ -25,6 +25,13 @@ const MODULES = [
     feature: 'hr.employees',
     icon: UserCircle,
   },
+  {
+    label: 'Projects',
+    href: '/projects',
+    feature: 'projects.all',
+    altFeature: 'projects.own',
+    icon: Briefcase,
+  },
 ] as const;
 
 export function ModuleSwitcher(): JSX.Element | null {
@@ -35,7 +42,11 @@ export function ModuleSwitcher(): JSX.Element | null {
     return null;
   }
 
-  const visible = MODULES.filter((m) => canRead(m.feature));
+  const visible = MODULES.filter(
+    (m) =>
+      canRead(m.feature) ||
+      ('altFeature' in m && m.altFeature && canRead(m.altFeature)),
+  );
   if (visible.length <= 1) {
     return null;
   }

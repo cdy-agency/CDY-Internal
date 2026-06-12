@@ -33,8 +33,10 @@ export const SYSTEM_FEATURES = [
   { key: 'hr.settings', name: 'HR Settings', module: 'hr', description: 'HR configuration (working days, leave year)' },
   { key: 'projects.all', name: 'All Projects', module: 'projects', description: 'View and manage all projects' },
   { key: 'projects.own', name: 'Own Projects', module: 'projects', description: 'View own assigned projects only' },
-  { key: 'projects.tasks', name: 'Tasks', module: 'projects', description: 'Task creation and management' },
-  { key: 'projects.approvals', name: 'Approvals', module: 'projects', description: 'Deliverable approval workflows' },
+  { key: 'projects.tasks', name: 'Tasks', module: 'projects', description: 'Task creation, assignment, and management' },
+  { key: 'projects.approvals', name: 'Approvals', module: 'projects', description: 'Milestone and deliverable approval workflows' },
+  { key: 'projects.time', name: 'Time Tracking', module: 'projects', description: 'Log and view time entries' },
+  { key: 'projects.reports', name: 'Project Reports', module: 'projects', description: 'Project profitability and progress reports' },
   { key: 'it.users', name: 'User Management', module: 'it', description: 'Create and manage system users' },
   { key: 'it.roles', name: 'Role Management', module: 'it', description: 'Create and manage roles' },
   { key: 'it.permissions', name: 'Permission Management', module: 'it', description: 'Assign permissions to roles' },
@@ -86,6 +88,8 @@ export const DEFAULT_ROLES: Array<{
       { key: 'hr.payroll', canRead: true, canWrite: false },
       { key: 'hr.performance', canRead: true, canWrite: true },
       { key: 'hr.settings', canRead: true, canWrite: true },
+      { key: 'projects.all', canRead: true, canWrite: false },
+      { key: 'projects.reports', canRead: true, canWrite: false },
     ],
   },
   {
@@ -117,6 +121,8 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.clients', canRead: true, canWrite: false },
       { key: 'hr.employees', canRead: true, canWrite: false },
       { key: 'hr.payroll', canRead: true, canWrite: true },
+      { key: 'projects.all', canRead: true, canWrite: false },
+      { key: 'projects.approvals', canRead: true, canWrite: false },
     ],
   },
   {
@@ -133,6 +139,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.proposals', canRead: true, canWrite: true },
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'hr.attendance', canRead: true, canWrite: true },
+      { key: 'projects.own', canRead: true, canWrite: false },
     ],
   },
   {
@@ -145,10 +152,15 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.invoices', canRead: true, canWrite: false },
       { key: 'finance.expenses', canRead: true, canWrite: false },
       { key: 'finance.budget', canRead: true, canWrite: true },
-      { key: 'projects.own', canRead: true, canWrite: true },
+      { key: 'projects.all', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'projects.approvals', canRead: true, canWrite: true },
+<<<<<<< HEAD
       { key: 'ventures.view', canRead: true, canWrite: false },
+=======
+      { key: 'projects.time', canRead: true, canWrite: true },
+      { key: 'projects.reports', canRead: true, canWrite: false },
+>>>>>>> 67826de (feat(projects): complete Sprint 17 — reports, handover, CSV import, v1.0.0)
       { key: 'hr.employees', canRead: true, canWrite: false },
     ],
   },
@@ -161,8 +173,16 @@ export const DEFAULT_ROLES: Array<{
     permissions: [
       { key: 'finance.budget', canRead: true, canWrite: true },
       { key: 'finance.expenses', canRead: true, canWrite: false },
+<<<<<<< HEAD
       { key: 'projects.all', canRead: true, canWrite: false },
       { key: 'ventures.view', canRead: true, canWrite: false },
+=======
+      { key: 'projects.all', canRead: true, canWrite: true },
+      { key: 'projects.tasks', canRead: true, canWrite: true },
+      { key: 'projects.approvals', canRead: true, canWrite: true },
+      { key: 'projects.time', canRead: true, canWrite: true },
+      { key: 'projects.reports', canRead: true, canWrite: true },
+>>>>>>> 67826de (feat(projects): complete Sprint 17 — reports, handover, CSV import, v1.0.0)
       { key: 'hr.employees', canRead: true, canWrite: true },
       { key: 'hr.attendance', canRead: true, canWrite: true },
       { key: 'hr.payroll', canRead: true, canWrite: true },
@@ -181,9 +201,10 @@ export const DEFAULT_ROLES: Array<{
     isDefault: true,
     isSystem: false,
     permissions: [
-      { key: 'projects.own', canRead: true, canWrite: true },
+      { key: 'projects.own', canRead: true, canWrite: false },
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'ventures.view', canRead: true, canWrite: false },
+      { key: 'projects.time', canRead: true, canWrite: true },
       { key: 'hr.attendance', canRead: true, canWrite: true },
     ],
   },
