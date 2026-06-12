@@ -8,7 +8,7 @@ npx prisma migrate deploy
 
 if [ "${SEED_ON_STARTUP:-true}" = "true" ]; then
   echo "Running database seed (skipped if data already exists)..."
-  npx prisma db seed
+  pnpm run prisma:seed
 else
   echo "SEED_ON_STARTUP=false — skipping seed"
 fi
