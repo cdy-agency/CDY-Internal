@@ -3,13 +3,10 @@ import {
   Post,
   Param,
   HttpStatus,
-  UseGuards,
   NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@cdy/shared';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { OverdueInvoicesJob } from '../automation/jobs/overdue-invoices.job';
 import { InvoiceRemindersJob } from '../automation/jobs/invoice-reminders.job';
 import { BillAlertsJob } from '../automation/jobs/bill-alerts.job';
@@ -17,7 +14,6 @@ import { BillAlertsJob } from '../automation/jobs/bill-alerts.job';
 @ApiTags('debug')
 @ApiBearerAuth()
 @Controller('debug')
-@UseGuards(RolesGuard)
 export class DebugController {
   constructor(
     private readonly overdueJob: OverdueInvoicesJob,
@@ -26,7 +22,7 @@ export class DebugController {
   ) {}
 
   @Post('run-cron/:job')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.settings', 'write')
   @ApiOperation({ summary: 'Manually trigger a cron job (QA only)' })
   async runCron(@Param('job') job: string) {
     switch (job) {

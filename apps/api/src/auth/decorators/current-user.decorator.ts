@@ -1,10 +1,14 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
+import type { PermissionMap } from '../../rbac/permission.types';
+
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
+  roleKey: string;
+  roleName: string;
+  permissions: PermissionMap;
 }
 
 export const CurrentUser = createParamDecorator(

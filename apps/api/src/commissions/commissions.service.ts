@@ -36,7 +36,7 @@ export class CommissionsService {
   async findSalesAgents() {
     const agents = await this.prisma.user.findMany({
       where: {
-        role: Role.SALES_AGENT,
+        role: { key: Role.SALES_AGENT },
         isActive: true,
         deletedAt: null,
       },
@@ -252,7 +252,16 @@ export class CommissionsService {
         month,
         status: CommissionStatus.PENDING,
       },
-      include: { agent: { select: { id: true, firstName: true, lastName: true, role: true } } },
+      include: {
+        agent: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: { select: { key: true } },
+          },
+        },
+      },
     });
 
     this.logger.log(
@@ -289,7 +298,12 @@ export class CommissionsService {
         where,
         include: {
           agent: {
-            select: { id: true, firstName: true, lastName: true, role: true },
+            select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: { select: { key: true } },
+          },
           },
         },
         orderBy: [{ agentId: 'asc' }, { createdAt: 'desc' }],
@@ -319,7 +333,12 @@ export class CommissionsService {
       where: { id },
       include: {
         agent: {
-          select: { id: true, firstName: true, lastName: true, role: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: { select: { key: true } },
+          },
         },
       },
     });
@@ -363,7 +382,12 @@ export class CommissionsService {
         },
         include: {
           agent: {
-            select: { id: true, firstName: true, lastName: true, role: true },
+            select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: { select: { key: true } },
+          },
           },
         },
       });
@@ -405,7 +429,12 @@ export class CommissionsService {
       },
       include: {
         agent: {
-          select: { id: true, firstName: true, lastName: true, role: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: { select: { key: true } },
+          },
         },
       },
     });
@@ -606,7 +635,7 @@ export class CommissionsService {
         id: string;
         firstName: string;
         lastName: string;
-        role?: string;
+        role?: { key: string };
       };
     },
   ) {
@@ -616,7 +645,7 @@ export class CommissionsService {
             id: record.agent.id,
             firstName: record.agent.firstName,
             lastName: record.agent.lastName,
-            role: record.agent.role ?? Role.SALES_AGENT,
+            roleKey: record.agent.role?.key ?? Role.SALES_AGENT,
           }
         : undefined;
 

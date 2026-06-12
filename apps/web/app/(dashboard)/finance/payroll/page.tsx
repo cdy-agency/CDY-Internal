@@ -16,7 +16,9 @@ import {
   shiftMonth,
   formatMonthKey,
 } from '@/lib/reportDates';
-import { PayrollStatus, Role } from '@cdy/shared';
+import { PayrollStatus } from '@cdy/shared';
+import { useCanWrite } from '@/hooks/usePermission';
+import { PermissionGate } from '@/components/PermissionGate';
 import type { ApiResponse, PayrollRun, UserProfile } from '@cdy/shared';
 
 function statusLabel(status: PayrollStatus): string {
@@ -49,7 +51,7 @@ export default function PayrollPage(): JSX.Element {
   const { data: preview } = usePayrollPreview(month);
   const currentRun = runs?.find((r) => r.month === month);
 
-  const isFinanceManager = user?.role === Role.FINANCE_MANAGER;
+  const canWritePayroll = useCanWrite('finance.payroll');
 
   async function handleCreateRun(): Promise<void> {
     setCreating(true);
@@ -84,7 +86,7 @@ export default function PayrollPage(): JSX.Element {
           <Link href="/finance/payroll/salaries">
             <Button variant="outline" size="sm">Employee Salaries</Button>
           </Link>
-          {isFinanceManager && !currentRun && (
+          {canWritePayroll && !currentRun && (
             <Button
               className="bg-cdy-red hover:bg-cdy-red/90"
               onClick={() => setConfirmOpen(true)}

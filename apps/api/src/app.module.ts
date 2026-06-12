@@ -10,8 +10,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AuditModule } from './audit/audit.module';
 import { DebugModule } from './debug/debug.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { PermissionGuard } from './auth/guards/permission.guard';
 import { SettingsModule } from './settings/settings.module';
 import { SettingsService } from './settings/settings.service';
+import { CacheModule } from './cache/cache.module';
+import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
@@ -20,7 +23,9 @@ import { SettingsService } from './settings/settings.service';
       envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
+    CacheModule,
     PrismaModule,
+    RbacModule,
     AuthModule,
     AuditModule,
     NotificationsModule,
@@ -33,6 +38,10 @@ import { SettingsService } from './settings/settings.service';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
     },
   ],
 })

@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   Req,
@@ -22,20 +21,17 @@ import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { ExpenseFiltersDto } from './dto/expense-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('expenses')
 @ApiBearerAuth()
 @Controller('expenses')
-@UseGuards(RolesGuard)
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.expenses', 'write')
   @UseInterceptors(
     FileInterceptor('receipt', { storage: memoryStorage() }),
   )
@@ -61,7 +57,7 @@ export class ExpensesController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO, Role.PROJECT_MANAGER)
+  @RequirePermission('finance.expenses', 'read')
   @ApiOperation({ summary: 'List expenses with filters' })
   async findAll(@Query() filters: ExpenseFiltersDto) {
     const data = await this.expensesService.findAll(filters);
@@ -73,7 +69,7 @@ export class ExpensesController {
   }
 
   @Get(':id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.expenses', 'read')
   @ApiOperation({ summary: 'Get expense by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.expensesService.findOne(id);
@@ -85,7 +81,7 @@ export class ExpensesController {
   }
 
   @Patch(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.expenses', 'write')
   @ApiOperation({ summary: 'Update expense (24hr window)' })
   async update(
     @Param('id') id: string,
@@ -106,7 +102,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.expenses', 'write')
   @ApiOperation({ summary: 'Soft-delete expense' })
   async remove(@Param('id') id: string) {
     const data = await this.expensesService.softDelete(id);

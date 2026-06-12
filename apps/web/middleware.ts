@@ -1,0 +1,107 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { AUTH_COOKIE_NAME } from '@/lib/auth';
+import type { PermissionMap } from '@cdy/shared';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  roleKey: string;
+  roleName: string;
+  permissions: PermissionMap;
+}
+
+const ROUTE_PERMISSIONS: Array<{
+  pattern: RegExp;
+  feature: string;
+  action: 'read' | 'write';
+}> = [
+  { pattern: /^\/finance\/invoices/, feature: 'finance.invoices', action: 'read' },
+  { pattern: /^\/finance\/payments/, feature: 'finance.payments', action: 'read' },
+  { pattern: /^\/finance\/expenses/, feature: 'finance.expenses', action: 'read' },
+  { pattern: /^\/finance\/bills/, feature: 'finance.bills', action: 'read' },
+  { pattern: /^\/finance\/ar/, feature: 'finance.ar', action: 'read' },
+  { pattern: /^\/finance\/reports/, feature: 'finance.reports', action: 'read' },
+  {
+    pattern: /^\/finance\/commissions\/my/,
+    feature: 'finance.commissions.own',
+    action: 'read',
+  },
+  { pattern: /^\/finance\/commissions/, feature: 'finance.commissions', action: 'read' },
+  { pattern: /^\/finance\/payroll/, feature: 'finance.payroll', action: 'read' },
+  { pattern: /^\/finance\/retainers/, feature: 'finance.retainers', action: 'read' },
+  { pattern: /^\/finance\/budget/, feature: 'finance.budget', action: 'read' },
+  {
+    pattern: /^\/finance\/reconciliation/,
+    feature: 'finance.reconciliation',
+    action: 'read',
+  },
+  { pattern: /^\/finance\/audit/, feature: 'finance.audit', action: 'read' },
+  { pattern: /^\/finance\/settings/, feature: 'finance.settings', action: 'read' },
+  { pattern: /^\/finance/, feature: 'finance.dashboard', action: 'read' },
+  { pattern: /^\/it/, feature: 'it.users', action: 'read' },
+];
+
+function decodeJwtPayload(token: string): JwtPayload {
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    throw new Error('Invalid token');
+  }
+
+  const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+  const json = atob(padded);
+  return JSON.parse(json) as JwtPayload;
+}
+
+export function middleware(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+
+  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it'))) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (!token) {
+    return NextResponse.next();
+  }
+
+  if (pathname === '/login') {
+    try {
+      const payload = decodeJwtPayload(token);
+      const destination = payload.roleKey === 'IT' ? '/it' : '/finance';
+      return NextResponse.redirect(new URL(destination, request.url));
+    } catch {
+      return NextResponse.next();
+    }
+  }
+
+  let payload: JwtPayload;
+  try {
+    payload = decodeJwtPayload(token);
+  } catch {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  const routeRule = ROUTE_PERMISSIONS.find((r) => r.pattern.test(pathname));
+  if (!routeRule) {
+    return NextResponse.next();
+  }
+
+  const permission = payload.permissions?.[routeRule.feature];
+  const allowed =
+    routeRule.action === 'read' ? permission?.canRead : permission?.canWrite;
+
+  if (!allowed) {
+    if (payload.roleKey === 'IT') {
+      return NextResponse.redirect(new URL('/it', request.url));
+    }
+    return NextResponse.redirect(new URL('/403', request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/finance/:path*', '/it/:path*', '/login'],
+};

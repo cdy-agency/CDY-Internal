@@ -31,7 +31,9 @@ export default function LoginPage(): JSX.Element {
         return;
       }
 
-      router.push('/finance');
+      const data = await response.json();
+      const roleKey = data.user?.roleKey as string | undefined;
+      router.push(roleKey === 'IT' ? '/it' : '/finance');
       router.refresh();
     } catch {
       setError('Unable to connect. Please try again.');

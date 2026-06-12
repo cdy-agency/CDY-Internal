@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { formatCurrency } from '@/lib/utils';
 import { formatMonthKey } from '@/lib/reportDates';
-import { PayrollStatus, Role } from '@cdy/shared';
+import { PayrollStatus } from '@cdy/shared';
+import { useCanWrite } from '@/hooks/usePermission';
 import type { ApiResponse, PayrollLineItem, UserProfile } from '@cdy/shared';
 
 function AdjustModal({
@@ -179,10 +180,10 @@ export default function PayrollDetailPage(): JSX.Element {
       .catch(() => setUser(null));
   }, []);
 
+  const canWritePayroll = useCanWrite('finance.payroll');
   const isCreator = user?.id === run?.createdBy;
-  const isFinanceManager = user?.role === Role.FINANCE_MANAGER;
   const canProcess =
-    isFinanceManager &&
+    canWritePayroll &&
     run?.status === PayrollStatus.DRAFT &&
     !isCreator;
 
@@ -240,7 +241,7 @@ export default function PayrollDetailPage(): JSX.Element {
           </p>
         </div>
         <div className="flex gap-2">
-          {run.status === PayrollStatus.DRAFT && isFinanceManager && (
+          {run.status === PayrollStatus.DRAFT && canWritePayroll && (
             <Button
               className="bg-cdy-red hover:bg-cdy-red/90"
               disabled={!canProcess}
@@ -353,7 +354,7 @@ export default function PayrollDetailPage(): JSX.Element {
                 </td>
                 <td className="px-4 py-3">
                   {run.status === PayrollStatus.DRAFT &&
-                    isFinanceManager &&
+                    canWritePayroll &&
                     (user?.id === item.employeeId ? (
                       <span className="text-xs text-cdy-muted">
                         Cannot adjust own record

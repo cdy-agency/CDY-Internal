@@ -4,25 +4,21 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditFiltersDto } from './dto/audit-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@cdy/shared';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 
 @ApiTags('audit')
 @ApiBearerAuth()
 @Controller('audit')
-@UseGuards(RolesGuard)
 export class AuditController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  @Roles(Role.CEO)
+  @RequirePermission('finance.audit', 'read')
   @ApiOperation({ summary: 'List finance audit logs (CEO only)' })
   async findAll(@Query() filters: AuditFiltersDto) {
     const page = filters.page ?? 1;
@@ -71,7 +67,7 @@ export class AuditController {
   }
 
   @Get(':entityId')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.audit', 'read')
   @ApiOperation({ summary: 'Audit logs for a specific entity' })
   async findByEntity(@Param('entityId') entityId: string) {
     const logs = await this.prisma.financeAuditLog.findMany({

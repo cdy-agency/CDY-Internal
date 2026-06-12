@@ -20,7 +20,9 @@ import {
   serviceTypeLabel,
 } from '@/lib/reportDates';
 import type { ApiResponse, CommissionRecord, UserProfile } from '@cdy/shared';
-import { CommissionStatus, Role } from '@cdy/shared';
+import { CommissionStatus } from '@cdy/shared';
+import { usePermissions } from '@/context/PermissionContext';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function ReviewPopover({
   commission,
@@ -135,6 +137,7 @@ export default function CommissionsPage(): JSX.Element {
   const [approveAllLoading, setApproveAllLoading] = useState(false);
 
   const { data, isLoading } = useCommissions({ month, limit: 50 });
+  const { canWrite, roleKey } = usePermissions();
 
   useEffect(() => {
     api
@@ -142,7 +145,10 @@ export default function CommissionsPage(): JSX.Element {
       .then((res) => {
         const profile = res.data.data;
         setUser(profile);
-        if (profile.role === Role.SALES_AGENT) {
+        if (
+          profile.roleKey === 'SALES_AGENT' &&
+          !profile.permissions?.['finance.commissions']?.canRead
+        ) {
           router.replace('/finance/commissions/my');
         }
       })
@@ -168,7 +174,7 @@ export default function CommissionsPage(): JSX.Element {
     }
   }
 
-  if (user?.role === Role.SALES_AGENT) {
+  if (roleKey === 'SALES_AGENT' && !canWrite('finance.commissions')) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-cdy-muted" />
@@ -195,13 +201,14 @@ export default function CommissionsPage(): JSX.Element {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        {user?.role === Role.FINANCE_MANAGER && (
+        <PermissionGate feature="finance.commissions" action="write">
           <Link href="/finance/commissions/rules">
             <Button variant="outline" size="sm">Manage Rules</Button>
           </Link>
-        )}
+        </PermissionGate>
         </div>
-        {user?.role === Role.FINANCE_MANAGER && data && data.summary.pending > 0 && (
+        <PermissionGate feature="finance.commissions" action="write">
+        {data && data.summary.pending > 0 && (
           <Button onClick={approveAll} disabled={approveAllLoading}>
             {approveAllLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -210,6 +217,7 @@ export default function CommissionsPage(): JSX.Element {
             )}
           </Button>
         )}
+        </PermissionGate>
       </div>
 
       {data && (

@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -18,20 +17,17 @@ import { BillsService } from './bills.service';
 import { CreateBillDto, PayBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
 import { BillFiltersDto } from './dto/bill-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('bills')
 @ApiBearerAuth()
 @Controller('bills')
-@UseGuards(RolesGuard)
 export class BillsController {
   constructor(private readonly billsService: BillsService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.bills', 'write')
   @ApiOperation({ summary: 'Create a bill' })
   async create(
     @Body() dto: CreateBillDto,
@@ -51,7 +47,7 @@ export class BillsController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.bills', 'read')
   @ApiOperation({ summary: 'List bills with filters' })
   async findAll(@Query() filters: BillFiltersDto) {
     const data = await this.billsService.findAll(filters);
@@ -63,7 +59,7 @@ export class BillsController {
   }
 
   @Get(':id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.bills', 'read')
   @ApiOperation({ summary: 'Get bill by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.billsService.findOne(id);
@@ -75,7 +71,7 @@ export class BillsController {
   }
 
   @Patch(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.bills', 'write')
   @ApiOperation({ summary: 'Update a bill' })
   async update(@Param('id') id: string, @Body() dto: UpdateBillDto) {
     const data = await this.billsService.update(id, dto);
@@ -87,7 +83,7 @@ export class BillsController {
   }
 
   @Post(':id/pay')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.bills', 'write')
   @ApiOperation({ summary: 'Mark bill as paid' })
   async pay(
     @Param('id') id: string,
@@ -108,7 +104,7 @@ export class BillsController {
   }
 
   @Delete(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.bills', 'write')
   @ApiOperation({ summary: 'Soft-delete a bill' })
   async remove(@Param('id') id: string) {
     const data = await this.billsService.softDelete(id);

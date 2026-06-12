@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/utils';
 import type { InvoiceFilters } from '@/types/invoice';
 import type { InvoiceRecord } from '@cdy/shared';
 import { InvoiceStatus } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
   { value: InvoiceStatus.DRAFT, label: 'Draft' },
@@ -63,10 +64,12 @@ export default function InvoicesPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-cdy-white">Invoices</h1>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          New Invoice
-        </Button>
+        <PermissionGate feature="finance.invoices" action="write">
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            New Invoice
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

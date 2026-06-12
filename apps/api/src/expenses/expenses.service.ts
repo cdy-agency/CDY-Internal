@@ -167,7 +167,7 @@ export class ExpensesService {
 
     if (
       existing.createdBy === auditCtx.userId &&
-      auditCtx.userRole === Role.FINANCE_MANAGER
+      auditCtx.userRoleKey === Role.FINANCE_MANAGER
     ) {
       this.auditService.log({
         userId: auditCtx.userId,

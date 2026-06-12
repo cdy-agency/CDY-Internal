@@ -7,7 +7,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -18,21 +17,18 @@ import { AmendRetainerDto } from './dto/amend-retainer.dto';
 import { RetainerFiltersDto } from './dto/retainer-filters.dto';
 import { PauseRetainerDto } from './dto/pause-retainer.dto';
 import { EndRetainerDto } from './dto/end-retainer.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
 import { buildAuditContext } from '../common/audit/build-audit-context';
-import { Role } from '@cdy/shared';
 
 @ApiTags('retainers')
 @ApiBearerAuth()
 @Controller('retainers')
-@UseGuards(RolesGuard)
 export class RetainersController {
   constructor(private readonly retainersService: RetainersService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'Create retainer contract' })
   async create(
     @Body() dto: CreateRetainerDto,
@@ -48,7 +44,7 @@ export class RetainersController {
   }
 
   @Get()
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'List retainer contracts' })
   async findAll(@Query() filters: RetainerFiltersDto) {
     const data = await this.retainersService.findAll(filters);
@@ -56,7 +52,7 @@ export class RetainersController {
   }
 
   @Get('summary')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'MRR summary' })
   async getSummary() {
     const data = await this.retainersService.getMRRSummary();
@@ -64,7 +60,7 @@ export class RetainersController {
   }
 
   @Get(':id')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'Get retainer contract' })
   async findOne(@Param('id') id: string) {
     const data = await this.retainersService.findOne(id);
@@ -72,7 +68,7 @@ export class RetainersController {
   }
 
   @Get(':id/invoices')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'List invoices for retainer' })
   async findInvoices(@Param('id') id: string) {
     const data = await this.retainersService.findInvoices(id);
@@ -80,7 +76,7 @@ export class RetainersController {
   }
 
   @Patch(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'Amend retainer contract' })
   async amend(
     @Param('id') id: string,
@@ -97,7 +93,7 @@ export class RetainersController {
   }
 
   @Post(':id/pause')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'Pause retainer' })
   async pause(@Param('id') id: string, @Body() dto: PauseRetainerDto) {
     const data = await this.retainersService.pause(id, dto.reason);
@@ -105,7 +101,7 @@ export class RetainersController {
   }
 
   @Post(':id/resume')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'Resume retainer' })
   async resume(@Param('id') id: string) {
     const data = await this.retainersService.resume(id);
@@ -113,7 +109,7 @@ export class RetainersController {
   }
 
   @Post(':id/end')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'End retainer contract' })
   async end(@Param('id') id: string, @Body() dto: EndRetainerDto) {
     const data = await this.retainersService.end(id, dto.reason);

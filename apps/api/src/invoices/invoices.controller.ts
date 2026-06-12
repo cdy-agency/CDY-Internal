@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Res,
   Req,
 } from '@nestjs/common';
@@ -21,20 +20,17 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceFiltersDto } from './dto/invoice-filters.dto';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
 import { WriteOffInvoiceDto } from './dto/write-off-invoice.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('invoices')
 @ApiBearerAuth()
 @Controller('invoices')
-@UseGuards(RolesGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Create a new invoice' })
   async create(
     @Body() dto: CreateInvoiceDto,
@@ -54,7 +50,7 @@ export class InvoicesController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO, Role.PROJECT_MANAGER)
+  @RequirePermission('finance.invoices', 'read')
   @ApiOperation({ summary: 'List invoices with filters and pagination' })
   async findAll(@Query() filters: InvoiceFiltersDto) {
     const data = await this.invoicesService.findAll(filters);
@@ -66,7 +62,7 @@ export class InvoicesController {
   }
 
   @Get(':id/pdf')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.invoices', 'read')
   @ApiOperation({ summary: 'Download invoice PDF' })
   async downloadPdf(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const { buffer, invoiceNumber } = await this.invoicesService.generatePdf(id);
@@ -79,7 +75,7 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO, Role.PROJECT_MANAGER)
+  @RequirePermission('finance.invoices', 'read')
   @ApiOperation({ summary: 'Get invoice by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.invoicesService.findOne(id);
@@ -91,7 +87,7 @@ export class InvoicesController {
   }
 
   @Patch(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Update a draft invoice' })
   async update(
     @Param('id') id: string,
@@ -112,7 +108,7 @@ export class InvoicesController {
   }
 
   @Post(':id/send-reminder')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Send manual payment reminder' })
   async sendReminder(@Param('id') id: string) {
     const data = await this.invoicesService.sendManualReminder(id);
@@ -124,7 +120,7 @@ export class InvoicesController {
   }
 
   @Post(':id/send')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Send invoice via email' })
   async send(
     @Param('id') id: string,
@@ -146,7 +142,7 @@ export class InvoicesController {
   }
 
   @Post(':id/write-off')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Write off an unpaid invoice' })
   async writeOff(
     @Param('id') id: string,
@@ -168,7 +164,7 @@ export class InvoicesController {
   }
 
   @Delete(':id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Soft-delete an invoice' })
   async remove(
     @Param('id') id: string,

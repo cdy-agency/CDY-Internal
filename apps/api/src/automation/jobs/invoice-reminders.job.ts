@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { InvoiceStatus, NotificationType, Role } from '@prisma/client';
+import { InvoiceStatus, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceEmailService } from '../../invoices/invoice-email.service';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -62,7 +62,7 @@ export class InvoiceRemindersJob {
           `Sent reminder ${nextReminderNumber} for invoice ${invoice.invoiceNumber}`,
         );
 
-        this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+        this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
           type: NotificationType.INVOICE_REMINDER_SENT,
           title: `Reminder ${nextReminderNumber} sent — ${invoice.invoiceNumber}`,
           body: `Payment reminder sent to client for invoice ${invoice.invoiceNumber}.`,
@@ -74,7 +74,7 @@ export class InvoiceRemindersJob {
           String(err),
         );
 
-        this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+        this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
           type: NotificationType.REMINDER_FAILED,
           title: `Reminder failed — ${invoice.invoiceNumber}`,
           body: `Failed to send reminder ${nextReminderNumber} for invoice ${invoice.invoiceNumber}. Manual follow-up required.`,

@@ -6,9 +6,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { RbacService } from '../rbac/rbac.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { UserProfile, Role } from '@cdy/shared';
+import { UserProfile } from '@cdy/shared';
 import { JwtPayload } from './decorators/current-user.decorator';
 
 interface AuthTokens {
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly rbacService: RbacService,
   ) {}
 
   async login(dto: LoginDto): Promise<{
@@ -35,6 +37,7 @@ export class AuthService {
         deletedAt: null,
         isActive: true,
       },
+      include: { role: true },
     });
 
     if (!user) {
@@ -47,27 +50,35 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const tokens = await this.generateTokens({
+    const profile = await this.rbacService.getPermissionProfile(user.id);
+
+    const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
-    });
+      roleKey: profile.roleKey,
+      roleName: profile.roleName,
+      permissions: profile.permissions,
+    };
+
+    const tokens = await this.generateTokens(payload);
 
     return {
       ...tokens,
       user: {
         id: user.id,
         email: user.email,
-        role: user.role as Role,
+        roleKey: profile.roleKey,
+        roleName: profile.roleName,
         firstName: user.firstName,
         lastName: user.lastName,
+        permissions: profile.permissions,
       },
     };
   }
 
   async refresh(dto: RefreshTokenDto): Promise<{ accessToken: string }> {
     try {
-      const payload = this.jwtService.verify<JwtPayload>(dto.refreshToken, {
+      const payload = this.jwtService.verify<{ sub: string }>(dto.refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
@@ -83,13 +94,20 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const accessToken = await this.jwtService.signAsync(
-        { sub: user.id, email: user.email, role: user.role },
-        {
-          secret: this.configService.get<string>('JWT_SECRET'),
-          expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') ?? '15m',
-        },
-      );
+      const profile = await this.rbacService.getPermissionProfile(user.id);
+
+      const accessPayload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        roleKey: profile.roleKey,
+        roleName: profile.roleName,
+        permissions: profile.permissions,
+      };
+
+      const accessToken = await this.jwtService.signAsync(accessPayload, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') ?? '15m',
+      });
 
       return { accessToken };
     } catch {
@@ -104,28 +122,35 @@ export class AuthService {
         deletedAt: null,
         isActive: true,
       },
+      include: { role: true },
     });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
+    const profile = await this.rbacService.getPermissionProfile(userId);
+
     return {
       id: user.id,
       email: user.email,
-      role: user.role as Role,
+      roleKey: profile.roleKey,
+      roleName: profile.roleName,
       firstName: user.firstName,
       lastName: user.lastName,
+      permissions: profile.permissions,
     };
   }
 
   private async generateTokens(payload: JwtPayload): Promise<AuthTokens> {
+    const refreshPayload = { sub: payload.sub };
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_SECRET'),
         expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') ?? '15m',
       }),
-      this.jwtService.signAsync(payload, {
+      this.jwtService.signAsync(refreshPayload, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         expiresIn:
           this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d',

@@ -26,117 +26,53 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { UserProfile } from '@cdy/shared';
-import { Role } from '@cdy/shared';
+import { usePermissions } from '@/context/PermissionContext';
 
 interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  roles: Role[];
+  feature: string;
+  salesAgentHref?: string;
 }
 
 const navItems: NavItem[] = [
-  {
-    label: 'Overview',
-    href: '/finance',
-    icon: LayoutDashboard,
-    roles: [
-      Role.CEO,
-      Role.FINANCE_MANAGER,
-      Role.SALES_AGENT,
-      Role.PROJECT_MANAGER,
-      Role.OPERATIONS_MANAGER,
-      Role.TEAM_MEMBER,
-    ],
-  },
-  {
-    label: 'Invoices',
-    href: '/finance/invoices',
-    icon: FileText,
-    roles: [Role.CEO, Role.FINANCE_MANAGER, Role.PROJECT_MANAGER],
-  },
-  {
-    label: 'Payments',
-    href: '/finance/payments',
-    icon: CreditCard,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
-  {
-    label: 'Expenses',
-    href: '/finance/expenses',
-    icon: Receipt,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
-  {
-    label: 'Bills',
-    href: '/finance/bills',
-    icon: Building2,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
-  {
-    label: 'AR Ledger',
-    href: '/finance/ar',
-    icon: ClipboardList,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
+  { label: 'Overview', href: '/finance', icon: LayoutDashboard, feature: 'finance.dashboard' },
+  { label: 'Invoices', href: '/finance/invoices', icon: FileText, feature: 'finance.invoices' },
+  { label: 'Payments', href: '/finance/payments', icon: CreditCard, feature: 'finance.payments' },
+  { label: 'Expenses', href: '/finance/expenses', icon: Receipt, feature: 'finance.expenses' },
+  { label: 'Bills', href: '/finance/bills', icon: Building2, feature: 'finance.bills' },
+  { label: 'AR Ledger', href: '/finance/ar', icon: ClipboardList, feature: 'finance.ar' },
   {
     label: 'Reconciliation',
     href: '/finance/reconciliation',
     icon: GitMerge,
-    roles: [Role.FINANCE_MANAGER],
+    feature: 'finance.reconciliation',
   },
-  {
-    label: 'Retainers',
-    href: '/finance/retainers',
-    icon: RefreshCw,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
-  {
-    label: 'Project Budget',
-    href: '/finance/budget',
-    icon: PiggyBank,
-    roles: [
-      Role.CEO,
-      Role.FINANCE_MANAGER,
-      Role.OPERATIONS_MANAGER,
-      Role.PROJECT_MANAGER,
-    ],
-  },
-  {
-    label: 'Reports',
-    href: '/finance/reports',
-    icon: BarChart3,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
+  { label: 'Retainers', href: '/finance/retainers', icon: RefreshCw, feature: 'finance.retainers' },
+  { label: 'Project Budget', href: '/finance/budget', icon: PiggyBank, feature: 'finance.budget' },
+  { label: 'Reports', href: '/finance/reports', icon: BarChart3, feature: 'finance.reports' },
   {
     label: 'Commissions',
     href: '/finance/commissions',
     icon: BadgeDollarSign,
-    roles: [Role.CEO, Role.FINANCE_MANAGER, Role.SALES_AGENT],
+    feature: 'finance.commissions',
+    salesAgentHref: '/finance/commissions/my',
   },
   {
-    label: 'Payroll',
-    href: '/finance/payroll',
-    icon: Wallet,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
+    label: 'My Commissions',
+    href: '/finance/commissions/my',
+    icon: BadgeDollarSign,
+    feature: 'finance.commissions.own',
   },
-  {
-    label: 'Audit Log',
-    href: '/finance/audit',
-    icon: ShieldCheck,
-    roles: [Role.CEO],
-  },
-  {
-    label: 'Settings',
-    href: '/finance/settings',
-    icon: Settings2,
-    roles: [Role.CEO, Role.FINANCE_MANAGER],
-  },
+  { label: 'Payroll', href: '/finance/payroll', icon: Wallet, feature: 'finance.payroll' },
+  { label: 'Audit Log', href: '/finance/audit', icon: ShieldCheck, feature: 'finance.audit' },
+  { label: 'Settings', href: '/finance/settings', icon: Settings2, feature: 'finance.settings' },
   {
     label: 'Tax Rates',
     href: '/finance/settings/tax',
     icon: Percent,
-    roles: [Role.FINANCE_MANAGER],
+    feature: 'finance.tax',
   },
 ];
 
@@ -148,33 +84,29 @@ interface FinanceSidebarProps {
 export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Element {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { canRead, roleKey } = usePermissions();
 
   function isActive(href: string): boolean {
-    if (href === '/finance/commissions' && user?.role === Role.SALES_AGENT) {
-      return pathname.startsWith('/finance/commissions');
-    }
     return href === '/finance'
       ? pathname === '/finance'
       : pathname.startsWith(href);
   }
 
   function resolveHref(item: NavItem): string {
-    if (item.label === 'Commissions' && user?.role === Role.SALES_AGENT) {
-      return '/finance/commissions/my';
+    if (item.salesAgentHref && roleKey === 'SALES_AGENT' && !canRead('finance.commissions')) {
+      return item.salesAgentHref;
     }
     return item.href;
   }
 
-  const visibleItems = navItems.filter(
-    (item) => user && item.roles.includes(user.role),
-  );
+  const visibleItems = navItems.filter((item) => canRead(item.feature));
 
   const navLinks = (
     <nav className="flex-1 space-y-1 overflow-y-auto p-3">
       {visibleItems.map((item) => {
         const Icon = item.icon;
         const href = resolveHref(item);
-        const active = isActive(item.href);
+        const active = isActive(href);
         return (
           <Link
             key={item.label}
@@ -243,7 +175,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
                 {user.firstName} {user.lastName}
               </p>
               <span className="mt-1 inline-block rounded-full border border-cdy-navy-border bg-cdy-navy px-2 py-0.5 text-xs text-cdy-muted">
-                {user.role.replace(/_/g, ' ')}
+                {user.roleName}
               </span>
             </div>
           )}

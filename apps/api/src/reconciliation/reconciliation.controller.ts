@@ -7,7 +7,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   Req,
@@ -19,20 +18,17 @@ import { Request } from 'express';
 import { ReconciliationService } from './reconciliation.service';
 import { ResolveTransactionDto } from './dto/resolve-transaction.dto';
 import { ReconciliationFiltersDto } from './dto/reconciliation-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('reconciliation')
 @ApiBearerAuth()
 @Controller('reconciliation')
-@UseGuards(RolesGuard)
 export class ReconciliationController {
   constructor(private readonly reconciliationService: ReconciliationService) {}
 
   @Post('import')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reconciliation', 'write')
   @UseInterceptors(
     FileInterceptor('statement', { storage: memoryStorage() }),
   )
@@ -62,7 +58,7 @@ export class ReconciliationController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.reconciliation', 'read')
   @ApiOperation({ summary: 'List reconciliation runs' })
   async findAll(@Query() filters: ReconciliationFiltersDto) {
     const data = await this.reconciliationService.findAll(filters);
@@ -74,7 +70,7 @@ export class ReconciliationController {
   }
 
   @Get(':id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.reconciliation', 'read')
   @ApiOperation({ summary: 'Get reconciliation detail' })
   async findOne(@Param('id') id: string) {
     const data = await this.reconciliationService.findOne(id);
@@ -86,7 +82,7 @@ export class ReconciliationController {
   }
 
   @Patch(':id/transactions/:txId/resolve')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reconciliation', 'write')
   @ApiOperation({ summary: 'Resolve unmatched transaction' })
   async resolveTransaction(
     @Param('id') id: string,
@@ -109,7 +105,7 @@ export class ReconciliationController {
   }
 
   @Post(':id/complete')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reconciliation', 'write')
   @ApiOperation({ summary: 'Complete reconciliation' })
   async complete(@Param('id') id: string) {
     const data = await this.reconciliationService.completeReconciliation(id);

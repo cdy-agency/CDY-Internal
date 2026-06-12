@@ -9,7 +9,6 @@ import {
   Query,
   Res,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -28,15 +27,12 @@ import {
   CreateBalanceSheetEntryDto,
   UpdateBalanceSheetEntryDto,
 } from './dto/balance-sheet-entry.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports')
-@UseGuards(RolesGuard)
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
@@ -46,7 +42,7 @@ export class ReportsController {
   ) {}
 
   @Get('pl')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Profit & Loss report' })
   async getProfitAndLoss(@Query() filters: PlReportFiltersDto) {
     const data = await this.reportsService.getProfitAndLoss(filters);
@@ -58,7 +54,7 @@ export class ReportsController {
   }
 
   @Get('pl/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Download P&L report PDF' })
   async downloadPlPdf(
     @Query() filters: PlReportFiltersDto,
@@ -76,7 +72,7 @@ export class ReportsController {
   }
 
   @Get('ageing')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Invoice ageing report' })
   async getInvoiceAgeing(@Query() filters: AgeingReportFiltersDto) {
     const data = await this.reportsService.getInvoiceAgeing(filters);
@@ -88,7 +84,7 @@ export class ReportsController {
   }
 
   @Get('ageing/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Download ageing report PDF' })
   async downloadAgeingPdf(
     @Query() filters: AgeingReportFiltersDto,
@@ -106,7 +102,7 @@ export class ReportsController {
   }
 
   @Get('expenses')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Expense summary report' })
   async getExpenseSummary(@Query() filters: ExpenseReportFiltersDto) {
     const data = await this.reportsService.getExpenseSummary(filters);
@@ -118,7 +114,7 @@ export class ReportsController {
   }
 
   @Get('expenses/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Download expense summary PDF' })
   async downloadExpensePdf(
     @Query() filters: ExpenseReportFiltersDto,
@@ -136,7 +132,7 @@ export class ReportsController {
   }
 
   @Get('cashflow')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Cash flow forecast' })
   async getCashFlow(@Query() filters: CashFlowFiltersDto) {
     const data = await this.cashFlowService.getForecast(filters);
@@ -148,7 +144,7 @@ export class ReportsController {
   }
 
   @Get('cashflow/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Download cash flow forecast PDF' })
   async downloadCashFlowPdf(
     @Query() filters: CashFlowFiltersDto,
@@ -166,7 +162,7 @@ export class ReportsController {
   }
 
   @Post('cashflow/adjustments')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'write')
   @ApiOperation({ summary: 'Add manual cash flow adjustment' })
   async createCashFlowAdjustment(
     @Body() dto: CreateCashFlowAdjustmentDto,
@@ -181,7 +177,7 @@ export class ReportsController {
   }
 
   @Delete('cashflow/adjustments/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'write')
   @ApiOperation({ summary: 'Delete cash flow adjustment' })
   async deleteCashFlowAdjustment(@Param('id') id: string) {
     const data = await this.cashFlowService.deleteAdjustment(id);
@@ -193,7 +189,7 @@ export class ReportsController {
   }
 
   @Get('balance-sheet')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Balance sheet as of date' })
   async getBalanceSheet(@Query() filters: BalanceSheetFiltersDto) {
     const data = await this.balanceSheetService.getBalanceSheet(filters.date);
@@ -205,7 +201,7 @@ export class ReportsController {
   }
 
   @Post('balance-sheet/entries')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'write')
   @ApiOperation({ summary: 'Create manual balance sheet entry' })
   async createBalanceSheetEntry(
     @Body() dto: CreateBalanceSheetEntryDto,
@@ -216,7 +212,7 @@ export class ReportsController {
   }
 
   @Patch('balance-sheet/entries/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'write')
   @ApiOperation({ summary: 'Update balance sheet entry' })
   async updateBalanceSheetEntry(
     @Param('id') id: string,
@@ -227,7 +223,7 @@ export class ReportsController {
   }
 
   @Delete('balance-sheet/entries/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'write')
   @ApiOperation({ summary: 'Delete balance sheet entry' })
   async deleteBalanceSheetEntry(@Param('id') id: string) {
     const data = await this.balanceSheetService.deleteEntry(id);
@@ -235,7 +231,7 @@ export class ReportsController {
   }
 
   @Get('balance-sheet/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.reports', 'read')
   @ApiOperation({ summary: 'Download balance sheet PDF' })
   async downloadBalanceSheetPdf(
     @Query() filters: BalanceSheetFiltersDto,

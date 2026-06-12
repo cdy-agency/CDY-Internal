@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -15,20 +14,17 @@ import { BudgetService } from './budget.service';
 import { CreateProjectBudgetDto } from './dto/create-project-budget.dto';
 import { BudgetIncreaseRequestDto } from './dto/budget-increase-request.dto';
 import { ReviewBudgetRequestDto } from './dto/review-budget-request.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('budget')
 @ApiBearerAuth()
 @Controller('budget')
-@UseGuards(RolesGuard)
 export class BudgetController {
   constructor(private readonly budgetService: BudgetService) {}
 
   @Post()
-  @Roles(Role.FINANCE_MANAGER, Role.OPERATIONS_MANAGER)
+  @RequirePermission('finance.budget', 'write')
   @ApiOperation({ summary: 'Create project budget' })
   async create(
     @Body() dto: CreateProjectBudgetDto,
@@ -39,7 +35,7 @@ export class BudgetController {
   }
 
   @Get()
-  @Roles(Role.CEO, Role.FINANCE_MANAGER, Role.OPERATIONS_MANAGER)
+  @RequirePermission('finance.budget', 'read')
   @ApiOperation({ summary: 'List all project budgets with status' })
   async findAll() {
     const data = await this.budgetService.findAll();
@@ -47,7 +43,7 @@ export class BudgetController {
   }
 
   @Get('increase-requests')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER, Role.OPERATIONS_MANAGER)
+  @RequirePermission('finance.budget', 'read')
   @ApiOperation({ summary: 'List pending budget increase requests' })
   async findPendingRequests() {
     const data = await this.budgetService.findPendingIncreaseRequests();
@@ -59,12 +55,7 @@ export class BudgetController {
   }
 
   @Get(':projectId')
-  @Roles(
-    Role.CEO,
-    Role.FINANCE_MANAGER,
-    Role.OPERATIONS_MANAGER,
-    Role.PROJECT_MANAGER,
-  )
+  @RequirePermission('finance.budget', 'read')
   @ApiOperation({ summary: 'Get budget status for project' })
   async getStatus(@Param('projectId') projectId: string) {
     const data = await this.budgetService.getBudgetStatus(projectId);
@@ -72,7 +63,7 @@ export class BudgetController {
   }
 
   @Post(':projectId/increase-request')
-  @Roles(Role.PROJECT_MANAGER, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.budget', 'write')
   @ApiOperation({ summary: 'Request budget increase' })
   async requestIncrease(
     @Param('projectId') projectId: string,
@@ -94,7 +85,7 @@ export class BudgetController {
   }
 
   @Patch('increase-requests/:id/review')
-  @Roles(Role.OPERATIONS_MANAGER)
+  @RequirePermission('finance.budget', 'write')
   @ApiOperation({ summary: 'Review budget increase request' })
   async review(
     @Param('id') id: string,

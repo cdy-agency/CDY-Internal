@@ -142,7 +142,7 @@ export class PaymentsService {
     );
     const remaining = Number(result.invoice.total) - alreadyPaid;
 
-    this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+    this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
       type: NotificationType.PAYMENT_RECEIVED,
       title: `Payment received — ${result.invoice.invoiceNumber}`,
       body: `$${dto.amount.toFixed(2)} recorded against invoice ${result.invoice.invoiceNumber}. ${result.isFullyPaid ? 'Invoice fully paid.' : `Remaining: $${remaining.toFixed(2)}.`}`,

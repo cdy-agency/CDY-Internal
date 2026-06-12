@@ -1,6 +1,5 @@
 import {
   PrismaClient,
-  Role,
   InvoiceStatus,
   PaymentMethod,
   ExpenseCategory,
@@ -8,6 +7,7 @@ import {
   CommissionStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
 
 const prisma = new PrismaClient();
 
@@ -27,10 +27,15 @@ async function clearAllData(): Promise<void> {
   await prisma.invoice.deleteMany();
   await prisma.expense.deleteMany();
   await prisma.bill.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.itAuditLog.deleteMany();
+  await prisma.rolePermission.deleteMany();
   await prisma.user.deleteMany();
 }
 
 async function main(): Promise<void> {
+  await seedRbac(prisma);
+
   const forceReseed = process.env.SEED_FORCE === 'true';
 
   if (!forceReseed) {
@@ -42,9 +47,15 @@ async function main(): Promise<void> {
   } else {
     process.stdout.write('SEED_FORCE=true — wiping and reseeding database\n');
     await clearAllData();
+    await seedRbac(prisma);
   }
 
   const passwordHash = await bcrypt.hash('CDY@2026!', 10);
+
+  const ceoRoleId = await getRoleIdByKey(prisma, 'CEO');
+  const financeRoleId = await getRoleIdByKey(prisma, 'FINANCE_MANAGER');
+  const salesRoleId = await getRoleIdByKey(prisma, 'SALES_AGENT');
+  const itRoleId = await getRoleIdByKey(prisma, 'IT');
 
   const ceo = await prisma.user.create({
     data: {
@@ -52,7 +63,7 @@ async function main(): Promise<void> {
       passwordHash,
       firstName: 'Amara',
       lastName: 'Okafor',
-      role: Role.CEO,
+      roleId: ceoRoleId,
     },
   });
 
@@ -62,7 +73,7 @@ async function main(): Promise<void> {
       passwordHash,
       firstName: 'Kofi',
       lastName: 'Mensah',
-      role: Role.FINANCE_MANAGER,
+      roleId: financeRoleId,
     },
   });
 
@@ -72,14 +83,23 @@ async function main(): Promise<void> {
       passwordHash,
       firstName: 'Zara',
       lastName: 'Ndlovu',
-      role: Role.SALES_AGENT,
+      roleId: salesRoleId,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'it@cdy.com',
+      passwordHash,
+      firstName: 'Ian',
+      lastName: 'Tech',
+      roleId: itRoleId,
     },
   });
 
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
   const draftInvoice = await prisma.invoice.create({
     data: {
@@ -318,10 +338,10 @@ async function main(): Promise<void> {
   void draftInvoice;
   void sentInvoice;
   void overdueInvoice;
-  void salesAgent;
+  void ceo;
 
   process.stdout.write(
-    'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com (password: CDY@2026!)\n',
+    'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com, it@cdy.com (password: CDY@2026!)\n',
   );
 }
 

@@ -5,7 +5,6 @@ import {
   NotificationType,
   Prisma,
   RetainerStatus,
-  Role,
 } from '@prisma/client';
 import { addDays, addMonths, format, startOfDay } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -110,7 +109,7 @@ export class RetainerBillingJob {
           },
         });
 
-        this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+        this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
           type: NotificationType.SYSTEM,
           title: `Retainer invoice sent — ${retainer.clientId}`,
           body: `Invoice ${invoiceNumber} for ${retainer.serviceName} ($${total.toFixed(2)}) auto-sent.`,

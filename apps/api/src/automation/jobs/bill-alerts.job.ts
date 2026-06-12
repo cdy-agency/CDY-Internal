@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { BillStatus, NotificationType, Role } from '@prisma/client';
+import { BillStatus, NotificationType } from '@prisma/client';
 import { format } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -38,7 +38,7 @@ export class BillAlertsJob {
     });
 
     for (const bill of dueSoonBills) {
-      this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+      this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
         type: NotificationType.BILL_DUE_SOON,
         title: `Bill due in 3 days — ${bill.vendorName}`,
         body: `$${Number(bill.amount).toFixed(2)} owed to ${bill.vendorName} is due on ${format(bill.dueDate, 'MMM d, yyyy')}.`,

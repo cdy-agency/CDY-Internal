@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { getRoleIdByKey } from '../src/rbac/run-rbac-seed';
 
 describe('Finance RBAC (e2e)', () => {
   let app: INestApplication;
@@ -38,6 +38,9 @@ describe('Finance RBAC (e2e)', () => {
     prisma = app.get(PrismaService);
 
     const passwordHash = await bcrypt.hash('CDY@2026!', 10);
+    const pmRoleId = await getRoleIdByKey(prisma, 'PROJECT_MANAGER');
+    const teamRoleId = await getRoleIdByKey(prisma, 'TEAM_MEMBER');
+
     await prisma.user.upsert({
       where: { email: 'pm@cdy.com' },
       update: {},
@@ -46,7 +49,7 @@ describe('Finance RBAC (e2e)', () => {
         passwordHash,
         firstName: 'Project',
         lastName: 'Manager',
-        role: Role.PROJECT_MANAGER,
+        roleId: pmRoleId,
       },
     });
     await prisma.user.upsert({
@@ -57,7 +60,7 @@ describe('Finance RBAC (e2e)', () => {
         passwordHash,
         firstName: 'Team',
         lastName: 'Member',
-        role: Role.TEAM_MEMBER,
+        roleId: teamRoleId,
       },
     });
 
@@ -66,6 +69,7 @@ describe('Finance RBAC (e2e)', () => {
     tokens['sales@cdy.com'] = await login('sales@cdy.com');
     tokens['pm@cdy.com'] = await login('pm@cdy.com');
     tokens['team@cdy.com'] = await login('team@cdy.com');
+    tokens['it@cdy.com'] = await login('it@cdy.com');
   });
 
   afterAll(async () => {
@@ -160,10 +164,17 @@ describe('Finance RBAC (e2e)', () => {
       .expect(200);
   });
 
-  it('FINANCE_MANAGER cannot GET /audit (403)', async () => {
+  it('IT cannot GET /invoices (403)', async () => {
     await request(app.getHttpServer())
-      .get('/api/v1/audit')
-      .set('Authorization', `Bearer ${tokens['finance@cdy.com']}`)
+      .get('/api/v1/invoices')
+      .set('Authorization', `Bearer ${tokens['it@cdy.com']}`)
       .expect(403);
+  });
+
+  it('IT can GET /it/users (200)', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/it/users')
+      .set('Authorization', `Bearer ${tokens['it@cdy.com']}`)
+      .expect(200);
   });
 });

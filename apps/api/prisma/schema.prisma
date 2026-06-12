@@ -14,33 +14,91 @@ model User {
   passwordHash String
   firstName    String
   lastName     String
-  role         Role      @default(TEAM_MEMBER)
+  roleId       String
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  invoices Invoice[]
-  payments Payment[]
-  expenses Expense[]
-  commissionRules CommissionRule[] @relation("AgentCommissionRules")
-  commissions     CommissionRecord[] @relation("AgentCommissions")
-  notifications   Notification[]
-  creditNotes     CreditNote[]
-  salary          EmployeeSalary?
+  role             Role              @relation(fields: [roleId], references: [id])
+  invoices         Invoice[]
+  payments         Payment[]
+  expenses         Expense[]
+  commissionRules  CommissionRule[]  @relation("AgentCommissionRules")
+  commissions      CommissionRecord[] @relation("AgentCommissions")
+  notifications    Notification[]
+  creditNotes      CreditNote[]
+  salary           EmployeeSalary?
   payrollLineItems PayrollLineItem[] @relation("EmployeePayroll")
 
-  @@index([role])
+  @@index([roleId])
 }
 
-enum Role {
-  CEO
-  FINANCE_MANAGER
-  SALES_AGENT
-  PROJECT_MANAGER
-  OPERATIONS_MANAGER
-  TEAM_MEMBER
-  CLIENT
+model SystemFeature {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  module      String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  permissions RolePermission[]
+
+  @@index([module])
+  @@map("system_features")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id        String   @id @default(cuid())
+  roleId    String
+  featureId String
+  canRead   Boolean  @default(false)
+  canWrite  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role    Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  feature SystemFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, featureId])
+  @@index([roleId])
+  @@index([featureId])
+  @@map("role_permissions")
+}
+
+model ItAuditLog {
+  id               String   @id @default(cuid())
+  performedBy      String
+  performedByEmail String
+  action           String
+  targetType       String
+  targetId         String
+  previousValue    Json?
+  newValue         Json?
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+
+  @@index([performedBy])
+  @@index([action])
+  @@index([createdAt])
+  @@map("it_audit_logs")
 }
 
 model Invoice {

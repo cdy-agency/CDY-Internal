@@ -415,7 +415,7 @@ export class InvoicesService {
       newValue: serialized,
     });
 
-    this.notificationsService.createForRoleAsync(Role.CEO, {
+    this.notificationsService.createForRoleAsync('CEO', {
       type: NotificationType.SYSTEM,
       title: `Invoice written off — ${invoice.invoiceNumber}`,
       body: `Invoice ${invoice.invoiceNumber} has been written off. Reason: ${dto.reason}`,

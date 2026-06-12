@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
-import { Role } from '@cdy/shared';
+import { usePermissions } from '@/context/PermissionContext';
+import { PermissionGate } from '@/components/PermissionGate';
 import { MetricCard } from '@/components/finance/MetricCard';
 import { Button } from '@/components/ui/button';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
@@ -33,8 +34,8 @@ export default function FinanceOverviewPage(): JSX.Element {
       .catch(() => undefined);
   }, []);
 
-  const showCommissionsCard =
-    user?.role === Role.CEO || user?.role === Role.FINANCE_MANAGER;
+  const { canRead } = usePermissions();
+  const showCommissionsCard = canRead('finance.commissions');
 
   const metrics = data
     ? [
@@ -163,12 +164,14 @@ export default function FinanceOverviewPage(): JSX.Element {
       <div>
         <h2 className="mb-4 text-lg font-medium text-cdy-white">Quick links</h2>
         <div className="flex flex-wrap gap-3">
-          <Button asChild variant="outline">
-            <Link href="/finance/invoices/new">
-              <Plus className="h-4 w-4" />
-              New Invoice
-            </Link>
-          </Button>
+          <PermissionGate feature="finance.invoices" action="write">
+            <Button asChild variant="outline">
+              <Link href="/finance/invoices/new">
+                <Plus className="h-4 w-4" />
+                New Invoice
+              </Link>
+            </Button>
+          </PermissionGate>
           <Button asChild variant="outline">
             <Link href="/finance/payments">
               <Plus className="h-4 w-4" />

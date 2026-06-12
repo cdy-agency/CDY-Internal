@@ -8,7 +8,6 @@ import {
   Query,
   Res,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -20,20 +19,17 @@ import {
   CreateEmployeeSalaryDto,
   UpdateEmployeeSalaryDto,
 } from './dto/create-employee-salary.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('payroll')
 @ApiBearerAuth()
 @Controller('payroll')
-@UseGuards(RolesGuard)
 export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @Post('runs')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Create payroll run for a month' })
   async createRun(
     @Body() dto: CreatePayrollRunDto,
@@ -44,7 +40,7 @@ export class PayrollController {
   }
 
   @Get('runs/preview')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'Preview payroll run totals before creating' })
   async previewRun(@Query() filters: PayrollFiltersDto) {
     const data = await this.payrollService.getPayrollPreview(
@@ -54,7 +50,7 @@ export class PayrollController {
   }
 
   @Get('runs')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'List payroll runs' })
   async findAllRuns(@Query() filters: PayrollFiltersDto) {
     const data = await this.payrollService.findAllRuns(filters.month);
@@ -62,7 +58,7 @@ export class PayrollController {
   }
 
   @Get('runs/:id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'Get payroll run by ID' })
   async findRun(@Param('id') id: string) {
     const data = await this.payrollService.findRun(id);
@@ -70,7 +66,7 @@ export class PayrollController {
   }
 
   @Patch('runs/:id/items/:itemId')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Adjust payroll line item' })
   async adjustLineItem(
     @Param('id') runId: string,
@@ -88,7 +84,7 @@ export class PayrollController {
   }
 
   @Post('runs/:id/process')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Process payroll run and send payslips' })
   async processRun(
     @Param('id') id: string,
@@ -99,7 +95,7 @@ export class PayrollController {
   }
 
   @Post('runs/:id/lock')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Lock payroll run' })
   async lockRun(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const data = await this.payrollService.lockRun(id, user.sub);
@@ -107,7 +103,7 @@ export class PayrollController {
   }
 
   @Get('runs/:id/items/:itemId/payslip')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'Download payslip PDF' })
   async downloadPayslip(
     @Param('id') runId: string,
@@ -129,7 +125,7 @@ export class PayrollController {
   }
 
   @Post('salaries')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Create employee salary record' })
   async createSalary(
     @Body() dto: CreateEmployeeSalaryDto,
@@ -140,7 +136,7 @@ export class PayrollController {
   }
 
   @Get('salaries')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'List employee salaries' })
   async findAllSalaries() {
     const data = await this.payrollService.findAllSalaries();
@@ -148,7 +144,7 @@ export class PayrollController {
   }
 
   @Patch('salaries/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payroll', 'write')
   @ApiOperation({ summary: 'Update employee salary' })
   async updateSalary(
     @Param('id') id: string,

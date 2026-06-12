@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { InstalmentStatus, NotificationType, Role } from '@prisma/client';
+import { InstalmentStatus, NotificationType } from '@prisma/client';
 import { format } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -41,7 +41,7 @@ export class PaymentPlanAlertsJob {
     });
 
     for (const inst of overdueInstalments) {
-      this.notificationsService.createForRoleAsync(Role.FINANCE_MANAGER, {
+      this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
         type: NotificationType.INVOICE_OVERDUE,
         title: `Payment plan instalment overdue — ${inst.plan.invoice.invoiceNumber}`,
         body: `Instalment ${inst.instalmentNumber} of $${Number(inst.amount).toFixed(2)} was due ${format(inst.dueDate, 'MMM d, yyyy')} and has not been paid.`,

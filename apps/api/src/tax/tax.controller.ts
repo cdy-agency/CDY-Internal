@@ -8,7 +8,6 @@ import {
   Query,
   Res,
   HttpStatus,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -18,15 +17,12 @@ import { TaxPdfService } from './tax-pdf.service';
 import { CreateTaxRateDto } from './dto/create-tax-rate.dto';
 import { TaxPaymentDto } from './dto/tax-payment.dto';
 import { TaxReportFiltersDto } from './dto/tax-report-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('tax')
 @ApiBearerAuth()
 @Controller('tax')
-@UseGuards(RolesGuard)
 export class TaxController {
   constructor(
     private readonly taxService: TaxService,
@@ -34,7 +30,7 @@ export class TaxController {
   ) {}
 
   @Get('rates')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'read')
   @ApiOperation({ summary: 'List tax rates' })
   async findAllRates() {
     const data = await this.taxService.findAllRates();
@@ -42,7 +38,7 @@ export class TaxController {
   }
 
   @Post('rates')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'write')
   @ApiOperation({ summary: 'Create tax rate' })
   async createRate(
     @Body() dto: CreateTaxRateDto,
@@ -53,7 +49,7 @@ export class TaxController {
   }
 
   @Delete('rates/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'write')
   @ApiOperation({ summary: 'Deactivate tax rate' })
   async deactivateRate(@Param('id') id: string) {
     const data = await this.taxService.deactivateTaxRate(id);
@@ -61,7 +57,7 @@ export class TaxController {
   }
 
   @Get('report')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'read')
   @ApiOperation({ summary: 'Tax liability report' })
   async getReport(@Query() filters: TaxReportFiltersDto) {
     const data = await this.taxService.getTaxLiabilityReport(filters);
@@ -69,7 +65,7 @@ export class TaxController {
   }
 
   @Get('report/pdf')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'read')
   @ApiOperation({ summary: 'Download tax liability report PDF' })
   async downloadReportPdf(
     @Query() filters: TaxReportFiltersDto,
@@ -87,7 +83,7 @@ export class TaxController {
   }
 
   @Post('remittances')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'write')
   @ApiOperation({ summary: 'Record tax remittance' })
   async recordRemittance(
     @Body() dto: TaxPaymentDto,
@@ -98,7 +94,7 @@ export class TaxController {
   }
 
   @Get('remittances')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.tax', 'read')
   @ApiOperation({ summary: 'List tax remittances' })
   async findRemittances() {
     const data = await this.taxService.findAllRemittances();

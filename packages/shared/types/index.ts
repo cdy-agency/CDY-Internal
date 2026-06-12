@@ -6,7 +6,13 @@ export enum Role {
   OPERATIONS_MANAGER = 'OPERATIONS_MANAGER',
   TEAM_MEMBER = 'TEAM_MEMBER',
   CLIENT = 'CLIENT',
+  IT = 'IT',
 }
+
+export type PermissionMap = Record<
+  string,
+  { canRead: boolean; canWrite: boolean }
+>;
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
@@ -108,9 +114,11 @@ export type ArRiskLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'CURRENT';
 export interface UserProfile {
   id: string;
   email: string;
-  role: Role;
+  roleKey: string;
+  roleName: string;
   firstName: string;
   lastName: string;
+  permissions?: PermissionMap;
 }
 
 export interface LoginResponse {
@@ -638,7 +646,7 @@ export interface CommissionRecord {
     id: string;
     firstName: string;
     lastName: string;
-    role: Role;
+    roleKey: string;
   };
 }
 

@@ -8,7 +8,6 @@ import {
   BudgetRequestStatus,
   NotificationType,
   Prisma,
-  Role,
 } from '@prisma/client';
 import { subDays } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
@@ -145,7 +144,7 @@ export class BudgetService {
 
       if (shouldAlert) {
         this.notificationsService.createForRoleAsync(
-          Role.OPERATIONS_MANAGER,
+          'OPERATIONS_MANAGER',
           {
             type: NotificationType.BUDGET_ALERT,
             title: `Budget alert — ${budget.projectName}`,
@@ -212,7 +211,7 @@ export class BudgetService {
       },
     });
 
-    this.notificationsService.createForRoleAsync(Role.OPERATIONS_MANAGER, {
+    this.notificationsService.createForRoleAsync('OPERATIONS_MANAGER', {
       type: NotificationType.BUDGET_ALERT,
       title: `Budget increase request — ${budget.projectName}`,
       body: `${requesterName ?? 'A team member'} is requesting a budget increase from $${Number(budget.approvedBudget).toFixed(2)} to $${dto.requestedBudget.toFixed(2)}. Justification: ${dto.justification}`,

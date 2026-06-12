@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -15,20 +14,17 @@ import { buildAuditContext } from '../common/audit/build-audit-context';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentFiltersDto } from './dto/payment-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('payments')
 @ApiBearerAuth()
 @Controller()
-@UseGuards(RolesGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('invoices/:invoiceId/payments')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payments', 'write')
   @ApiOperation({ summary: 'Record a payment against an invoice' })
   async recordPayment(
     @Param('invoiceId') invoiceId: string,
@@ -50,7 +46,7 @@ export class PaymentsController {
   }
 
   @Get('payments')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payments', 'read')
   @ApiOperation({ summary: 'List payments with filters' })
   async findAll(@Query() filters: PaymentFiltersDto) {
     const data = await this.paymentsService.findAll(filters);
@@ -62,7 +58,7 @@ export class PaymentsController {
   }
 
   @Get('payments/:id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payments', 'read')
   @ApiOperation({ summary: 'Get payment by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.paymentsService.findOne(id);

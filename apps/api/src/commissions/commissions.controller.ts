@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -26,20 +25,17 @@ import {
   PayrollMonthDto,
   ApproveAllDto,
 } from './dto/commission-filters.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
-import { Role } from '@cdy/shared';
 
 @ApiTags('commissions')
 @ApiBearerAuth()
 @Controller('commissions')
-@UseGuards(RolesGuard)
 export class CommissionsController {
   constructor(private readonly commissionsService: CommissionsService) {}
 
   @Get('agents')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.commissions', 'read')
   @ApiOperation({ summary: 'List sales agents for commission rules' })
   async findSalesAgents() {
     const data = await this.commissionsService.findSalesAgents();
@@ -47,7 +43,7 @@ export class CommissionsController {
   }
 
   @Post('rules')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Create commission rule' })
   async createRule(
     @Body() dto: CreateCommissionRuleDto,
@@ -58,7 +54,7 @@ export class CommissionsController {
   }
 
   @Get('rules')
-  @Roles(Role.CEO, Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'read')
   @ApiOperation({ summary: 'List commission rules' })
   async findAllRules() {
     const data = await this.commissionsService.findAllRules();
@@ -66,7 +62,7 @@ export class CommissionsController {
   }
 
   @Patch('rules/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Update commission rule' })
   async updateRule(@Param('id') id: string, @Body() dto: UpdateCommissionRuleDto) {
     const data = await this.commissionsService.updateRule(id, dto);
@@ -74,7 +70,7 @@ export class CommissionsController {
   }
 
   @Delete('rules/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Deactivate commission rule' })
   async deactivateRule(
     @Param('id') id: string,
@@ -90,7 +86,7 @@ export class CommissionsController {
   }
 
   @Post('calculate')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Calculate commission for a closed deal' })
   async calculate(
     @Body() dto: CalculateCommissionDto,
@@ -109,7 +105,7 @@ export class CommissionsController {
   }
 
   @Get('my')
-  @Roles(Role.SALES_AGENT)
+  @RequirePermission('finance.commissions.own', 'read')
   @ApiOperation({ summary: 'Get own commissions' })
   async findMyCommissions(
     @Query() filters: CommissionFiltersDto,
@@ -123,7 +119,7 @@ export class CommissionsController {
   }
 
   @Get('summary/me')
-  @Roles(Role.SALES_AGENT)
+  @RequirePermission('finance.commissions.own', 'read')
   @ApiOperation({ summary: 'Agent commission summary' })
   async getMySummary(
     @Query('month') month: string,
@@ -134,7 +130,7 @@ export class CommissionsController {
   }
 
   @Get('payroll')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'read')
   @ApiOperation({ summary: 'Payroll summary for approved commissions' })
   async getPayrollSummary(@Query() query: PayrollMonthDto) {
     const data = await this.commissionsService.getPayrollSummary(query.month);
@@ -142,7 +138,7 @@ export class CommissionsController {
   }
 
   @Patch('approve-all')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Approve all pending commissions for a month' })
   async approveAll(
     @Query() query: ApproveAllDto,
@@ -156,7 +152,7 @@ export class CommissionsController {
   }
 
   @Patch(':id/review')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.commissions', 'write')
   @ApiOperation({ summary: 'Approve or reject a commission' })
   async review(
     @Param('id') id: string,
@@ -174,7 +170,7 @@ export class CommissionsController {
   }
 
   @Get()
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.commissions', 'read')
   @ApiOperation({ summary: 'List all commissions' })
   async findAll(@Query() filters: CommissionFiltersDto) {
     const data = await this.commissionsService.findAll(filters);
@@ -182,7 +178,7 @@ export class CommissionsController {
   }
 
   @Get(':id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.commissions', 'read')
   @ApiOperation({ summary: 'Get commission by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.commissionsService.findOne(id);

@@ -6,7 +6,6 @@ import {
   Body,
   Param,
   HttpStatus,
-  UseGuards,
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -16,21 +15,18 @@ import {
   CreatePaymentPlanDto,
   PayInstalmentDto,
 } from './dto/create-payment-plan.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
 import { buildAuditContext } from '../common/audit/build-audit-context';
-import { Role } from '@cdy/shared';
 
 @ApiTags('payment-plans')
 @ApiBearerAuth()
 @Controller()
-@UseGuards(RolesGuard)
 export class PaymentPlansController {
   constructor(private readonly paymentPlansService: PaymentPlansService) {}
 
   @Post('invoices/:invoiceId/payment-plan')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payment_plans', 'write')
   @ApiOperation({ summary: 'Create payment plan for invoice' })
   async create(
     @Param('invoiceId') invoiceId: string,
@@ -50,7 +46,7 @@ export class PaymentPlansController {
   }
 
   @Get('invoices/:invoiceId/payment-plan')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.payment_plans', 'read')
   @ApiOperation({ summary: 'Get payment plan for invoice' })
   async findByInvoice(@Param('invoiceId') invoiceId: string) {
     const data = await this.paymentPlansService.findByInvoice(invoiceId);
@@ -62,7 +58,7 @@ export class PaymentPlansController {
   }
 
   @Post('payment-plans/:id/instalments/:itemId/pay')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payment_plans', 'write')
   @ApiOperation({ summary: 'Pay a payment plan instalment' })
   async payInstalment(
     @Param('id') id: string,
@@ -86,7 +82,7 @@ export class PaymentPlansController {
   }
 
   @Delete('payment-plans/:id')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.payment_plans', 'write')
   @ApiOperation({ summary: 'Cancel payment plan' })
   async cancel(@Param('id') id: string) {
     const data = await this.paymentPlansService.cancel(id);

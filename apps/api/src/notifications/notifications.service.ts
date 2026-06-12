@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Notification, NotificationType, Role } from '@prisma/client';
+import { Notification, NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationFiltersDto } from './dto/notification-filters.dto';
 
@@ -33,12 +33,16 @@ export class NotificationsService {
   }
 
   async createForRole(
-    role: Role,
+    roleKey: string,
     data: Omit<CreateNotificationData, 'userId'>,
   ): Promise<void> {
     try {
       const users = await this.prisma.user.findMany({
-        where: { role, isActive: true, deletedAt: null },
+        where: {
+          role: { key: roleKey },
+          isActive: true,
+          deletedAt: null,
+        },
         select: { id: true },
       });
 
@@ -53,10 +57,10 @@ export class NotificationsService {
   }
 
   createForRoleAsync(
-    role: Role,
+    roleKey: string,
     data: Omit<CreateNotificationData, 'userId'>,
   ): void {
-    void this.createForRole(role, data);
+    void this.createForRole(roleKey, data);
   }
 
   async findAll(userId: string, filters: NotificationFiltersDto) {

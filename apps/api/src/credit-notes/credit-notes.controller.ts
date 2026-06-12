@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   HttpStatus,
-  UseGuards,
   Req,
   Res,
 } from '@nestjs/common';
@@ -17,21 +16,18 @@ import {
   CreateCreditNoteDto,
   CreditNoteFiltersDto,
 } from './dto/create-credit-note.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
 import { buildAuditContext } from '../common/audit/build-audit-context';
-import { Role } from '@cdy/shared';
 
 @ApiTags('credit-notes')
 @ApiBearerAuth()
 @Controller()
-@UseGuards(RolesGuard)
 export class CreditNotesController {
   constructor(private readonly creditNotesService: CreditNotesService) {}
 
   @Post('invoices/:invoiceId/credit-notes')
-  @Roles(Role.FINANCE_MANAGER)
+  @RequirePermission('finance.credit_notes', 'write')
   @ApiOperation({ summary: 'Create credit note for invoice' })
   async create(
     @Param('invoiceId') invoiceId: string,
@@ -53,7 +49,7 @@ export class CreditNotesController {
   }
 
   @Get('invoices/:invoiceId/credit-notes')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.credit_notes', 'read')
   @ApiOperation({ summary: 'Credit notes for an invoice' })
   async findByInvoice(@Param('invoiceId') invoiceId: string) {
     const data = await this.creditNotesService.findByInvoice(invoiceId);
@@ -65,7 +61,7 @@ export class CreditNotesController {
   }
 
   @Get('credit-notes')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.credit_notes', 'read')
   @ApiOperation({ summary: 'List credit notes' })
   async findAll(@Query() filters: CreditNoteFiltersDto) {
     const data = await this.creditNotesService.findAll(filters);
@@ -77,7 +73,7 @@ export class CreditNotesController {
   }
 
   @Get('credit-notes/:id/pdf')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.credit_notes', 'read')
   @ApiOperation({ summary: 'Download credit note PDF' })
   async downloadPdf(
     @Param('id') id: string,
@@ -93,7 +89,7 @@ export class CreditNotesController {
   }
 
   @Get('credit-notes/:id')
-  @Roles(Role.FINANCE_MANAGER, Role.CEO)
+  @RequirePermission('finance.credit_notes', 'read')
   @ApiOperation({ summary: 'Get credit note by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.creditNotesService.findOne(id);

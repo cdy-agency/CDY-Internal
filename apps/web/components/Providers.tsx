@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
+import { PermissionProvider } from '@/context/PermissionContext';
 
 export function Providers({ children }: { children: React.ReactNode }): JSX.Element {
   const [queryClient] = useState(
@@ -19,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }): JSX.Elem
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <PermissionProvider>{children}</PermissionProvider>
       <Toaster
         position="top-right"
         toastOptions={{
