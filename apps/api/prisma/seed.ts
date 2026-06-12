@@ -21,9 +21,9 @@ async function clearAllData(): Promise<void> {
   await prisma.leadActivity.deleteMany();
   await prisma.pipelineStageHistory.deleteMany();
   await prisma.lead.deleteMany();
-  await prisma.client.deleteMany();
-  await prisma.payrollLineItem.deleteMany();
-  await prisma.payrollRun.deleteMany();
+<<<<<<< HEAD
+=======
+  await prisma.invoiceReminder.deleteMany();
   await prisma.employeeSalary.deleteMany();
   await prisma.balanceSheetEntry.deleteMany();
   await prisma.financeSetting.deleteMany();
