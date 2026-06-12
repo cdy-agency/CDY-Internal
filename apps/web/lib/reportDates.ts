@@ -80,7 +80,21 @@ export function shiftMonth(monthKey: string, delta: number): string {
   return format(d, 'yyyy-MM');
 }
 
+export function buildCrmReportPresets(): DatePreset[] {
+  return buildPlPresets();
+}
+
 export function formatMonthKey(monthKey: string): string {
   const [y, m] = monthKey.split('-').map(Number);
   return format(new Date(y, m - 1, 1), 'MMMM yyyy');
+}
+
+export function crmFiltersToParams(filters: Record<string, string | number | boolean | undefined>): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '' && value !== false) {
+      params.set(key, String(value));
+    }
+  }
+  return params;
 }

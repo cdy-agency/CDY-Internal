@@ -11,8 +11,9 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { ApiResponse, InvoiceDetail, InvoiceRecord } from '@cdy/shared';
+import type { ApiResponse, ClientSearchResult, InvoiceDetail, InvoiceRecord } from '@cdy/shared';
 import { InvoiceStatus } from '@cdy/shared';
+import { ClientSearch } from '@/components/crm/ClientSearch';
 
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -48,6 +49,7 @@ export function InvoiceDrawer({
   const queryClient = useQueryClient();
   const [submitAction, setSubmitAction] = useState<'draft' | 'send' | null>(null);
   const [statusText, setStatusText] = useState('');
+  const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
 
   const isEdit = Boolean(invoice);
   const isReadOnly = isEdit && invoice?.status !== InvoiceStatus.DRAFT;
@@ -58,6 +60,7 @@ export function InvoiceDrawer({
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(
@@ -98,6 +101,13 @@ export function InvoiceDrawer({
           unitPrice: item.unitPrice,
         })),
       });
+      setSelectedClient({
+        id: invoice.clientId,
+        companyName: invoice.clientId,
+        contactName: invoice.clientId,
+        email: '',
+        country: 'RW',
+      });
     } else if (open && !invoice) {
       reset({
         clientId: '',
@@ -108,6 +118,7 @@ export function InvoiceDrawer({
         notes: '',
         lineItems: [{ description: '', quantity: 1, unitPrice: 0 }],
       });
+      setSelectedClient(null);
     }
   }, [open, invoice, reset]);
 
@@ -230,13 +241,18 @@ export function InvoiceDrawer({
         >
           <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
             <div className="space-y-2">
-              <Label htmlFor="clientId">Client ID</Label>
-              <Input
-                id="clientId"
-                {...register('clientId')}
-                disabled={isReadOnly}
-                placeholder="client-001"
-              />
+              <Label>Client</Label>
+              {isReadOnly ? (
+                <Input value={invoice?.clientId ?? ''} disabled />
+              ) : (
+                <ClientSearch
+                  value={selectedClient}
+                  onChange={(client) => {
+                    setSelectedClient(client);
+                    setValue('clientId', client?.id ?? '', { shouldValidate: true });
+                  }}
+                />
+              )}
               {errors.clientId && (
                 <p className="text-xs text-[var(--cdy-danger)]">{errors.clientId.message}</p>
               )}

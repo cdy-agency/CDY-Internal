@@ -28,6 +28,15 @@ export interface SerializedInvoice {
   id: string;
   invoiceNumber: string;
   clientId: string;
+  client: {
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+    country: string;
+    city: string | null;
+    address: string | null;
+  } | null;
   projectId: string | null;
   status: Invoice['status'];
   lineItems: LineItemWithAmount[];
@@ -168,6 +177,19 @@ export class InvoicesService {
     const [invoices, total] = await Promise.all([
       this.prisma.invoice.findMany({
         where,
+        include: {
+          client: {
+            select: {
+              companyName: true,
+              contactName: true,
+              email: true,
+              phone: true,
+              country: true,
+              city: true,
+              address: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -196,6 +218,17 @@ export class InvoicesService {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, deletedAt: null },
       include: {
+        client: {
+          select: {
+            companyName: true,
+            contactName: true,
+            email: true,
+            phone: true,
+            country: true,
+            city: true,
+            address: true,
+          },
+        },
         payments: {
           where: { deletedAt: null },
           orderBy: { paidAt: 'asc' },
@@ -508,7 +541,19 @@ export class InvoicesService {
     return invoice;
   }
 
-  private serializeInvoice(invoice: Invoice): SerializedInvoice {
+  private serializeInvoice(
+    invoice: Invoice & {
+      client?: {
+        companyName: string;
+        contactName: string;
+        email: string;
+        phone: string | null;
+        country: string;
+        city: string | null;
+        address: string | null;
+      } | null;
+    },
+  ): SerializedInvoice {
     return {
       ...invoice,
       subtotal: Number(invoice.subtotal),
@@ -516,6 +561,7 @@ export class InvoicesService {
       taxAmount: Number(invoice.taxAmount),
       total: Number(invoice.total),
       lineItems: invoice.lineItems as unknown as LineItemWithAmount[],
+      client: invoice.client ?? null,
     };
   }
 
