@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
+import { seedHrData } from './seeds/hr.seed';
 
 const prisma = new PrismaClient();
 
@@ -25,6 +26,13 @@ async function clearAllData(): Promise<void> {
   await prisma.payrollLineItem.deleteMany();
   await prisma.payrollRun.deleteMany();
   await prisma.employeeSalary.deleteMany();
+  await prisma.attendanceRecord.deleteMany();
+  await prisma.leaveRequest.deleteMany();
+  await prisma.leaveBalance.deleteMany();
+  await prisma.leaveType.deleteMany();
+  await prisma.employee.deleteMany();
+  await prisma.department.deleteMany();
+  await prisma.hrSetting.deleteMany();
   await prisma.balanceSheetEntry.deleteMany();
   await prisma.financeSetting.deleteMany();
   await prisma.budgetIncreaseRequest.deleteMany();
@@ -465,7 +473,12 @@ async function main(): Promise<void> {
   void draftInvoice;
   void sentInvoice;
   void overdueInvoice;
-  void ceo;
+
+  await seedHrData(
+    prisma,
+    { ceo, financeManager, salesAgent },
+    financeManager.id,
+  );
 
   process.stdout.write(
     'Seed complete: ceo@cdy.com, finance@cdy.com, sales@cdy.com, it@cdy.com (password: CDY@2026!)\n',

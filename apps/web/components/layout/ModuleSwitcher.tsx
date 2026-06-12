@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Coins, Users } from 'lucide-react';
+import { Coins, UserCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/context/PermissionContext';
 
@@ -18,6 +18,12 @@ const MODULES = [
     href: '/crm',
     feature: 'crm.pipeline',
     icon: Users,
+  },
+  {
+    label: 'HR',
+    href: '/hr',
+    feature: 'hr.employees',
+    icon: UserCircle,
   },
 ] as const;
 

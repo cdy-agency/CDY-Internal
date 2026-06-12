@@ -27,5 +27,7 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   totalClients!: number;
   newClientsThisMonth!: number;
   cashFlowAlert!: boolean;
+  totalActiveEmployees!: number;
+  totalMonthlyPayroll!: number;
   previousMonth!: FinanceSummaryMetrics;
 }

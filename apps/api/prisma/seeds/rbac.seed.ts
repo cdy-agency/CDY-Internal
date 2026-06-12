@@ -27,7 +27,8 @@ export const SYSTEM_FEATURES = [
   { key: 'hr.employees', name: 'Employees', module: 'hr', description: 'Employee profiles and directory' },
   { key: 'hr.attendance', name: 'Attendance & Leave', module: 'hr', description: 'Leave requests and attendance' },
   { key: 'hr.payroll', name: 'HR Payroll View', module: 'hr', description: 'HR view of payroll data' },
-  { key: 'hr.performance', name: 'Performance Reviews', module: 'hr', description: 'Performance review tracking' },
+  { key: 'hr.performance', name: 'Performance Reviews', module: 'hr', description: 'Performance review tracking (Sprint 14)' },
+  { key: 'hr.settings', name: 'HR Settings', module: 'hr', description: 'HR configuration (working days, leave year)' },
   { key: 'projects.all', name: 'All Projects', module: 'projects', description: 'View and manage all projects' },
   { key: 'projects.own', name: 'Own Projects', module: 'projects', description: 'View own assigned projects only' },
   { key: 'projects.tasks', name: 'Tasks', module: 'projects', description: 'Task creation and management' },
@@ -76,6 +77,11 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.clients', canRead: true, canWrite: false },
       { key: 'crm.proposals', canRead: true, canWrite: false },
       { key: 'crm.reports', canRead: true, canWrite: true },
+      { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.attendance', canRead: true, canWrite: false },
+      { key: 'hr.payroll', canRead: true, canWrite: false },
+      { key: 'hr.performance', canRead: true, canWrite: true },
+      { key: 'hr.settings', canRead: true, canWrite: true },
     ],
   },
   {
@@ -103,6 +109,8 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.audit', canRead: true, canWrite: false },
       { key: 'finance.settings', canRead: true, canWrite: false },
       { key: 'crm.clients', canRead: true, canWrite: false },
+      { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.payroll', canRead: true, canWrite: true },
     ],
   },
   {
@@ -117,6 +125,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.pipeline', canRead: true, canWrite: true },
       { key: 'crm.clients', canRead: true, canWrite: false },
       { key: 'crm.proposals', canRead: true, canWrite: true },
+      { key: 'hr.attendance', canRead: true, canWrite: true },
     ],
   },
   {
@@ -132,6 +141,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'projects.own', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'projects.approvals', canRead: true, canWrite: true },
+      { key: 'hr.employees', canRead: true, canWrite: false },
     ],
   },
   {
@@ -144,7 +154,11 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.budget', canRead: true, canWrite: true },
       { key: 'finance.expenses', canRead: true, canWrite: false },
       { key: 'projects.all', canRead: true, canWrite: false },
-      { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.employees', canRead: true, canWrite: true },
+      { key: 'hr.attendance', canRead: true, canWrite: true },
+      { key: 'hr.payroll', canRead: true, canWrite: true },
+      { key: 'hr.performance', canRead: true, canWrite: true },
+      { key: 'hr.settings', canRead: true, canWrite: true },
       { key: 'crm.leads', canRead: true, canWrite: false },
       { key: 'crm.pipeline', canRead: true, canWrite: false },
       { key: 'crm.clients', canRead: true, canWrite: true },
@@ -160,6 +174,7 @@ export const DEFAULT_ROLES: Array<{
     permissions: [
       { key: 'projects.own', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
+      { key: 'hr.attendance', canRead: true, canWrite: true },
     ],
   },
   {

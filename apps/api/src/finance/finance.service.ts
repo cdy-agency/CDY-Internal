@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  EmployeeStatus,
   InvoiceStatus,
   PaymentPlanStatus,
   Prisma,
@@ -88,6 +89,7 @@ export class FinanceService {
       blockedProjects,
       totalClients,
       newClientsThisMonth,
+      hrMetrics,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -127,6 +129,7 @@ export class FinanceService {
       this.prisma.client.count({
         where: { deletedAt: null, createdAt: { gte: currentMonthStart } },
       }),
+      this.getHrPayrollMetrics(),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -156,6 +159,7 @@ export class FinanceService {
     };
 
     const cashFlowAlert = await this.cashFlowService.hasShortfallIn30Days();
+    const { totalActiveEmployees, totalMonthlyPayroll } = hrMetrics;
 
     this.logger.debug('Finance summary computed');
 
@@ -177,6 +181,8 @@ export class FinanceService {
       totalClients,
       newClientsThisMonth,
       cashFlowAlert,
+      totalActiveEmployees,
+      totalMonthlyPayroll,
       previousMonth: previousMetrics,
     };
   }
@@ -416,6 +422,26 @@ export class FinanceService {
     return this.prisma.projectBudget.count({
       where: { isBlocked: true },
     });
+  }
+
+  private async getHrPayrollMetrics(): Promise<{
+    totalActiveEmployees: number;
+    totalMonthlyPayroll: number;
+  }> {
+    const activeEmployees = await this.prisma.employee.findMany({
+      where: { status: EmployeeStatus.ACTIVE, deletedAt: null },
+      select: { baseSalary: true },
+    });
+
+    const totalMonthlyPayroll = activeEmployees.reduce(
+      (sum, e) => sum + Number(e.baseSalary),
+      0,
+    );
+
+    return {
+      totalActiveEmployees: activeEmployees.length,
+      totalMonthlyPayroll: Number(totalMonthlyPayroll.toFixed(2)),
+    };
   }
 
   private toNumber(value: Prisma.Decimal | number | null | undefined): number {
