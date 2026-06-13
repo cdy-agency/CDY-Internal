@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { PermissionGate } from '@/components/PermissionGate';
 import type { ApiResponse } from '@cdy/shared';
 
 interface ItOverview {
@@ -35,12 +36,16 @@ export default function ItOverviewPage(): JSX.Element {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-cdy-white">IT Overview</h1>
         <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/it/users">Add User</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/it/roles">Create Role</Link>
-          </Button>
+          <PermissionGate feature="it.users" action="write">
+            <Button asChild>
+              <Link href="/it/users/new">+ Create user</Link>
+            </Button>
+          </PermissionGate>
+          <PermissionGate feature="it.roles" action="write">
+            <Button variant="outline" asChild>
+              <Link href="/it/roles/new">+ Create role</Link>
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
