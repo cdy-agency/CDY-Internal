@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Invoice } from '@prisma/client';
 import puppeteer, { Browser } from 'puppeteer';
+import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 import { SettingsService } from '../settings/settings.service';
 
 interface LineItem {
@@ -27,10 +28,7 @@ export class InvoicePdfService implements OnModuleDestroy {
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browserPromise) {
-      this.browserPromise = puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      this.browserPromise = puppeteer.launch(getPuppeteerLaunchOptions());
     }
     return this.browserPromise;
   }

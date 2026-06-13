@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import puppeteer, { Browser } from 'puppeteer';
+import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 import { format } from 'date-fns';
 import type { PlReportResult } from './reports.service';
 
@@ -36,10 +37,7 @@ export class ReportPdfService implements OnModuleDestroy {
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browserPromise) {
-      this.browserPromise = puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      this.browserPromise = puppeteer.launch(getPuppeteerLaunchOptions());
     }
     return this.browserPromise;
   }

@@ -217,3 +217,19 @@ docker compose -f docker-compose.prod.yml exec api npx prisma migrate status
 ```
 
 Expected result: all 15 migrations show as applied, including Sprint 14 (new name), Sprint 16, and Sprint 17.
+
+### PDF generation (Puppeteer / Chromium)
+
+Invoice, receipt, payslip, and report PDFs require Chromium inside the API container. The production Dockerfile installs Alpine `chromium` and sets `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`.
+
+After pulling code changes, rebuild the API image:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d api
+```
+
+Verify Chromium is available:
+
+```bash
+docker compose -f docker-compose.prod.yml exec api sh -c 'test -x /usr/bin/chromium && echo OK || echo MISSING'
+```

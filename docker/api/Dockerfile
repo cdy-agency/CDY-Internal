@@ -10,11 +10,15 @@ COPY apps/api/package.json ./apps/api/
 
 # ─── Dependencies ─────────────────────────────────────────────
 FROM base AS deps
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN pnpm install --frozen-lockfile
 
 # ─── Development (hot reload) ─────────────────────────────────
 FROM deps AS development
 COPY apps/api/ ./apps/api/
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto-emoji
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN pnpm --filter @cdy/shared build && pnpm --filter api prisma:generate
 EXPOSE 3251
 
@@ -26,7 +30,19 @@ RUN pnpm --filter api build
 
 # ─── Production ───────────────────────────────────────────────
 FROM node:20-alpine AS production
-RUN apk add --no-cache openssl libc6-compat
+# Chromium for Puppeteer PDF generation (invoices, receipts, payslips, reports)
+RUN apk add --no-cache \
+    openssl \
+    libc6-compat \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install -g pnpm
 WORKDIR /app
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
