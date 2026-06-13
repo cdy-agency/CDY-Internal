@@ -19,6 +19,8 @@ export const SYSTEM_FEATURES = [
   { key: 'finance.reports', name: 'Financial Reports', module: 'finance', description: 'P&L, ageing, cash flow, balance sheet' },
   { key: 'finance.audit', name: 'Finance Audit Log', module: 'finance', description: 'Tamper-proof finance action trail' },
   { key: 'finance.settings', name: 'Finance Settings', module: 'finance', description: 'Company details, invoice config' },
+  { key: 'ventures.view', name: 'Ventures — View', module: 'finance', description: 'View venture income and expenses' },
+  { key: 'ventures.manage', name: 'Ventures — Manage', module: 'finance', description: 'Create and manage ventures, log income and expenses' },
   { key: 'crm.leads', name: 'Leads', module: 'crm', description: 'Lead capture and management' },
   { key: 'crm.pipeline', name: 'Sales Pipeline', module: 'crm', description: 'Kanban pipeline board' },
   { key: 'crm.clients', name: 'Clients', module: 'crm', description: 'Client account management' },
@@ -71,6 +73,8 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.reports', canRead: true, canWrite: false },
       { key: 'finance.audit', canRead: true, canWrite: false },
       { key: 'finance.settings', canRead: true, canWrite: true },
+      { key: 'ventures.view', canRead: true, canWrite: false },
+      { key: 'ventures.manage', canRead: true, canWrite: true },
     ],
   },
   {
@@ -97,6 +101,8 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.reports', canRead: true, canWrite: false },
       { key: 'finance.audit', canRead: true, canWrite: false },
       { key: 'finance.settings', canRead: true, canWrite: false },
+      { key: 'ventures.view', canRead: true, canWrite: false },
+      { key: 'ventures.manage', canRead: true, canWrite: true },
     ],
   },
   {
@@ -111,6 +117,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.pipeline', canRead: true, canWrite: true },
       { key: 'crm.clients', canRead: true, canWrite: false },
       { key: 'crm.proposals', canRead: true, canWrite: true },
+      { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
   {
@@ -126,6 +133,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'projects.own', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'projects.approvals', canRead: true, canWrite: true },
+      { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
   {
@@ -139,6 +147,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.expenses', canRead: true, canWrite: false },
       { key: 'projects.all', canRead: true, canWrite: false },
       { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
   {
@@ -150,6 +159,7 @@ export const DEFAULT_ROLES: Array<{
     permissions: [
       { key: 'projects.own', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
+      { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
   {
@@ -160,6 +170,7 @@ export const DEFAULT_ROLES: Array<{
     isSystem: false,
     permissions: [
       { key: 'finance.invoices', canRead: true, canWrite: false },
+      { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
   {

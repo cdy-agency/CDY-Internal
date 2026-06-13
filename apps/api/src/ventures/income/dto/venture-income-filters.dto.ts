@@ -1,6 +1,6 @@
 import { IsOptional, IsDateString, IsString } from 'class-validator';
 
-export class PlReportFiltersDto {
+export class VentureIncomeFiltersDto {
   @IsOptional()
   @IsDateString()
   from?: string;
@@ -11,9 +11,5 @@ export class PlReportFiltersDto {
 
   @IsOptional()
   @IsString()
-  serviceType?: string;
-
-  @IsOptional()
-  @IsString()
-  ventureId?: string;
+  category?: string;
 }

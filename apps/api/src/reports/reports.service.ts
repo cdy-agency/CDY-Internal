@@ -85,8 +85,33 @@ export class ReportsService {
     const prevTo = new Date(from.getTime() - 1);
     prevTo.setHours(23, 59, 59, 999);
 
-    const current = await this.computePlPeriod(from, to, filters.serviceType);
-    const previous = await this.computePlPeriod(prevFrom, prevTo, filters.serviceType);
+    const ventureId = filters.ventureId;
+
+    let current: PlPeriodData;
+    let previous: PlPeriodData;
+
+    if (ventureId && ventureId !== 'all') {
+      current = await this.computeVenturePlPeriod(from, to, ventureId);
+      previous = await this.computeVenturePlPeriod(prevFrom, prevTo, ventureId);
+    } else if (ventureId === 'all') {
+      current = await this.computeCombinedPlPeriod(
+        from,
+        to,
+        filters.serviceType,
+      );
+      previous = await this.computeCombinedPlPeriod(
+        prevFrom,
+        prevTo,
+        filters.serviceType,
+      );
+    } else {
+      current = await this.computePlPeriod(from, to, filters.serviceType);
+      previous = await this.computePlPeriod(
+        prevFrom,
+        prevTo,
+        filters.serviceType,
+      );
+    }
 
     this.logger.debug(
       `P&L report computed for ${from.toISOString()} – ${to.toISOString()}`,
@@ -194,6 +219,182 @@ export class ReportsService {
       netProfit,
       netMargin,
     };
+  }
+
+  private async computeVenturePlPeriod(
+    from: Date,
+    to: Date,
+    ventureId: string,
+  ): Promise<PlPeriodData> {
+    const [incomeRaw, expenseRaw] = await Promise.all([
+      this.prisma.ventureIncome.groupBy({
+        by: ['category'],
+        where: {
+          ventureId,
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.ventureExpense.groupBy({
+        by: ['category'],
+        where: {
+          ventureId,
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { ventureAmount: true },
+      }),
+    ]);
+
+    const revenueByServiceType = incomeRaw.map((r) => ({
+      serviceType: r.category,
+      amount: this.toNumber(r._sum.amount),
+    }));
+    const opexByCategory = expenseRaw.map((r) => ({
+      category: r.category,
+      amount: this.toNumber(r._sum.ventureAmount),
+    }));
+
+    const totalRevenue = revenueByServiceType.reduce((s, r) => s + r.amount, 0);
+    const totalOpex = opexByCategory.reduce((s, r) => s + r.amount, 0);
+    const grossProfit = totalRevenue;
+    const grossMargin =
+      totalRevenue > 0 ? Number(((grossProfit / totalRevenue) * 100).toFixed(2)) : 0;
+    const netProfit = grossProfit - totalOpex;
+    const netMargin =
+      totalRevenue > 0
+        ? Number(((netProfit / totalRevenue) * 100).toFixed(2))
+        : 0;
+
+    return {
+      totalRevenue,
+      revenueByServiceType,
+      totalCOGS: 0,
+      cogsByCategory: [],
+      grossProfit,
+      grossMargin,
+      totalOpex,
+      opexByCategory,
+      netProfit,
+      netMargin,
+    };
+  }
+
+  private async computeAllVenturesPlPeriod(
+    from: Date,
+    to: Date,
+  ): Promise<PlPeriodData> {
+    const [incomeRaw, expenseRaw] = await Promise.all([
+      this.prisma.ventureIncome.groupBy({
+        by: ['category'],
+        where: { date: { gte: from, lte: to }, deletedAt: null },
+        _sum: { amount: true },
+      }),
+      this.prisma.ventureExpense.groupBy({
+        by: ['category'],
+        where: { date: { gte: from, lte: to }, deletedAt: null },
+        _sum: { ventureAmount: true },
+      }),
+    ]);
+
+    const revenueByServiceType = incomeRaw.map((r) => ({
+      serviceType: r.category,
+      amount: this.toNumber(r._sum.amount),
+    }));
+    const opexByCategory = expenseRaw.map((r) => ({
+      category: r.category,
+      amount: this.toNumber(r._sum.ventureAmount),
+    }));
+
+    const totalRevenue = revenueByServiceType.reduce((s, r) => s + r.amount, 0);
+    const totalOpex = opexByCategory.reduce((s, r) => s + r.amount, 0);
+    const grossProfit = totalRevenue;
+    const grossMargin =
+      totalRevenue > 0 ? Number(((grossProfit / totalRevenue) * 100).toFixed(2)) : 0;
+    const netProfit = grossProfit - totalOpex;
+    const netMargin =
+      totalRevenue > 0
+        ? Number(((netProfit / totalRevenue) * 100).toFixed(2))
+        : 0;
+
+    return {
+      totalRevenue,
+      revenueByServiceType,
+      totalCOGS: 0,
+      cogsByCategory: [],
+      grossProfit,
+      grossMargin,
+      totalOpex,
+      opexByCategory,
+      netProfit,
+      netMargin,
+    };
+  }
+
+  private mergePlPeriods(a: PlPeriodData, b: PlPeriodData): PlPeriodData {
+    const revenueMap = new Map<string, number>();
+    for (const r of [...a.revenueByServiceType, ...b.revenueByServiceType]) {
+      revenueMap.set(r.serviceType, (revenueMap.get(r.serviceType) ?? 0) + r.amount);
+    }
+    const revenueByServiceType = Array.from(revenueMap.entries()).map(
+      ([serviceType, amount]) => ({ serviceType, amount }),
+    );
+
+    const cogsMap = new Map<ExpenseCategory, number>();
+    for (const r of [...a.cogsByCategory, ...b.cogsByCategory]) {
+      cogsMap.set(r.category, (cogsMap.get(r.category) ?? 0) + r.amount);
+    }
+    const cogsByCategory = Array.from(cogsMap.entries()).map(
+      ([category, amount]) => ({ category, amount }),
+    );
+
+    const opexMap = new Map<ExpenseCategory, number>();
+    for (const r of [...a.opexByCategory, ...b.opexByCategory]) {
+      opexMap.set(r.category, (opexMap.get(r.category) ?? 0) + r.amount);
+    }
+    const opexByCategory = Array.from(opexMap.entries()).map(
+      ([category, amount]) => ({ category, amount }),
+    );
+
+    const totalRevenue = revenueByServiceType.reduce((s, r) => s + r.amount, 0);
+    const totalCOGS = cogsByCategory.reduce((s, r) => s + r.amount, 0);
+    const grossProfit = totalRevenue - totalCOGS;
+    const grossMargin =
+      totalRevenue > 0
+        ? Number(((grossProfit / totalRevenue) * 100).toFixed(2))
+        : 0;
+    const totalOpex = opexByCategory.reduce((s, r) => s + r.amount, 0);
+    const netProfit = grossProfit - totalOpex;
+    const netMargin =
+      totalRevenue > 0
+        ? Number(((netProfit / totalRevenue) * 100).toFixed(2))
+        : 0;
+
+    return {
+      totalRevenue,
+      revenueByServiceType,
+      totalCOGS,
+      cogsByCategory,
+      grossProfit,
+      grossMargin,
+      totalOpex,
+      opexByCategory,
+      netProfit,
+      netMargin,
+    };
+  }
+
+  private async computeCombinedPlPeriod(
+    from: Date,
+    to: Date,
+    serviceType?: string,
+  ): Promise<PlPeriodData> {
+    const [cdy, ventures] = await Promise.all([
+      this.computePlPeriod(from, to, serviceType),
+      this.computeAllVenturesPlPeriod(from, to),
+    ]);
+    return this.mergePlPeriods(cdy, ventures);
   }
 
   async getInvoiceAgeing(filters: AgeingReportFiltersDto) {

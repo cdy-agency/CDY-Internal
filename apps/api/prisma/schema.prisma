@@ -743,3 +743,70 @@ model FinanceSetting {
   updatedBy String
   updatedAt DateTime @updatedAt
 }
+
+model Venture {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String   @default("6366F1")
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  incomeEntries  VentureIncome[]
+  expenseEntries VentureExpense[]
+
+  @@index([isActive])
+}
+
+model VentureIncome {
+  id          String    @id @default(cuid())
+  ventureId   String
+  description String
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("USD")
+  category    String
+  date        DateTime
+  reference   String?
+  notes       String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  venture Venture @relation(fields: [ventureId], references: [id])
+
+  @@index([ventureId])
+  @@index([date])
+  @@index([category])
+}
+
+model VentureExpense {
+  id            String          @id @default(cuid())
+  ventureId     String
+  description   String
+  totalAmount   Decimal         @db.Decimal(12, 2)
+  ventureShare  Decimal         @db.Decimal(5, 2)
+  ventureAmount Decimal         @db.Decimal(12, 2)
+  currency      String          @default("USD")
+  category      ExpenseCategory
+  date          DateTime
+  isShared      Boolean         @default(false)
+  cdyShare      Decimal?        @db.Decimal(5, 2)
+  receiptUrl    String?
+  notes         String?
+  expenseId     String?
+  createdBy     String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  venture Venture @relation(fields: [ventureId], references: [id])
+
+  @@index([ventureId])
+  @@index([date])
+  @@index([category])
+  @@index([isShared])
+  @@index([expenseId])
+}

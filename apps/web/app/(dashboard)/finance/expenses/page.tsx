@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useVentures } from '@/hooks/useVentures';
 import { ExpenseDrawer } from '@/components/finance/expenses/ExpenseDrawer';
 import { ExpenseCategoryBadge, EXPENSE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
@@ -25,6 +26,7 @@ export default function ExpensesPage(): JSX.Element {
   const [editExpense, setEditExpense] = useState<ExpenseRecord | null>(null);
 
   const { data, isLoading, isError } = useExpenses(filters);
+  const { data: ventures } = useVentures();
 
   function openCreate(): void {
     setEditExpense(null);
@@ -96,6 +98,31 @@ export default function ExpensesPage(): JSX.Element {
           </span>
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm text-cdy-muted">
+          Venture:
+          <select
+            value={filters.ventureId ?? ''}
+            onChange={(e) =>
+              setFilters((prev) => ({
+                ...prev,
+                ventureId: e.target.value || undefined,
+                page: 1,
+              }))
+            }
+            className="h-9 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+          >
+            <option value="">All</option>
+            <option value="cdy-main">CDY Main</option>
+            {ventures?.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <button

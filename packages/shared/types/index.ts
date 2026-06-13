@@ -167,6 +167,11 @@ export interface FinanceSummary {
   taxOwed: number;
   blockedProjects: number;
   cashFlowAlert: boolean;
+  ventures: {
+    count: number;
+    totalIncomeMTD: number;
+    totalExpensesMTD: number;
+  };
   previousMonth: FinanceSummaryMetrics & {
     totalDraftInvoices?: number;
     totalSentInvoices?: number;
@@ -904,4 +909,86 @@ export interface BudgetIncreaseRequestRecord {
   rejectionReason: string | null;
   createdAt: string;
   projectName?: string;
+}
+
+export interface VentureRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VentureIncomeRecord {
+  id: string;
+  ventureId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string;
+  date: string;
+  reference: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VentureExpenseRecord {
+  id: string;
+  ventureId: string;
+  description: string;
+  totalAmount: number;
+  ventureShare: number;
+  ventureAmount: number;
+  currency: string;
+  category: ExpenseCategory;
+  date: string;
+  isShared: boolean;
+  cdyShare: number | null;
+  receiptUrl: string | null;
+  notes: string | null;
+  expenseId: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VentureCategoryBreakdown {
+  category: string;
+  amount: number;
+}
+
+export interface VenturePeriodSummary {
+  ventureId: string;
+  period: { from: string; to: string };
+  income: {
+    total: number;
+    count: number;
+    byCategory: VentureCategoryBreakdown[];
+  };
+  expenses: {
+    total: number;
+    count: number;
+    byCategory: VentureCategoryBreakdown[];
+  };
+  netProfit: number;
+  margin: number;
+}
+
+export interface VentureCardSummary extends VenturePeriodSummary {
+  venture: { id: string; name: string; color: string };
+}
+
+export interface AllVenturesSummary {
+  period: { from: string; to: string };
+  totals: {
+    totalIncome: number;
+    totalExpenses: number;
+    totalNetProfit: number;
+  };
+  ventures: VentureCardSummary[];
 }

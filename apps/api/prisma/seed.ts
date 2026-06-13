@@ -12,6 +12,9 @@ import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
 const prisma = new PrismaClient();
 
 async function clearAllData(): Promise<void> {
+  await prisma.ventureExpense.deleteMany();
+  await prisma.ventureIncome.deleteMany();
+  await prisma.venture.deleteMany();
   await prisma.payrollLineItem.deleteMany();
   await prisma.payrollRun.deleteMany();
   await prisma.employeeSalary.deleteMany();
@@ -330,6 +333,81 @@ async function main(): Promise<void> {
         amount: 1200,
         dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 5),
         status: BillStatus.UNPAID,
+        createdBy: financeManager.id,
+      },
+    ],
+  });
+
+  const printing = await prisma.venture.create({
+    data: {
+      name: 'CDY Printing',
+      description: 'Printing and branded materials',
+      color: '6366F1',
+      createdBy: financeManager.id,
+    },
+  });
+
+  const events = await prisma.venture.create({
+    data: {
+      name: 'CDY Events',
+      description: 'Event planning and catering services',
+      color: 'F59E0B',
+      createdBy: financeManager.id,
+    },
+  });
+
+  await prisma.ventureIncome.createMany({
+    data: [
+      {
+        ventureId: printing.id,
+        description: 'Branded flyers — Acme Corp',
+        amount: 1200,
+        category: 'Sales',
+        date: new Date('2026-06-15'),
+        createdBy: financeManager.id,
+      },
+      {
+        ventureId: printing.id,
+        description: 'Business cards — TechStart',
+        amount: 800,
+        category: 'Sales',
+        date: new Date('2026-06-10'),
+        createdBy: financeManager.id,
+      },
+      {
+        ventureId: events.id,
+        description: 'Team lunch catering — CDY',
+        amount: 3500,
+        category: 'Service Fee',
+        date: new Date('2026-06-12'),
+        createdBy: financeManager.id,
+      },
+    ],
+  });
+
+  await prisma.ventureExpense.createMany({
+    data: [
+      {
+        ventureId: printing.id,
+        description: 'Paper & ink stock',
+        totalAmount: 800,
+        ventureShare: 100,
+        ventureAmount: 800,
+        category: ExpenseCategory.SUPPLIER,
+        date: new Date(now.getFullYear(), now.getMonth(), 14),
+        isShared: false,
+        createdBy: financeManager.id,
+      },
+      {
+        ventureId: printing.id,
+        description: 'Office rent share',
+        totalAmount: 2400,
+        ventureShare: 25,
+        ventureAmount: 600,
+        category: ExpenseCategory.OFFICE,
+        date: new Date(now.getFullYear(), now.getMonth(), 1),
+        isShared: true,
+        cdyShare: 75,
         createdBy: financeManager.id,
       },
     ],

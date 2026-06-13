@@ -13,6 +13,7 @@ import {
   Building2,
   AlertOctagon,
   BadgeDollarSign,
+  Store,
 } from 'lucide-react';
 import api from '@/lib/api';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
@@ -34,8 +35,9 @@ export default function FinanceOverviewPage(): JSX.Element {
       .catch(() => undefined);
   }, []);
 
-  const { canRead } = usePermissions();
+  const { canRead, canWrite } = usePermissions();
   const showCommissionsCard = canRead('finance.commissions');
+  const showVenturesCard = canWrite('ventures.manage');
 
   const metrics = data
     ? [
@@ -116,6 +118,18 @@ export default function FinanceOverviewPage(): JSX.Element {
               },
             ]
           : []),
+        ...(showVenturesCard && data.ventures
+          ? [
+              {
+                label: 'Ventures (this month)',
+                value: formatCurrency(data.ventures.totalIncomeMTD - data.ventures.totalExpensesMTD),
+                delta: 0,
+                icon: Store,
+                iconColor: 'bg-indigo-500/10 text-indigo-400',
+                subLabel: `${data.ventures.count} active · Income ${formatCurrency(data.ventures.totalIncomeMTD)} · Expenses ${formatCurrency(data.ventures.totalExpensesMTD)}`,
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -134,7 +148,7 @@ export default function FinanceOverviewPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading
-          ? Array.from({ length: showCommissionsCard ? 9 : 8 }).map((_, index) => (
+          ? Array.from({ length: (showCommissionsCard ? 1 : 0) + (showVenturesCard ? 1 : 0) + 8 }).map((_, index) => (
               <MetricCard
                 key={`skeleton-${index}`}
                 label=""

@@ -21,6 +21,7 @@ import {
   LogOut,
   Menu,
   X,
+  Store,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { label: 'Invoices', href: '/finance/invoices', icon: FileText, feature: 'finance.invoices' },
   { label: 'Payments', href: '/finance/payments', icon: CreditCard, feature: 'finance.payments' },
   { label: 'Expenses', href: '/finance/expenses', icon: Receipt, feature: 'finance.expenses' },
+  { label: 'Ventures', href: '/finance/ventures', icon: Store, feature: 'ventures.view' },
   { label: 'Bills', href: '/finance/bills', icon: Building2, feature: 'finance.bills' },
   { label: 'AR Ledger', href: '/finance/ar', icon: ClipboardList, feature: 'finance.ar' },
   {

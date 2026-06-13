@@ -30,6 +30,7 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/finance\/commissions/, feature: 'finance.commissions', action: 'read' },
   { pattern: /^\/finance\/payroll/, feature: 'finance.payroll', action: 'read' },
   { pattern: /^\/finance\/retainers/, feature: 'finance.retainers', action: 'read' },
+  { pattern: /^\/finance\/ventures/, feature: 'ventures.view', action: 'read' },
   { pattern: /^\/finance\/budget/, feature: 'finance.budget', action: 'read' },
   {
     pattern: /^\/finance\/reconciliation/,

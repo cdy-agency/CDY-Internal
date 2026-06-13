@@ -16,6 +16,7 @@ export interface PlFilters {
   from?: string;
   to?: string;
   serviceType?: string;
+  ventureId?: string;
 }
 
 export interface AgeingFilters {
@@ -35,6 +36,7 @@ export function usePlReport(filters: PlFilters) {
       if (filters.from) params.set('from', filters.from);
       if (filters.to) params.set('to', filters.to);
       if (filters.serviceType) params.set('serviceType', filters.serviceType);
+      if (filters.ventureId) params.set('ventureId', filters.ventureId);
       const qs = params.toString();
       const res = await api.get<ApiResponse<PlReportData>>(
         `/reports/pl${qs ? `?${qs}` : ''}`,

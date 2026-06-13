@@ -9,6 +9,7 @@ import {
 import { addDays } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashFlowService } from '../reports/cash-flow.service';
+import { VenturesService } from '../ventures/ventures.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
 import { FinanceSummaryMetrics } from '@cdy/shared';
 
@@ -23,6 +24,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cashFlowService: CashFlowService,
+    private readonly venturesService: VenturesService,
   ) {}
 
   async getSummary(): Promise<FinanceSummaryDto> {
@@ -86,6 +88,7 @@ export class FinanceService {
       retainersUpForRenewal,
       taxOwed,
       blockedProjects,
+      venturesMtd,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -121,6 +124,7 @@ export class FinanceService {
       this.countRetainersUpForRenewal(),
       this.computeCurrentMonthTaxOwed(currentMonthStart, currentMonthEnd),
       this.countBlockedProjects(),
+      this.venturesService.getMtdTotals(currentMonthStart, currentMonthEnd),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -169,6 +173,7 @@ export class FinanceService {
       taxOwed,
       blockedProjects,
       cashFlowAlert,
+      ventures: venturesMtd,
       previousMonth: previousMetrics,
     };
   }

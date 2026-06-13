@@ -25,5 +25,10 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   taxOwed!: number;
   blockedProjects!: number;
   cashFlowAlert!: boolean;
+  ventures!: {
+    count: number;
+    totalIncomeMTD: number;
+    totalExpensesMTD: number;
+  };
   previousMonth!: FinanceSummaryMetrics;
 }

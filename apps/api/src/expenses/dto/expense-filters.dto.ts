@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsEnum, IsDateString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsEnum, IsDateString, IsInt, Min, IsString } from 'class-validator';
 import { ExpenseCategory } from '@prisma/client';
 
 export class ExpenseFiltersDto {
@@ -14,6 +14,10 @@ export class ExpenseFiltersDto {
   @IsOptional()
   @IsDateString()
   dateTo?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 
   @IsOptional()
   @Transform(({ value }: { value: string }) => parseInt(value, 10))

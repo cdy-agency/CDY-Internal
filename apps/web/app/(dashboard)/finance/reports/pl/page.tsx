@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { usePlReport } from '@/hooks/useReports';
+import { useVentures } from '@/hooks/useVentures';
 import { ReportFilterBar } from '@/components/finance/reports/ReportFilterBar';
 import { ReportTable, type ReportSection } from '@/components/finance/reports/ReportTable';
 import { EmptyReport } from '@/components/finance/reports/EmptyReport';
@@ -29,12 +30,16 @@ export default function ProfitAndLossPage(): JSX.Element {
   const [from, setFrom] = useState(presets[0].from);
   const [to, setTo] = useState(presets[0].to);
   const [serviceType, setServiceType] = useState('all');
+  const [ventureView, setVentureView] = useState('cdy-main');
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  const { data: ventures } = useVentures();
 
   const filters = {
     from,
     to,
     serviceType: serviceType === 'all' ? undefined : serviceType,
+    ventureId: ventureView === 'cdy-main' ? undefined : ventureView,
   };
 
   const { data, isLoading, isError } = usePlReport(filters);
@@ -173,6 +178,19 @@ export default function ProfitAndLossPage(): JSX.Element {
         onDownloadPdf={handleDownload}
         pdfLoading={pdfLoading}
       >
+        <select
+          value={ventureView}
+          onChange={(e) => setVentureView(e.target.value)}
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+        >
+          <option value="cdy-main">CDY Main</option>
+          <option value="all">All ventures</option>
+          {ventures?.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+            </option>
+          ))}
+        </select>
         <select
           value={serviceType}
           onChange={(e) => setServiceType(e.target.value)}

@@ -22,6 +22,7 @@ import { RetainersModule } from '../retainers/retainers.module';
 import { BudgetModule } from '../budget/budget.module';
 import { PayrollModule } from '../payroll/payroll.module';
 import { SettingsModule } from '../settings/settings.module';
+import { VenturesModule } from '../ventures/ventures.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SettingsModule } from '../settings/settings.module';
     BudgetModule,
     PayrollModule,
     SettingsModule,
+    VenturesModule,
   ],
 
   controllers: [FinanceController],

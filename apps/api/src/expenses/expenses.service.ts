@@ -102,6 +102,32 @@ export class ExpensesService {
       }
     }
 
+    if (filters.ventureId === 'cdy-main') {
+      const linked = await this.prisma.ventureExpense.findMany({
+        where: { expenseId: { not: null }, deletedAt: null },
+        select: { expenseId: true },
+      });
+      const linkedIds = linked
+        .map((l) => l.expenseId)
+        .filter((id): id is string => id !== null);
+      if (linkedIds.length > 0) {
+        where.id = { notIn: linkedIds };
+      }
+    } else if (filters.ventureId) {
+      const linked = await this.prisma.ventureExpense.findMany({
+        where: {
+          ventureId: filters.ventureId,
+          expenseId: { not: null },
+          deletedAt: null,
+        },
+        select: { expenseId: true },
+      });
+      const linkedIds = linked
+        .map((l) => l.expenseId)
+        .filter((id): id is string => id !== null);
+      where.id = { in: linkedIds.length > 0 ? linkedIds : ['__none__'] };
+    }
+
     const [expenses, total, categoryCounts] = await Promise.all([
       this.prisma.expense.findMany({
         where,
