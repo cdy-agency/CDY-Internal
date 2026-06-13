@@ -11,6 +11,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { redirectToLoginAfterAuthFailure } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
@@ -41,7 +42,7 @@ export default function ItLayout({
         }
         setUser(res.data.data);
       })
-      .catch(() => router.push('/login'));
+      .catch(() => void redirectToLoginAfterAuthFailure(router));
   }, [router]);
 
   async function handleLogout(): Promise<void> {

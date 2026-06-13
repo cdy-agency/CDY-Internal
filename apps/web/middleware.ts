@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { AUTH_COOKIE_NAME } from '@/lib/auth';
+import { AUTH_COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/lib/auth';
 import type { PermissionMap } from '@cdy/shared';
 
 interface JwtPayload {
@@ -9,6 +9,31 @@ interface JwtPayload {
   roleKey: string;
   roleName: string;
   permissions: PermissionMap;
+  exp?: number;
+}
+
+function parseJwtPayload(token: string): JwtPayload | null {
+  try {
+    const payload = decodeJwtPayload(token);
+    if (payload.exp != null && payload.exp * 1000 < Date.now()) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function clearAuthCookies(response: NextResponse): NextResponse {
+  response.cookies.delete(AUTH_COOKIE_NAME);
+  response.cookies.delete(REFRESH_COOKIE_NAME);
+  return response;
+}
+
+function redirectToLogin(request: NextRequest): NextResponse {
+  return clearAuthCookies(
+    NextResponse.redirect(new URL('/login', request.url)),
+  );
 }
 
 const ROUTE_PERMISSIONS: Array<{
@@ -99,21 +124,18 @@ export function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
+  const payload = parseJwtPayload(token);
+
   if (pathname === '/login') {
-    try {
-      const payload = decodeJwtPayload(token);
+    if (payload) {
       const destination = payload.roleKey === 'IT' ? '/it' : '/finance';
       return NextResponse.redirect(new URL(destination, request.url));
-    } catch {
-      return NextResponse.next();
     }
+    return clearAuthCookies(NextResponse.next());
   }
 
-  let payload: JwtPayload;
-  try {
-    payload = decodeJwtPayload(token);
-  } catch {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (!payload) {
+    return redirectToLogin(request);
   }
 
   const routeRule = ROUTE_PERMISSIONS.find((r) => r.pattern.test(pathname));
