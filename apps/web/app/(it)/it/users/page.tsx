@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import type { ApiResponse } from '@cdy/shared';
+import { Button } from '@/components/ui/button';
+import { PermissionGate } from '@/components/PermissionGate';
 
 interface ItUserRow {
   id: string;
@@ -26,7 +28,14 @@ export default function ItUsersPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-cdy-white">Users</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-cdy-white">Users</h1>
+        <PermissionGate feature="it.users" action="write">
+          <Button asChild>
+            <Link href="/it/users/new">+ Create user</Link>
+          </Button>
+        </PermissionGate>
+      </div>
       <div className="overflow-hidden rounded-lg border border-cdy-navy-border">
         <table className="w-full text-sm">
           <thead className="bg-cdy-navy-light text-left text-cdy-muted">
