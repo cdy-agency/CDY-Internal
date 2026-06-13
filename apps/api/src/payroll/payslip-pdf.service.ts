@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PayrollLineItem, PayrollRun } from '@prisma/client';
 import { format, parse } from 'date-fns';
 import puppeteer, { Browser } from 'puppeteer';
+import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 
 @Injectable()
 export class PayslipPdfService implements OnModuleDestroy {
@@ -18,10 +19,7 @@ export class PayslipPdfService implements OnModuleDestroy {
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browserPromise) {
-      this.browserPromise = puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      this.browserPromise = puppeteer.launch(getPuppeteerLaunchOptions());
     }
     return this.browserPromise;
   }
