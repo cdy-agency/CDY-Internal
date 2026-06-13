@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Invoice, Payment, Prisma } from '@prisma/client';
 import puppeteer, { Browser } from 'puppeteer';
+import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 
 type InvoiceWithPayments = Invoice & { payments: Payment[] };
 
@@ -18,10 +19,7 @@ export class ReceiptPdfService implements OnModuleDestroy {
 
   private async getBrowser(): Promise<Browser> {
     if (!this.browserPromise) {
-      this.browserPromise = puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      this.browserPromise = puppeteer.launch(getPuppeteerLaunchOptions());
     }
     return this.browserPromise;
   }
