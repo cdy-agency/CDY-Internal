@@ -97,6 +97,8 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/finance\/audit/, feature: 'finance.audit', action: 'read' },
   { pattern: /^\/finance\/settings/, feature: 'finance.settings', action: 'read' },
   { pattern: /^\/finance/, feature: 'finance.dashboard', action: 'read' },
+  { pattern: /^\/it\/users\/new/, feature: 'it.users', action: 'write' },
+  { pattern: /^\/it\/roles\/new/, feature: 'it.roles', action: 'write' },
   { pattern: /^\/it/, feature: 'it.users', action: 'read' },
 ];
 
