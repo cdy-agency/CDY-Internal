@@ -168,3 +168,52 @@ git tag v1.0.0-projects
 git push origin feature/projects --tags
 # Railway + Vercel auto-deploy on push
 ```
+
+### Fixing P3009 — failed `sprint14` migration (production)
+
+**Cause:** The Sprint 14 migration was originally timestamped `20260610100000`, which runs *before* Sprint 13 creates the `Employee` table. Prisma recorded it as failed and blocks all later migrations (P3009).
+
+The migration folder is renamed to `20260629100000_sprint14_hr_performance_salary_history` so it runs after HR employees (Sprint 13).
+
+**On the production host** (`/srv/applications/CDY-Internal`):
+
+```bash
+# 1. Pull the fix (renamed migration folder)
+git pull
+
+# 2. Check migration history and whether Sprint 14 tables exist
+docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "SELECT migration_name, finished_at, rolled_back_at, LEFT(logs, 120) AS logs FROM _prisma_migrations ORDER BY started_at;"
+
+docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'PerformanceReview');"
+```
+
+**If `PerformanceReview` does NOT exist** (typical — migration failed before creating tables):
+
+```bash
+# Remove the stale failed record for the OLD migration name
+docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "DELETE FROM _prisma_migrations WHERE migration_name = '20260610100000_sprint14_hr_performance_salary_history';"
+
+# Rebuild/restart API so migrate deploy runs with the renamed migration
+docker compose -f docker-compose.prod.yml up --build -d api
+
+# Verify
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate status
+```
+
+**If `PerformanceReview` already exists** (tables were created manually or partially):
+
+```bash
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate resolve --applied 20260629100000_sprint14_hr_performance_salary_history
+
+# Still delete the old failed row if present
+docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "DELETE FROM _prisma_migrations WHERE migration_name = '20260610100000_sprint14_hr_performance_salary_history';"
+
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate status
+```
+
+Expected result: all 15 migrations show as applied, including Sprint 14 (new name), Sprint 16, and Sprint 17.

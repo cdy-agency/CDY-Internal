@@ -233,6 +233,8 @@ On success: status → COMPLETED, CEO and Finance Manager notified, caches inval
 **Tag:** `v1.0.0-projects`  
 **Migration:** `20260710100000_sprint17_projects_completion_indexes`
 
+> **Note:** Sprint 14 migration must be `20260629100000_sprint14_hr_performance_salary_history` (not `20260610100000`). See DEPLOYMENT.md if you hit P3009 on production.
+
 ```bash
 docker compose exec api npx prisma migrate deploy
 docker compose exec api npx prisma generate
