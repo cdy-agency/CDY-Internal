@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { redirectToLoginAfterAuthFailure } from '@/lib/session';
 import { ProjectsSidebar } from '@/components/projects/ProjectsSidebar';
 import { FinanceTopbar } from '@/components/finance/FinanceTopbar';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
@@ -19,7 +20,7 @@ export default function ProjectsLayout({
     api
       .get<ApiResponse<UserProfile>>('/auth/me')
       .then((res) => setUser(res.data.data))
-      .catch(() => router.push('/login'));
+      .catch(() => void redirectToLoginAfterAuthFailure(router));
   }, [router]);
 
   async function handleLogout(): Promise<void> {

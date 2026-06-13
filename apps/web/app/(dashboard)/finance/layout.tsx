@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { redirectToLoginAfterAuthFailure } from '@/lib/session';
 import { FinanceSidebar } from '@/components/finance/FinanceSidebar';
 import { FinanceTopbar } from '@/components/finance/FinanceTopbar';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
