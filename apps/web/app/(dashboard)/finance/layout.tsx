@@ -20,7 +20,7 @@ export default function FinanceLayout({
       .get<ApiResponse<UserProfile>>('/auth/me')
       .then((res) => setUser(res.data.data))
       .catch(() => router.push('/login'));
-  }, [router]);
+  },[user] );
 
   async function handleLogout(): Promise<void> {
     await fetch('/api/auth/logout', { method: 'POST' });
