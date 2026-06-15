@@ -11,7 +11,7 @@ async function proxyRequest(
   const path = params.path.join('/');
   const url = new URL(request.url);
   const targetUrl = `${API_URL}/${path}${url.search}`;
-
+console.log('Proxying request to:', targetUrl); // Log the target URL for debugging
   const headers: Record<string, string> = {};
 
   const contentType = request.headers.get('Content-Type');
