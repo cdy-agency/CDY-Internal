@@ -27,8 +27,9 @@ import { CrmSettingsService } from '../settings/crm-settings.service';
 import { CrmActor } from '../common/crm-actor.interface';
 import { buildCsvRow } from '../common/csv.util';
 import { format } from 'date-fns';
+import { CacheKeys } from '../../common/cache-keys';
 
-const CRM_SUMMARY_CACHE_KEY = 'crm:summary';
+const CRM_SUMMARY_CACHE_KEY = CacheKeys.CRM_SUMMARY;
 const CONVERSION_CACHE_PREFIX = 'crm:conversion:';
 
 const CLOSED_STAGES: PipelineStage[] = [

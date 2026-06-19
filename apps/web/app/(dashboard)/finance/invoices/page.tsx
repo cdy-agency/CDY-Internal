@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { FileText, Plus } from 'lucide-react';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useVentures } from '@/hooks/useVentures';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { EmptyState } from '@/components/finance/EmptyState';
@@ -33,6 +34,7 @@ export default function InvoicesPage(): JSX.Element {
   const [editInvoice, setEditInvoice] = useState<InvoiceRecord | null>(null);
 
   const { data, isLoading, isError } = useInvoices(filters);
+  const { data: ventures } = useVentures();
 
   function toggleStatus(status: InvoiceStatus): void {
     setFilters((prev) => {
@@ -128,6 +130,24 @@ export default function InvoicesPage(): JSX.Element {
             }))
           }
         />
+        {ventures && ventures.length > 0 && (
+          <select
+            value={filters.ventureId ?? ''}
+            onChange={(e) =>
+              setFilters((prev) => ({
+                ...prev,
+                ventureId: e.target.value || undefined,
+                page: 1,
+              }))
+            }
+            className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+          >
+            <option value="">All ventures</option>
+            {ventures.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {isLoading && <InvoiceTableSkeleton />}

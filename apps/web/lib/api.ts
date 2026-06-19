@@ -10,6 +10,8 @@ const api = axios.create({
   },
 });
 
+let isRedirectingToLogin = false;
+
 api.interceptors.request.use((config) => {
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
@@ -28,9 +30,13 @@ api.interceptors.response.use(
     const status = error.response.status;
 
     if (status === 401) {
-      fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
-        window.location.href = '/login';
-      });
+      const alreadyOnLogin = window.location.pathname === '/login';
+      if (!alreadyOnLogin && !isRedirectingToLogin) {
+        isRedirectingToLogin = true;
+        fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
+          window.location.href = '/login';
+        });
+      }
       return Promise.reject(error);
     }
 

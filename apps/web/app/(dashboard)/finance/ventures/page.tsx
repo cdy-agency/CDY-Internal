@@ -6,8 +6,8 @@ import { Plus } from 'lucide-react';
 import { useAllVenturesSummary } from '@/hooks/useVentures';
 import { AddVentureDrawer } from '@/components/finance/ventures/AddVentureDrawer';
 import { VentureCard } from '@/components/finance/ventures/VentureCard';
-import { LogIncomeDrawer } from '@/components/finance/ventures/LogIncomeDrawer';
 import { LogExpenseDrawer } from '@/components/finance/ventures/LogExpenseDrawer';
+import { LogIncomeDrawer } from '@/components/finance/ventures/LogIncomeDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,10 @@ export default function VenturesOverviewPage(): JSX.Element {
   const [from, setFrom] = useState(presets[0].from);
   const [to, setTo] = useState(presets[0].to);
   const [addOpen, setAddOpen] = useState(false);
-  const [incomeVentureId, setIncomeVentureId] = useState<string | null>(null);
+  const [incomeTarget, setIncomeTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [expenseTarget, setExpenseTarget] = useState<{
     id: string;
     name: string;
@@ -36,7 +39,7 @@ export default function VenturesOverviewPage(): JSX.Element {
     1,
   );
   const maxExpense = Math.max(
-    ...(data?.ventures.map((v) => v.expenses.total) ?? [0]),
+    ...(data?.ventures.map((v) => v.expenses.ventureTotal) ?? [0]),
     1,
   );
 
@@ -151,7 +154,10 @@ export default function VenturesOverviewPage(): JSX.Element {
                     summary={summary}
                     maxIncome={maxIncome}
                     maxExpense={maxExpense}
-                    onLogIncome={setIncomeVentureId}
+                    onLogIncome={(id) => {
+                      const v = data.ventures.find((s) => s.venture.id === id);
+                      if (v) setIncomeTarget({ id, name: v.venture.name });
+                    }}
                     onLogExpense={(id, name) => setExpenseTarget({ id, name })}
                   />
                 ))}
@@ -161,11 +167,12 @@ export default function VenturesOverviewPage(): JSX.Element {
         )}
 
         <AddVentureDrawer open={addOpen} onClose={() => setAddOpen(false)} />
-        {incomeVentureId && (
+        {incomeTarget && (
           <LogIncomeDrawer
             open
-            ventureId={incomeVentureId}
-            onClose={() => setIncomeVentureId(null)}
+            ventureId={incomeTarget.id}
+            ventureName={incomeTarget.name}
+            onClose={() => setIncomeTarget(null)}
           />
         )}
         {expenseTarget && (

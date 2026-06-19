@@ -65,10 +65,10 @@ export function VentureCard({
         </div>
         <div>
           <div className="mb-1 flex justify-between text-cdy-muted">
-            <span>Expenses</span>
-            <span className="text-cdy-white">{formatCurrency(summary.expenses.total)}</span>
+            <span>Expenses (venture share)</span>
+            <span className="text-cdy-white">{formatCurrency(summary.expenses.ventureTotal)}</span>
           </div>
-          <ProgressBar value={summary.expenses.total} max={maxExpense} color="#EF4444" />
+          <ProgressBar value={summary.expenses.ventureTotal} max={maxExpense} color="#EF4444" />
         </div>
         <div className="flex items-center justify-between pt-1">
           <span className="text-cdy-muted">Net</span>
@@ -88,7 +88,11 @@ export function VentureCard({
           <Link href={`/finance/ventures/${summary.venture.id}`}>View Details</Link>
         </Button>
         <PermissionGate feature="ventures.manage" action="write">
-          <Button variant="outline" size="sm" onClick={() => onLogIncome(summary.venture.id)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onLogIncome(summary.venture.id)}
+          >
             + Log Income
           </Button>
           <Button

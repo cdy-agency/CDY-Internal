@@ -1,7 +1,8 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
@@ -20,6 +21,13 @@ import { CrmModule } from './crm/crm.module';
 import { HrModule } from './hr/hr.module';
 import { HrSettingsModule } from './hr/settings/hr-settings.module';
 import { ProjectsModule } from './projects/projects.module';
+import { MarketingModule } from './marketing/marketing.module';
+import { SoftwareModule } from './software/software.module';
+import { BrandingModule } from './branding/branding.module';
+import { InfluencerModule } from './influencer/influencer.module';
+import { SalesModule } from './sales/sales.module';
+import { CeoDashboardModule } from './ceo/ceo-dashboard.module';
+import { ItModule } from './it/it.module';
 
 @Module({
   imports: [
@@ -39,6 +47,13 @@ import { ProjectsModule } from './projects/projects.module';
     HrModule,
     HrSettingsModule,
     ProjectsModule,
+    MarketingModule,
+    SoftwareModule,
+    BrandingModule,
+    InfluencerModule,
+    SalesModule,
+    CeoDashboardModule,
+    ItModule,
     AutomationModule,
     DebugModule,
     SettingsModule,
@@ -51,6 +66,10 @@ import { ProjectsModule } from './projects/projects.module';
     {
       provide: APP_GUARD,
       useClass: PermissionGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PerformanceInterceptor,
     },
   ],
 })

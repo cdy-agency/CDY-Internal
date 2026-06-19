@@ -1,14 +1,12 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type {
   ApiResponse,
   VentureRecord,
   AllVenturesSummary,
   VenturePeriodSummary,
-  VentureIncomeRecord,
-  VentureExpenseRecord,
 } from '@cdy/shared';
 
 export interface VentureSummaryFilters {
@@ -16,10 +14,12 @@ export interface VentureSummaryFilters {
   to: string;
 }
 
-export interface VentureIncomeFilters {
+export interface VentureListFilters {
   from?: string;
   to?: string;
-  category?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
 }
 
 export function useVentures(includeInactive = false) {
@@ -85,20 +85,18 @@ export function useVentureSummary(id: string, filters: VentureSummaryFilters) {
   });
 }
 
-export function useVentureIncome(
-  ventureId: string,
-  filters: VentureIncomeFilters = {},
-) {
+export function useVentureInvoices(ventureId: string, filters: VentureListFilters = {}) {
   return useQuery({
-    queryKey: ['ventures', ventureId, 'income', filters],
-    queryFn: async (): Promise<VentureIncomeRecord[]> => {
-      const params = new URLSearchParams();
-      if (filters.from) params.set('from', filters.from);
-      if (filters.to) params.set('to', filters.to);
-      if (filters.category) params.set('category', filters.category);
-      const qs = params.toString();
-      const response = await api.get<ApiResponse<VentureIncomeRecord[]>>(
-        `/ventures/${ventureId}/income${qs ? `?${qs}` : ''}`,
+    queryKey: ['ventures', ventureId, 'invoices', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams({ ventureId });
+      if (filters.from) params.set('dateFrom', filters.from);
+      if (filters.to) params.set('dateTo', filters.to);
+      if (filters.status) params.set('status', filters.status);
+      if (filters.page) params.set('page', String(filters.page));
+      if (filters.limit) params.set('limit', String(filters.limit));
+      const response = await api.get<ApiResponse<unknown>>(
+        `/invoices?${params.toString()}`,
       );
       return response.data.data;
     },
@@ -107,24 +105,66 @@ export function useVentureIncome(
   });
 }
 
-export function useVentureExpenses(
-  ventureId: string,
-  filters: VentureIncomeFilters = {},
-) {
+export function useVentureExpenses(ventureId: string, filters: VentureListFilters = {}) {
   return useQuery({
     queryKey: ['ventures', ventureId, 'expenses', filters],
-    queryFn: async (): Promise<VentureExpenseRecord[]> => {
-      const params = new URLSearchParams();
-      if (filters.from) params.set('from', filters.from);
-      if (filters.to) params.set('to', filters.to);
-      if (filters.category) params.set('category', filters.category);
-      const qs = params.toString();
-      const response = await api.get<ApiResponse<VentureExpenseRecord[]>>(
-        `/ventures/${ventureId}/expenses${qs ? `?${qs}` : ''}`,
+    queryFn: async () => {
+      const params = new URLSearchParams({ ventureId });
+      if (filters.from) params.set('dateFrom', filters.from);
+      if (filters.to) params.set('dateTo', filters.to);
+      if (filters.page) params.set('page', String(filters.page));
+      if (filters.limit) params.set('limit', String(filters.limit));
+      const response = await api.get<ApiResponse<unknown>>(
+        `/expenses?${params.toString()}`,
       );
       return response.data.data;
     },
     enabled: Boolean(ventureId),
     staleTime: 30_000,
+  });
+}
+
+interface CreateVentureInput {
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export function useCreateVenture() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateVentureInput): Promise<VentureRecord> => {
+      const response = await api.post<ApiResponse<VentureRecord>>('/ventures', data);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ventures'] });
+    },
+  });
+}
+
+export function useUpdateVenture(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Partial<CreateVentureInput>): Promise<VentureRecord> => {
+      const response = await api.patch<ApiResponse<VentureRecord>>(`/ventures/${id}`, data);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ventures'] });
+    },
+  });
+}
+
+export function useDeactivateVenture() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<VentureRecord> => {
+      const response = await api.patch<ApiResponse<VentureRecord>>(`/ventures/${id}/deactivate`);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ventures'] });
+    },
   });
 }

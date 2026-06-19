@@ -13,6 +13,7 @@ function buildQueryParams(filters: InvoiceFilters): string {
   if (filters.clientId) params.set('clientId', filters.clientId);
   if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('dateTo', filters.dateTo);
+  if (filters.ventureId) params.set('ventureId', filters.ventureId);
   if (filters.page) params.set('page', String(filters.page));
   if (filters.limit) params.set('limit', String(filters.limit));
   return params.toString();

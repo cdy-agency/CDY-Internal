@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, Coins, UserCircle, Users } from 'lucide-react';
+import { Briefcase, Coins, Code2, Megaphone, Palette, Star, TrendingUp, UserCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/context/PermissionContext';
 
@@ -31,6 +31,36 @@ const MODULES = [
     feature: 'projects.all',
     altFeature: 'projects.own',
     icon: Briefcase,
+  },
+  {
+    label: 'Marketing',
+    href: '/marketing',
+    feature: 'marketing.content',
+    icon: Megaphone,
+  },
+  {
+    label: 'Software',
+    href: '/software',
+    feature: 'software.projects',
+    icon: Code2,
+  },
+  {
+    label: 'Branding',
+    href: '/branding',
+    feature: 'branding.projects',
+    icon: Palette,
+  },
+  {
+    label: 'Influencer',
+    href: '/influencer',
+    feature: 'influencer.campaigns',
+    icon: Star,
+  },
+  {
+    label: 'Sales',
+    href: '/sales',
+    feature: 'sales.campaigns',
+    icon: TrendingUp,
   },
 ] as const;
 

@@ -4,14 +4,6 @@ import Link from 'next/link';
 import { format, isPast, isToday, differenceInDays, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import {
-  FolderKanban,
-  AlertTriangle,
-  Ban,
-  CalendarClock,
-  CheckCircle2,
-  ListTodo,
-} from 'lucide-react';
-import {
   ProjectStatus,
   TaskPriority,
   type ProjectRecord,
@@ -22,18 +14,16 @@ import {
   useProjectProgress,
   useApproveMilestone,
 } from '@/hooks/useProjects';
-import { MetricCard } from '@/components/finance/MetricCard';
 import { Button } from '@/components/ui/button';
 import { PermissionGate } from '@/components/PermissionGate';
 import { cn, formatCurrency } from '@/lib/utils';
-
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  [ProjectStatus.ACTIVE]: 'Active',
-  [ProjectStatus.ON_HOLD]: 'On Hold',
-  [ProjectStatus.COMPLETED]: 'Completed',
-  [ProjectStatus.CANCELLED]: 'Cancelled',
-  [ProjectStatus.ARCHIVED]: 'Archived',
-};
+import {
+  MetricHero,
+  SectionCard,
+  DonutChart,
+  DataTable,
+  QualityBadge,
+} from '@/components/dashboard';
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   [TaskPriority.LOW]: 'text-emerald-400',
@@ -42,44 +32,58 @@ const PRIORITY_COLORS: Record<TaskPriority, string> = {
   [TaskPriority.URGENT]: 'text-cdy-red',
 };
 
-function progressBarColor(
-  percent: number,
-  endDate: string | null,
-): string {
-  if (percent >= 80) return 'bg-emerald-500';
-  if (percent >= 50) return 'bg-amber-500';
-  if (endDate) {
-    const due = parseISO(endDate);
-    if (isPast(due)) return 'bg-cdy-red';
-    if (differenceInDays(due, new Date()) <= 7) return 'bg-amber-500';
-  }
-  return 'bg-cdy-red';
+function progressColor(percent: number, endDate: string | null): string {
+  if (percent >= 80) return '#4ADE80';
+  if (percent >= 50) return '#FBBF24';
+  if (endDate && isPast(parseISO(endDate))) return '#C41E3A';
+  if (endDate && differenceInDays(parseISO(endDate), new Date()) <= 7) return '#FBBF24';
+  return '#C41E3A';
 }
 
-function ProjectProgressBar({
-  project,
-}: {
-  project: ProjectRecord;
-}): JSX.Element {
+function ProjectRow({ project }: { project: ProjectRecord }): JSX.Element {
   const { data: progress, isLoading } = useProjectProgress(project.id);
   const percent = progress?.progressPercent ?? 0;
 
-  if (isLoading) {
-    return <div className="h-2 w-24 animate-pulse rounded-full bg-cdy-navy" />;
-  }
-
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-2 w-24 overflow-hidden rounded-full bg-cdy-navy">
-        <div
-          className={cn(
-            'h-full rounded-full transition-all',
-            progressBarColor(percent, project.endDate),
-          )}
-          style={{ width: `${percent}%` }}
-        />
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href={`/projects/${project.id}`}
+          className="min-w-0 flex-1 font-medium text-cdy-white hover:text-cdy-red"
+        >
+          <span className="truncate">{project.name}</span>
+          <span className="ml-2 text-xs text-cdy-dim">
+            {project.projectCode}
+          </span>
+        </Link>
+        <span className="shrink-0 text-xs text-cdy-muted">
+          {project.client?.companyName ?? '—'}
+        </span>
+        <span className="shrink-0 font-mono text-xs text-cdy-muted">
+          {percent}%
+        </span>
       </div>
-      <span className="text-xs text-cdy-muted">{percent}%</span>
+      {isLoading ? (
+        <div className="h-1.5 animate-pulse rounded-full bg-cdy-navy" />
+      ) : (
+        <div className="h-1.5 overflow-hidden rounded-full bg-cdy-navy">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${percent}%`,
+              backgroundColor: progressColor(percent, project.endDate),
+            }}
+          />
+        </div>
+      )}
+      <div className="flex justify-between text-xs text-cdy-dim">
+        <span className="capitalize">{project.serviceType.replace(/_/g, ' ')}</span>
+        <span>
+          {project.endDate
+            ? format(parseISO(project.endDate), 'MMM d, yyyy')
+            : 'Ongoing'}
+        </span>
+      </div>
     </div>
   );
 }
@@ -91,271 +95,272 @@ export default function ProjectsOverviewPage(): JSX.Element {
   });
   const approveMilestone = useApproveMilestone();
 
-  const activeProjects = projects ?? [];
-
   async function handleApprove(
     projectId: string,
     milestoneId: string,
   ): Promise<void> {
     try {
       await approveMilestone.mutateAsync({ projectId, milestoneId });
-      toast.success(
-        'Milestone approved — draft invoice created in Finance.',
-      );
+      toast.success('Milestone approved — draft invoice created in Finance.');
     } catch {
       /* interceptor */
     }
   }
 
+  const activeProjects = projects ?? [];
+  const totalTracked =
+    (summary?.activeProjects ?? 0) +
+    (summary?.completedThisMonth ?? 0);
+
+  const healthData = [
+    {
+      label: 'On track',
+      value: Math.max(
+        (summary?.activeProjects ?? 0) -
+        (summary?.overdueTasks ?? 0) -
+        (summary?.blockedTasks ?? 0),
+        0,
+      ),
+      color: '#4ADE80',
+    },
+    {
+      label: 'Overdue tasks',
+      value: summary?.overdueTasks ?? 0,
+      color: '#FBBF24',
+    },
+    {
+      label: 'Blocked tasks',
+      value: summary?.blockedTasks ?? 0,
+      color: '#F87171',
+    },
+  ].filter((s) => s.value > 0);
+
+  const healthScore =
+    totalTracked > 0
+      ? Math.round(
+          (Math.max(
+            (summary?.activeProjects ?? 0) -
+            (summary?.overdueTasks ?? 0) -
+            (summary?.blockedTasks ?? 0),
+            0,
+          ) /
+          Math.max(summary?.activeProjects ?? 1, 1)) *
+          100,
+        )
+      : 0;
+
+  const healthQuality =
+    healthScore >= 80 ? { label: 'HEALTHY', variant: 'green' as const } :
+    healthScore >= 60 ? { label: 'FAIR', variant: 'blue' as const } :
+    healthScore >= 40 ? { label: 'AT RISK', variant: 'amber' as const } :
+    { label: 'CRITICAL', variant: 'red' as const };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-cdy-white">Overview</h1>
         <PermissionGate feature="projects.all" action="write">
           <Link href="/projects/new">
-            <Button>New Project</Button>
+            <Button className="bg-cdy-red hover:bg-cdy-red/90">
+              New Project
+            </Button>
           </Link>
         </PermissionGate>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <MetricCard
-          label="Active Projects"
-          value={String(summary?.activeProjects ?? 0)}
-          delta={0}
-          deltaLabel="currently active"
-          icon={FolderKanban}
-          iconColor="bg-cdy-red/20 text-cdy-red"
-          isLoading={summaryLoading}
-        />
-        <MetricCard
-          label="Overdue Tasks"
-          value={String(summary?.overdueTasks ?? 0)}
-          delta={0}
-          deltaLabel="need attention"
-          icon={AlertTriangle}
-          iconColor="bg-amber-500/20 text-amber-400"
-          isLoading={summaryLoading}
-        />
-        <MetricCard
-          label="Blocked Tasks"
-          value={String(summary?.blockedTasks ?? 0)}
-          delta={0}
-          deltaLabel="awaiting resolution"
-          icon={Ban}
-          iconColor="bg-cdy-red/20 text-cdy-red"
-          isLoading={summaryLoading}
-        />
-        <MetricCard
-          label="Milestones Due"
-          value={String(summary?.milestonesAwaitingApproval ?? 0)}
-          delta={0}
-          deltaLabel="awaiting approval"
-          icon={CalendarClock}
-          iconColor="bg-blue-500/20 text-blue-400"
-          isLoading={summaryLoading}
-        />
-        <MetricCard
-          label="Completed MTD"
-          value={String(summary?.completedThisMonth ?? 0)}
-          delta={0}
-          deltaLabel="projects this month"
-          icon={CheckCircle2}
-          iconColor="bg-emerald-500/20 text-emerald-400"
-          isLoading={summaryLoading}
-        />
-        <MetricCard
-          label="Tasks Done MTW"
-          value={String(summary?.tasksCompletedThisWeek ?? 0)}
-          delta={0}
-          deltaLabel="completed this week"
-          icon={ListTodo}
-          iconColor="bg-purple-500/20 text-purple-400"
-          isLoading={summaryLoading}
-        />
+      {/* Row 1 — Hero metrics */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <SectionCard>
+          <MetricHero
+            value={String(summary?.activeProjects ?? 0)}
+            label="Active projects"
+            isLoading={summaryLoading}
+            size="md"
+          />
+        </SectionCard>
+        <SectionCard>
+          <MetricHero
+            value={String(summary?.overdueTasks ?? 0)}
+            label="Overdue tasks"
+            badge={
+              (summary?.overdueTasks ?? 0) > 0 ? 'ACTION REQUIRED' : 'ALL CLEAR'
+            }
+            badgeVariant={
+              (summary?.overdueTasks ?? 0) > 0 ? 'amber' : 'green'
+            }
+            isLoading={summaryLoading}
+            size="md"
+          />
+        </SectionCard>
+        <SectionCard>
+          <MetricHero
+            value={String(summary?.blockedTasks ?? 0)}
+            label="Blocked tasks"
+            badge={
+              (summary?.blockedTasks ?? 0) > 0 ? 'BLOCKED' : 'ALL CLEAR'
+            }
+            badgeVariant={
+              (summary?.blockedTasks ?? 0) > 0 ? 'red' : 'green'
+            }
+            isLoading={summaryLoading}
+            size="md"
+          />
+        </SectionCard>
+        <SectionCard>
+          <MetricHero
+            value={String(summary?.milestonesAwaitingApproval ?? 0)}
+            label="Milestones to approve"
+            badge={
+              (summary?.milestonesAwaitingApproval ?? 0) > 0
+                ? 'PENDING'
+                : 'ALL CLEAR'
+            }
+            badgeVariant={
+              (summary?.milestonesAwaitingApproval ?? 0) > 0 ? 'amber' : 'green'
+            }
+            isLoading={summaryLoading}
+            size="md"
+          />
+        </SectionCard>
       </div>
 
-      <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
-        <h2 className="mb-4 text-lg font-semibold text-cdy-white">
-          Active Projects
-        </h2>
-        {projectsLoading ? (
-          <p className="text-sm text-cdy-muted">Loading…</p>
-        ) : activeProjects.length === 0 ? (
-          <p className="text-sm text-cdy-muted">No active projects yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-cdy-navy-border text-cdy-muted">
-                  <th className="pb-3 pr-4 font-medium">Project</th>
-                  <th className="pb-3 pr-4 font-medium">Client</th>
-                  <th className="pb-3 pr-4 font-medium">Service</th>
-                  <th className="pb-3 pr-4 font-medium">Progress</th>
-                  <th className="pb-3 pr-4 font-medium">Due</th>
-                  <th className="pb-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeProjects.map((project) => (
-                  <tr
-                    key={project.id}
-                    className="border-b border-cdy-navy-border/50 last:border-0"
-                  >
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/projects/${project.id}`}
-                        className="font-medium text-cdy-white hover:text-cdy-red"
-                      >
-                        {project.name}
-                      </Link>
-                      <p className="text-xs text-cdy-muted">
-                        {project.projectCode}
-                      </p>
-                    </td>
-                    <td className="py-3 pr-4 text-cdy-muted">
-                      {project.client?.companyName ?? '—'}
-                    </td>
-                    <td className="py-3 pr-4 capitalize text-cdy-muted">
-                      {project.serviceType.replace(/_/g, ' ')}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <ProjectProgressBar project={project} />
-                    </td>
-                    <td className="py-3 pr-4 text-cdy-muted">
-                      {project.endDate
-                        ? format(parseISO(project.endDate), 'MMM d, yyyy')
-                        : 'Ongoing'}
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                          project.status === ProjectStatus.ACTIVE
-                            ? 'bg-emerald-500/15 text-emerald-400'
-                            : 'bg-amber-500/15 text-amber-400',
-                        )}
-                      >
-                        {STATUS_LABELS[project.status]}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Row 2 — Health DonutChart + Active project progress bars */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <SectionCard title="Portfolio health">
+          <div className="flex items-center gap-4">
+            {healthData.length > 0 ? (
+              <DonutChart segments={healthData} size={110} thickness={22} />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center rounded-full border-8 border-cdy-navy text-2xl font-bold text-cdy-white">
+                —
+              </div>
+            )}
+            <div className="space-y-2">
+              <QualityBadge
+                label={healthQuality.label}
+                variant={healthQuality.variant}
+              />
+              <div className="space-y-1 text-xs text-cdy-muted">
+                <p>
+                  <span className="font-mono text-green-400">
+                    {summary?.completedThisMonth ?? 0}
+                  </span>{' '}
+                  completed MTD
+                </p>
+                <p>
+                  <span className="font-mono text-purple-400">
+                    {summary?.tasksCompletedThisWeek ?? 0}
+                  </span>{' '}
+                  tasks done this week
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </SectionCard>
+
+        <SectionCard title="Active project progress" className="lg:col-span-2">
+          {projectsLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="h-3 w-48 animate-pulse rounded bg-cdy-navy" />
+                  <div className="h-1.5 animate-pulse rounded-full bg-cdy-navy" />
+                </div>
+              ))}
+            </div>
+          ) : activeProjects.length === 0 ? (
+            <p className="text-sm text-cdy-muted">No active projects yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {activeProjects.slice(0, 6).map((project) => (
+                <ProjectRow key={project.id} project={project} />
+              ))}
+              {activeProjects.length > 6 && (
+                <Link
+                  href="/projects"
+                  className="block text-xs text-cdy-red hover:underline"
+                >
+                  +{activeProjects.length - 6} more projects →
+                </Link>
+              )}
+            </div>
+          )}
+        </SectionCard>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
-          <h2 className="mb-4 text-lg font-semibold text-cdy-white">
-            Upcoming Deadlines
-          </h2>
+      {/* Row 3 — Upcoming deadlines + Milestones awaiting approval */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Upcoming deadlines — 7 days">
           {summaryLoading ? (
             <p className="text-sm text-cdy-muted">Loading…</p>
           ) : (summary?.upcomingDeadlines.length ?? 0) === 0 ? (
-            <p className="text-sm text-cdy-muted">
-              No deadlines in the next 7 days.
-            </p>
+            <p className="text-sm text-cdy-muted">No deadlines in the next 7 days.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-cdy-muted">
-                    <th className="pb-2 pr-3 font-medium">Task</th>
-                    <th className="pb-2 pr-3 font-medium">Project</th>
-                    <th className="pb-2 pr-3 font-medium">Assignee</th>
-                    <th className="pb-2 font-medium">Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {summary?.upcomingDeadlines.map((deadline) => {
-                    const due = parseISO(deadline.dueDate);
-                    const overdue = isPast(due) && !isToday(due);
-                    const dueToday = isToday(due);
-                    return (
-                      <tr
-                        key={deadline.taskId}
-                        className={cn(
-                          'border-b border-cdy-navy-border/50 last:border-0',
-                          overdue && 'bg-cdy-red/5',
-                          dueToday && !overdue && 'bg-amber-500/5',
-                        )}
-                      >
-                        <td className="py-2 pr-3">
-                          <span
-                            className={cn(
-                              'font-medium',
-                              PRIORITY_COLORS[deadline.priority],
-                            )}
-                          >
-                            {deadline.priority}
-                          </span>
-                          <p className="text-cdy-white">{deadline.title}</p>
-                        </td>
-                        <td className="py-2 pr-3 text-cdy-muted">
-                          {deadline.projectName}
-                        </td>
-                        <td className="py-2 pr-3 text-cdy-muted">
-                          {deadline.assigneeName}
-                        </td>
-                        <td className="py-2 text-cdy-muted">
-                          {format(due, 'MMM d')}
-                          {overdue && (
-                            <span className="ml-1 text-cdy-red">Overdue</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={['Task', 'Project', 'Assignee', 'Due']}
+              rows={(summary?.upcomingDeadlines ?? []).map((d) => {
+                const due = parseISO(d.dueDate);
+                const overdue = isPast(due) && !isToday(due);
+                const dueToday = isToday(due);
+                return [
+                  <span key="task" className={cn(
+                    PRIORITY_COLORS[d.priority],
+                    'font-medium',
+                  )}>
+                    {d.title}
+                  </span>,
+                  d.projectName,
+                  d.assigneeName,
+                  <span key="due" className={cn(
+                    overdue ? 'text-cdy-red font-semibold' :
+                    dueToday ? 'text-amber-400 font-semibold' :
+                    'text-cdy-muted',
+                  )}>
+                    {format(due, 'MMM d')}
+                    {overdue && ' (overdue)'}
+                    {dueToday && ' (today)'}
+                  </span>,
+                ];
+              })}
+            />
           )}
-        </div>
+        </SectionCard>
 
-        <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
-          <h2 className="mb-2 text-lg font-semibold text-cdy-white">
-            Milestones Awaiting Approval
-          </h2>
-          <p className="mb-4 text-sm text-cdy-muted">
-            {summary?.milestonesAwaitingApproval ?? 0} milestone
-            {(summary?.milestonesAwaitingApproval ?? 0) !== 1 ? 's' : ''}{' '}
-            awaiting approval
-          </p>
+        <SectionCard
+          title="Milestones awaiting approval"
+          action={
+            (summary?.milestonesAwaitingApproval ?? 0) > 0 ? (
+              <span className="rounded-full bg-cdy-red/20 px-2 py-0.5 text-xs text-cdy-red">
+                {summary!.milestonesAwaitingApproval}
+              </span>
+            ) : undefined
+          }
+        >
           {summaryLoading ? (
             <p className="text-sm text-cdy-muted">Loading…</p>
           ) : (summary?.milestonesPendingApproval.length ?? 0) === 0 ? (
-            <p className="text-sm text-cdy-muted">None pending.</p>
+            <p className="text-sm text-cdy-muted">None pending approval.</p>
           ) : (
             <div className="space-y-3">
               {summary?.milestonesPendingApproval.map((milestone) => (
                 <div
                   key={milestone.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-cdy-navy-border bg-cdy-navy p-3"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-cdy-navy-border bg-cdy-navy p-3"
                 >
                   <div>
                     <p className="font-medium text-cdy-white">
                       {milestone.projectName} — {milestone.name}
                     </p>
                     <p className="text-sm text-cdy-muted">
-                      {formatCurrency(
-                        milestone.billingAmount,
-                        milestone.currency,
-                      )}
+                      {formatCurrency(milestone.billingAmount, milestone.currency)}
                     </p>
                   </div>
                   <PermissionGate feature="projects.approvals" action="write">
                     <Button
                       size="sm"
-                      onClick={() =>
-                        void handleApprove(
-                          milestone.projectId,
-                          milestone.id,
-                        )
-                      }
                       disabled={approveMilestone.isPending}
+                      onClick={() =>
+                        void handleApprove(milestone.projectId, milestone.id)
+                      }
                     >
                       Approve
                     </Button>
@@ -364,7 +369,7 @@ export default function ProjectsOverviewPage(): JSX.Element {
               ))}
             </div>
           )}
-        </div>
+        </SectionCard>
       </div>
     </div>
   );

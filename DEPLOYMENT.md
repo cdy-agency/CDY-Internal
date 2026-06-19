@@ -1,235 +1,147 @@
-# CDY Finance Module — Production Deployment
+# CDY Deployment Guide — v1.0.0
 
-## Pre-deployment checklist
-- [ ] All QA checklist items ticked
-- [ ] SENTRY_DSN set in Railway and Vercel
-- [ ] RESEND_API_KEY set with production sending domain verified
-- [ ] JWT_SECRET is at least 32 characters and not the dev default
-- [ ] DATABASE_URL points to production PostgreSQL
-- [ ] FRONTEND_URL=https://inhouse.cdyagency.com
+## Prerequisites
 
-## Deploy steps
+- Docker Desktop running
+- `.env.docker` file present at repo root (see `.env.example`)
+- Dev postgres (`cdy_postgres`) running — shares `cdy_network` with prod containers
 
-### 1. Run migrations on production
+---
+
+## Production Stack
+
+| Container | Image | Port |
+|-----------|-------|------|
+| `cdy_api_prod` | `cdy-api:prod` | 3251 |
+| `cdy_web_prod` | `cdy-web:prod` | 3250 |
+| `cdy_postgres_prod` | `postgres:15` | 5432 (internal) |
+
+---
+
+## Deploy Steps
+
+### 1. Pull latest code
+
 ```bash
-railway run npx prisma migrate deploy
+git pull origin master
 ```
 
-### 2. Verify migration
+### 2. Build API image
+
 ```bash
-railway run npx prisma migrate status
+docker build -f apps/api/Dockerfile.prod -t cdy-api:prod .
 ```
 
-### 3. Push to main
+### 3. Build Web image
+
 ```bash
-git tag v2.0.0-finance
-git push origin main --tags
+docker build -f apps/web/Dockerfile.prod -t cdy-web:prod .
 ```
 
-## v2.0.0-finance Release
+### 4. Run database migration
 
-### New in v2.0.0
-- Payroll engine with payslip generation
-- Commission rules management UI
-- Balance sheet manual entries + year-on-year comparison
-- Finance settings (company details, invoice prefix, payroll config)
-- Employee salary management
-
-### Migration
 ```bash
-railway run npx prisma migrate deploy
+# From host (dev postgres must be reachable on port 5433):
+DATABASE_URL=postgresql://postgres:password@localhost:5433/cdy_inhouse \
+  npx prisma db push --schema=apps/api/prisma/schema.prisma
+
+# Or from inside the running API container:
+docker exec -it cdy_api_prod npx prisma db push
 ```
 
-### Seed payroll data (once)
+### 5. Force-recreate containers
+
 ```bash
-# Add salary records for each employee via the UI or API
-# POST /api/v1/payroll/salaries for each employee
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d --force-recreate
 ```
 
-### Tag and deploy
+### 6. Verify containers are healthy
+
 ```bash
-git tag v2.0.0-finance
-git push origin main --tags
+docker ps | grep cdy
+docker logs cdy_api_prod --tail 50
+docker logs cdy_web_prod --tail 20
 ```
 
-### Docker production (host nginx)
+### 7. Smoke test
 
-Public URL: **https://inhouse.cdyagency.com**
+- [ ] Login page loads at `http://localhost:3250/login`
+- [ ] CEO login → redirects to `/finance`
+- [ ] IT login → redirects to `/it`
+- [ ] Finance dashboard loads with data
+- [ ] CRM pipeline loads
+- [ ] HR employees list loads
+- [ ] Projects list loads
+- [ ] CEO Dashboard loads at `/ceo` (CEO role only)
+- [ ] Notifications bell renders and count updates
+- [ ] Invoice PDF generation works
+- [ ] Module switcher navigates between modules
+- [ ] Cron logs visible at `GET /api/v1/it/cron-logs` (IT Admin)
 
-Host nginx proxies to `127.0.0.1:3250` (web) and `127.0.0.1:3251` (api). No Docker nginx container.
+---
 
-1. Copy env: `cp .env.docker.prod.example .env.docker` and fill secrets.
-2. Start stack: `docker compose -f docker-compose.prod.yml --env-file .env.docker up --build -d`
-3. Install host nginx: `host-nginx.http-only.example.conf` first, then `host-nginx.example.conf` after cert.
-4. Run migrations: `docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy`
-5. Stop old Docker nginx if present: `docker rm -f cdy_nginx 2>/dev/null`
-
-CI/CD pipeline handles the rest automatically.
-
-### 4. Smoke test
-Execute every item in the Production smoke test section of QA_CHECKLIST.md
-
-### 5. Rollback (if needed)
-- Railway: Dashboard → Deployments → previous deployment → Redeploy
-- Vercel: Dashboard → Deployments → previous deployment → Promote to Production
-
-## v1.0.0-crm Release
-
-### New in v1.0.0-crm
-
-- Full CRM pipeline from lead to closed deal
-- Automatic Finance integration on deal closure
-- Sales agent personal dashboards with target tracking
-- Conversion reports, sales performance, source analysis
-- Proposal tracking, bulk lead actions, CSV export
-- CRM settings (lost reasons, score weights)
-
-### Migration
+## Rollback
 
 ```bash
-railway run npx prisma migrate deploy
+# Tag the previous working image before deploying
+docker tag cdy-api:prod cdy-api:prod-backup
+
+# Rollback
+docker tag cdy-api:prod-backup cdy-api:prod
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d --force-recreate cdy_api_prod
 ```
 
-### Seed CRM settings (once)
+---
 
-```bash
-# CRM settings seed on bootstrap — no manual step needed
-# onApplicationBootstrap() seeds defaults automatically
+## v1.0.0 Checklist
+
+- [x] Sprint 1–21: Finance, CRM, HR, Projects core
+- [x] Sprint 22: Sales module (campaigns, agents, activity logs)
+- [x] Sprint 23: Marketing, Software, Branding, Influencer modules
+- [x] Sprint 24: CEO Global Dashboard
+- [x] Sprint 25: Production hardening
+  - [x] CronLog model + composite indexes (5 models)
+  - [x] CacheKeys and CacheTTL registry
+  - [x] GlobalExceptionFilter — correlationId, timestamp, path, Prisma P2002/P2025/P2003
+  - [x] PerformanceInterceptor — logs requests >500ms globally
+  - [x] All 9 cron jobs write CronLog records (itemsProcessed, errors, status)
+  - [x] IT module — `GET /api/v1/it/cron-logs` (IT Admin, paginated)
+  - [x] Debug controller — all 9 jobs, production guard, `it.audit:write` permission
+  - [x] ErrorBoundary component wraps CEO dashboard sections
+  - [x] SYSTEM_OVERVIEW.md
+  - [x] DEPLOYMENT.md
+
+---
+
+## Environment File Template (`.env.docker`)
+
+```env
+DATABASE_URL=postgresql://postgres:password@cdy_postgres_prod:5432/cdy_inhouse
+JWT_SECRET=your-jwt-secret-here
+JWT_REFRESH_SECRET=your-refresh-secret-here
+FRONTEND_URL=http://localhost:3250
+NODE_ENV=production
+PORT=3251
+NEXT_PUBLIC_API_URL=http://cdy_api_prod:3251
+SENTRY_DSN=
+UPLOAD_DIR=/app/uploads
 ```
 
-### Tag and deploy
+---
+
+## Useful Commands
 
 ```bash
-git tag v1.0.0-crm
-git push origin main --tags
-```
+# View API logs live
+docker logs cdy_api_prod -f
 
-## v1.0.0-hr Release
+# Connect to prod DB
+docker exec -it cdy_postgres_prod psql -U postgres -d cdy_inhouse
 
-### New in v1.0.0-hr
+# Push schema changes to prod DB (from inside API container)
+docker exec -it cdy_api_prod npx prisma db push
 
-- Performance review system (quarterly reviews, self-assessment, manager completion, acknowledgement)
-- Salary history tracking with payroll effective-date integration
-- Onboarding checklist (12 default items, auto-init on employee create)
-- HR audit log (fire-and-forget, wired into all HR write operations)
-- HR reports: headcount, turnover, leave utilisation, attendance summary
-- Finance summary: `totalActiveEmployees` and `totalMonthlyPayroll` from HR
-- Team productivity stub endpoint (attendance data until Projects module)
-- Frontend: performance pages, reports, audit log, employee profile tabs
-
-### Migrations
-
-```bash
-railway run npx prisma migrate deploy
-# or locally:
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma generate
-```
-
-Sprint 14 migration: `20260610100000_sprint14_hr_performance_salary_history`
-
-### Tag and deploy
-
-```bash
-git tag v1.0.0-hr
-git push origin feature/hr --tags
-# Railway + Vercel auto-deploy on push
-```
-
-## v1.0.0-projects Release
-
-### New in v1.0.0-projects
-
-- Portfolio report with project health matrix and service breakdown
-- Budget vs actual report with variance tracking and CSV export
-- Project handover report (saved as `ProjectReport` snapshot)
-- Project completion workflow with incomplete task / uninvoiced milestone acknowledgement
-- Project on-hold and reactivate status transitions
-- Bulk task import from CSV (milestone name + assignee email resolution)
-- Redis caching on portfolio, budget, profitability, and workload endpoints
-- Composite indexes on all Projects module tables
-- Frontend: reports landing, portfolio/budget pages, completion modal, CSV import modal, handover page
-
-### Migrations
-
-```bash
-railway run npx prisma migrate deploy
-# or locally:
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma generate
-```
-
-Sprint 17 migration: `20260710100000_sprint17_projects_completion_indexes`
-
-### Tag and deploy
-
-```bash
-git tag v1.0.0-projects
-git push origin feature/projects --tags
-# Railway + Vercel auto-deploy on push
-```
-
-### Fixing P3009 — failed `sprint14` migration (production)
-
-**Cause:** The Sprint 14 migration was originally timestamped `20260610100000`, which runs *before* Sprint 13 creates the `Employee` table. Prisma recorded it as failed and blocks all later migrations (P3009).
-
-The migration folder is renamed to `20260629100000_sprint14_hr_performance_salary_history` so it runs after HR employees (Sprint 13).
-
-**On the production host** (`/srv/applications/CDY-Internal`):
-
-```bash
-# 1. Pull the fix (renamed migration folder)
-git pull
-
-# 2. Check migration history and whether Sprint 14 tables exist
-docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
-  "SELECT migration_name, finished_at, rolled_back_at, LEFT(logs, 120) AS logs FROM _prisma_migrations ORDER BY started_at;"
-
-docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
-  "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'PerformanceReview');"
-```
-
-**If `PerformanceReview` does NOT exist** (typical — migration failed before creating tables):
-
-```bash
-# Remove the stale failed record for the OLD migration name
-docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
-  "DELETE FROM _prisma_migrations WHERE migration_name = '20260610100000_sprint14_hr_performance_salary_history';"
-
-# Rebuild/restart API so migrate deploy runs with the renamed migration
-docker compose -f docker-compose.prod.yml up --build -d api
-
-# Verify
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate status
-```
-
-**If `PerformanceReview` already exists** (tables were created manually or partially):
-
-```bash
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate resolve --applied 20260629100000_sprint14_hr_performance_salary_history
-
-# Still delete the old failed row if present
-docker compose -f docker-compose.prod.yml exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
-  "DELETE FROM _prisma_migrations WHERE migration_name = '20260610100000_sprint14_hr_performance_salary_history';"
-
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
-docker compose -f docker-compose.prod.yml exec api npx prisma migrate status
-```
-
-Expected result: all 15 migrations show as applied, including Sprint 14 (new name), Sprint 16, and Sprint 17.
-
-### PDF generation (Puppeteer / Chromium)
-
-Invoice, receipt, payslip, and report PDFs require Chromium inside the API container. The production Dockerfile installs Alpine `chromium` and sets `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`.
-
-After pulling code changes, rebuild the API image:
-
-```bash
-docker compose -f docker-compose.prod.yml up --build -d api
-```
-
-Verify Chromium is available:
-
-```bash
-docker compose -f docker-compose.prod.yml exec api sh -c 'test -x /usr/bin/chromium && echo OK || echo MISSING'
+# Trigger a debug cron job (non-prod, IT Admin)
+curl -X POST http://localhost:3251/api/v1/debug/run-cron/overdue \
+  -H "Cookie: cdy_auth=<token>"
 ```

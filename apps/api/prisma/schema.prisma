@@ -132,6 +132,7 @@ model Invoice {
   deletedAt            DateTime?
 
   milestoneId          String?       @unique
+  ventureId            String?
 
   payments         Payment[]
   reminders        InvoiceReminder[]
@@ -142,6 +143,7 @@ model Invoice {
   creator          User              @relation(fields: [createdBy], references: [id])
   client           Client?           @relation("ClientInvoices", fields: [clientId], references: [id])
   milestone        Milestone?        @relation(fields: [milestoneId], references: [id])
+  venture          Venture?          @relation(fields: [ventureId], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -151,6 +153,7 @@ model Invoice {
   @@index([paidAt])
   @@index([taxRateId])
   @@index([retainerContractId])
+  @@index([ventureId])
 }
 
 enum InvoiceStatus {
@@ -218,21 +221,25 @@ model Expense {
   amount     Decimal         @db.Decimal(12, 2)
   currency   String          @default("USD")
   date       DateTime
-  projectId          String?
-  internalHourlyCost Decimal?        @db.Decimal(10, 2)
-  receiptUrl         String?
-  uploadPath         String?
-  notes              String?
-  createdBy          String
+  projectId           String?
+  ventureId           String?
+  ventureSharePercent Decimal?  @db.Decimal(5, 2)
+  internalHourlyCost  Decimal?  @db.Decimal(10, 2)
+  receiptUrl          String?
+  uploadPath          String?
+  notes               String?
+  createdBy           String
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   deletedAt  DateTime?
 
-  creator User @relation(fields: [createdBy], references: [id])
+  creator User     @relation(fields: [createdBy], references: [id])
+  venture Venture? @relation(fields: [ventureId], references: [id])
 
   @@index([category])
   @@index([date])
   @@index([projectId])
+  @@index([ventureId])
 }
 
 enum ExpenseCategory {
@@ -761,6 +768,8 @@ model Venture {
 
   incomeEntries  VentureIncome[]
   expenseEntries VentureExpense[]
+  invoices       Invoice[]
+  expenses       Expense[]
 
   @@index([isActive])
 }
@@ -834,9 +843,14 @@ model Client {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  leads    Lead[]
-  invoices Invoice[] @relation("ClientInvoices")
-  projects Project[]
+  leads            Lead[]
+  invoices         Invoice[]         @relation("ClientInvoices")
+  projects         Project[]
+  marketingClients      MarketingClient[]
+  softwareProjects      SoftwareProject[]
+  brandingProjects      BrandingProject[]
+  influencerCampaigns   InfluencerCampaign[]
+  salesCampaigns        SalesCampaign[]
 
   @@index([assignedTo])
   @@index([createdAt])
@@ -1652,4 +1666,662 @@ model ProjectReport {
 
   @@index([projectId])
   @@index([type])
+}
+
+// ─── Sprint 18: Marketing Services ──────────────────────────────
+
+model MarketingClient {
+  id            String   @id @default(cuid())
+  clientId      String   @unique
+  projectId     String?
+  retainerId    String?
+  platforms     String[]
+  postsPerMonth Int      @default(12)
+  isActive      Boolean  @default(true)
+  notes         String?
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  contentItems ContentItem[]
+  client       Client        @relation(fields: [clientId], references: [id])
+
+  @@index([clientId])
+  @@index([isActive])
+}
+
+model ContentItem {
+  id                String        @id @default(cuid())
+  marketingClientId String
+  title             String
+  description       String?
+  platform          String
+  contentType       ContentType
+  scheduledDate     DateTime
+  publishedAt       DateTime?
+  status            ContentStatus @default(DRAFT)
+  fileUrl           String?
+  notes             String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  createdBy         String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  marketingClient MarketingClient @relation(fields: [marketingClientId], references: [id])
+
+  @@index([marketingClientId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([platform])
+  @@index([marketingClientId, status])
+  @@index([marketingClientId, scheduledDate])
+}
+
+enum ContentType {
+  POST
+  REEL
+  STORY
+  CAROUSEL
+  VIDEO
+  BLOG
+  EMAIL
+  AD
+}
+
+enum ContentStatus {
+  DRAFT
+  READY
+  APPROVED
+  PUBLISHED
+  REJECTED
+  CANCELLED
+}
+
+// ─── Sprint 19: Software & Web Dev Services ───────────────────
+
+model SoftwareProject {
+  id                String              @id @default(cuid())
+  clientId          String
+  projectId         String?
+  name              String
+  description       String?
+  projectType       SoftwareProjectType @default(WEBSITE)
+  phase             SoftwarePhase       @default(REQUIREMENTS)
+  startDate         DateTime
+  deployedAt        DateTime?
+  maintenanceEndsAt DateTime?
+  isActive          Boolean             @default(true)
+  notes             String?
+  createdBy         String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  client          Client           @relation(fields: [clientId], references: [id])
+  requirements    RequirementDoc[]
+  designPhase     DesignPhase?
+  devSprints      DevSprint[]
+  qaPhase         QaPhase?
+  deployment      Deployment?
+  maintenanceLogs MaintenanceLog[]
+
+  @@index([clientId])
+  @@index([phase])
+  @@index([isActive])
+  @@index([clientId, isActive])
+}
+
+enum SoftwareProjectType {
+  WEBSITE
+  WEB_APP
+  MOBILE_APP
+  SYSTEM
+  OTHER
+}
+
+enum SoftwarePhase {
+  REQUIREMENTS
+  DESIGN
+  DEVELOPMENT
+  QA
+  DEPLOYMENT
+  MAINTENANCE
+  COMPLETED
+}
+
+model RequirementDoc {
+  id                String          @id @default(cuid())
+  softwareProjectId String
+  title             String
+  content           String
+  version           Int             @default(1)
+  fileUrl           String?
+  status            DocStatus       @default(DRAFT)
+  sentToClientAt    DateTime?
+  clientSignedAt    DateTime?
+  notes             String?
+  createdBy         String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+
+  @@index([softwareProjectId])
+}
+
+enum DocStatus {
+  DRAFT
+  SENT
+  SIGNED
+  REVISED
+}
+
+model DesignPhase {
+  id                String       @id @default(cuid())
+  softwareProjectId String       @unique
+  figmaUrl          String?
+  isSkipped         Boolean      @default(false)
+  status            DesignStatus @default(IN_PROGRESS)
+  sentToClientAt    DateTime?
+  clientApprovedAt  DateTime?
+  notes             String?
+  createdBy         String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+}
+
+enum DesignStatus {
+  IN_PROGRESS
+  SENT
+  APPROVED
+  CHANGES_REQUESTED
+  SKIPPED
+}
+
+model DevSprint {
+  id                String       @id @default(cuid())
+  softwareProjectId String
+  name              String
+  goal              String?
+  startDate         DateTime
+  endDate           DateTime
+  status            SprintStatus @default(PLANNED)
+  completedAt       DateTime?
+  milestoneId       String?
+  createdBy         String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+  items           SprintItem[]
+
+  @@index([softwareProjectId])
+  @@index([status])
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  SKIPPED
+}
+
+model SprintItem {
+  id          String     @id @default(cuid())
+  sprintId    String
+  title       String
+  description String?
+  status      ItemStatus @default(TODO)
+  assigneeId  String?
+  storyPoints Int?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  sprint DevSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@index([sprintId])
+  @@index([status])
+}
+
+enum ItemStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+model QaPhase {
+  id                String   @id @default(cuid())
+  softwareProjectId String   @unique
+  isSkipped         Boolean  @default(false)
+  status            QaStatus @default(IN_PROGRESS)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  notes             String?
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+  bugs            Bug[]
+}
+
+enum QaStatus {
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model Bug {
+  id          String      @id @default(cuid())
+  qaPhaseId   String
+  title       String
+  description String?
+  severity    BugSeverity @default(MEDIUM)
+  status      BugStatus   @default(OPEN)
+  assigneeId  String?
+  resolvedAt  DateTime?
+  createdBy   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  qaPhase QaPhase @relation(fields: [qaPhaseId], references: [id], onDelete: Cascade)
+
+  @@index([qaPhaseId])
+  @@index([status])
+  @@index([severity])
+}
+
+enum BugSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  WONT_FIX
+}
+
+model Deployment {
+  id                String   @id @default(cuid())
+  softwareProjectId String   @unique
+  deployedAt        DateTime
+  deploymentUrl     String?
+  serverDetails     String?
+  deployedBy        String
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+}
+
+model MaintenanceLog {
+  id                String            @id @default(cuid())
+  softwareProjectId String
+  title             String
+  description       String
+  type              MaintenanceType
+  status            MaintenanceStatus @default(OPEN)
+  priority          BugSeverity       @default(MEDIUM)
+  reportedAt        DateTime          @default(now())
+  resolvedAt        DateTime?
+  assigneeId        String?
+  notes             String?
+  createdBy         String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
+
+  @@index([softwareProjectId])
+  @@index([status])
+}
+
+enum MaintenanceType {
+  BUG
+  UPDATE
+  SECURITY
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+// ─── Branding Project ─────────────────────────────────────────
+model BrandingProject {
+  id          String         @id @default(cuid())
+  clientId    String
+  projectId   String?
+  name        String
+  description String?
+  status      BrandingStatus @default(IN_PROGRESS)
+  deliveredAt DateTime?
+  notes       String?
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  client     Client              @relation(fields: [clientId], references: [id])
+  scopeItems BrandingScopeItem[]
+
+  @@index([clientId])
+  @@index([status])
+}
+
+enum BrandingStatus {
+  IN_PROGRESS
+  DELIVERED
+  ON_HOLD
+  CANCELLED
+}
+
+// ─── Branding Scope Item ──────────────────────────────────────
+model BrandingScopeItem {
+  id                String       @id @default(cuid())
+  brandingProjectId String
+  title             String
+  description       String?
+  supplierId        String?
+  status            ScopeStatus  @default(IN_PROGRESS)
+  deliveredAt       DateTime?
+  notes             String?
+  order             Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  brandingProject BrandingProject    @relation(fields: [brandingProjectId], references: [id], onDelete: Cascade)
+  supplier        BrandingSupplier?  @relation(fields: [supplierId], references: [id])
+  submissions     DesignSubmission[]
+
+  @@index([brandingProjectId])
+  @@index([status])
+  @@index([brandingProjectId, status])
+}
+
+enum ScopeStatus {
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
+  DELIVERED
+}
+
+// ─── Design Submission ────────────────────────────────────────
+model DesignSubmission {
+  id             String           @id @default(cuid())
+  scopeItemId    String
+  version        Int
+  fileUrl        String?
+  description    String?
+  status         SubmissionStatus @default(PENDING)
+  submittedAt    DateTime         @default(now())
+  reviewedAt     DateTime?
+  clientFeedback String?
+  submittedBy    String
+  reviewedBy     String?
+
+  scopeItem BrandingScopeItem @relation(fields: [scopeItemId], references: [id], onDelete: Cascade)
+
+  @@index([scopeItemId])
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─── Branding Supplier ────────────────────────────────────────
+model BrandingSupplier {
+  id          String    @id @default(cuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  notes       String?
+  isActive    Boolean   @default(true)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  scopeItems BrandingScopeItem[]
+}
+
+// ─── Sprint 21: Influencer Marketing ─────────────────────────
+
+model Influencer {
+  id             String   @id @default(cuid())
+  name           String
+  handle         String
+  platform       String
+  otherPlatforms String[]
+  followersCount Int?
+  email          String?
+  phone          String?
+  location       String?
+  category       String?
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assignments CampaignInfluencer[]
+
+  @@index([platform])
+  @@index([isActive])
+}
+
+model InfluencerCampaign {
+  id          String         @id @default(cuid())
+  clientId    String
+  projectId   String?
+  name        String
+  brief       String?
+  platforms   String[]
+  budget      Decimal?       @db.Decimal(12, 2)
+  currency    String         @default("USD")
+  startDate   DateTime
+  endDate     DateTime?
+  status      CampaignStatus @default(ACTIVE)
+  completedAt DateTime?
+  notes       String?
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  client      Client               @relation(fields: [clientId], references: [id])
+  influencers CampaignInfluencer[]
+
+  @@index([clientId])
+  @@index([status])
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+model CampaignInfluencer {
+  id           String   @id @default(cuid())
+  campaignId   String
+  influencerId String
+  agreedFee    Decimal? @db.Decimal(10, 2)
+  currency     String   @default("USD")
+  isPaid       Boolean  @default(false)
+  paidAt       DateTime?
+  paidAmount   Decimal? @db.Decimal(10, 2)
+  paymentNotes String?
+  notes        String?
+  addedAt      DateTime @default(now())
+
+  campaign     InfluencerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  influencer   Influencer         @relation(fields: [influencerId], references: [id])
+  deliverables Deliverable[]
+
+  @@unique([campaignId, influencerId])
+  @@index([campaignId])
+  @@index([influencerId])
+}
+
+model Deliverable {
+  id                   String            @id @default(cuid())
+  campaignInfluencerId String
+  description          String
+  platform             String
+  contentType          String
+  dueDate              DateTime?
+  status               DeliverableStatus @default(PENDING)
+  verifiedAt           DateTime?
+  verifiedBy           String?
+  postUrl              String?
+  notes                String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  campaignInfluencer CampaignInfluencer @relation(fields: [campaignInfluencerId], references: [id], onDelete: Cascade)
+
+  @@index([campaignInfluencerId])
+  @@index([status])
+  @@index([campaignInfluencerId, status])
+}
+
+enum DeliverableStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  MISSED
+}
+
+// ─── Sprint 22: Sales Services ────────────────────────────────
+
+model SalesCampaign {
+  id             String              @id @default(cuid())
+  clientId       String
+  projectId      String?
+  name           String
+  productService String
+  territory      String?
+  startDate      DateTime
+  endDate        DateTime?
+  status         SalesCampaignStatus @default(ACTIVE)
+  completedAt    DateTime?
+  visitTarget    Int?
+  leadTarget     Int?
+  salesTarget    Int?
+  notes          String?
+  createdBy      String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  client        Client             @relation(fields: [clientId], references: [id])
+  agents        SalesAgent[]
+  dailyLogs     DailyActivityLog[]
+  weeklyReports WeeklyReport[]
+
+  @@index([clientId])
+  @@index([status])
+}
+
+enum SalesCampaignStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+model SalesAgent {
+  id           String   @id @default(cuid())
+  campaignId   String
+  employeeId   String
+  territory    String?
+  visitTarget  Int?
+  leadTarget   Int?
+  salesTarget  Int?
+  joinedAt     DateTime @default(now())
+  isActive     Boolean  @default(true)
+
+  campaign  SalesCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  dailyLogs DailyActivityLog[]
+
+  @@unique([campaignId, employeeId])
+  @@index([campaignId])
+  @@index([employeeId])
+}
+
+model DailyActivityLog {
+  id          String   @id @default(cuid())
+  campaignId  String
+  agentId     String
+  employeeId  String
+  date        DateTime
+  visitsCount Int      @default(0)
+  leadsCount  Int      @default(0)
+  salesCount  Int      @default(0)
+  salesAmount Decimal? @db.Decimal(12, 2)
+  notes       String?
+  challenges  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign SalesCampaign @relation(fields: [campaignId], references: [id])
+  agent    SalesAgent    @relation(fields: [agentId], references: [id])
+
+  @@unique([agentId, date])
+  @@index([campaignId])
+  @@index([agentId])
+  @@index([date])
+  @@index([campaignId, date])
+}
+
+model WeeklyReport {
+  id               String   @id @default(cuid())
+  campaignId       String
+  weekStart        DateTime
+  weekEnd          DateTime
+  weekNumber       Int
+  totalVisits      Int
+  totalLeads       Int
+  totalSales       Int
+  totalSalesAmount Decimal? @db.Decimal(12, 2)
+  activeAgents     Int
+  highlights       String?
+  challenges       String?
+  nextWeekPlan     String?
+  generatedAt      DateTime @default(now())
+  generatedBy      String
+
+  campaign SalesCampaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([campaignId, weekNumber])
+  @@index([campaignId])
+}
+
+// ─── Sprint 25: Monitoring ─────────────────────────────────────
+
+model CronLog {
+  id             String   @id @default(cuid())
+  jobName        String
+  startedAt      DateTime
+  completedAt    DateTime
+  itemsProcessed Int      @default(0)
+  errors         Int      @default(0)
+  status         String   @default("SUCCESS")
+  createdAt      DateTime @default(now())
+
+  @@index([jobName])
+  @@index([startedAt])
+  @@index([jobName, startedAt])
 }

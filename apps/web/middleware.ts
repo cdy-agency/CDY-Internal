@@ -101,6 +101,16 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/it\/users\/new/, feature: 'it.users', action: 'write' },
   { pattern: /^\/it\/roles\/new/, feature: 'it.roles', action: 'write' },
   { pattern: /^\/it/, feature: 'it.users', action: 'read' },
+  { pattern: /^\/marketing\/[^/]+/, feature: 'marketing.content', action: 'read' },
+  { pattern: /^\/marketing/, feature: 'marketing.content', action: 'read' },
+  { pattern: /^\/software\/[^/]+/, feature: 'software.projects', action: 'read' },
+  { pattern: /^\/software/, feature: 'software.projects', action: 'read' },
+  { pattern: /^\/branding\/[^/]+/, feature: 'branding.projects', action: 'read' },
+  { pattern: /^\/branding/, feature: 'branding.projects', action: 'read' },
+  { pattern: /^\/influencer/, feature: 'influencer.campaigns', action: 'read' },
+  { pattern: /^\/sales\/my/, feature: 'sales.reporting', action: 'read' },
+  { pattern: /^\/sales/, feature: 'sales.campaigns', action: 'read' },
+  { pattern: /^\/ceo/, feature: 'ceo.dashboard', action: 'read' },
 ];
 
 function decodeJwtPayload(token: string): JwtPayload {
@@ -119,7 +129,7 @@ export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr') || pathname.startsWith('/projects'))) {
+  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr') || pathname.startsWith('/projects') || pathname.startsWith('/marketing') || pathname.startsWith('/software') || pathname.startsWith('/branding') || pathname.startsWith('/influencer') || pathname.startsWith('/sales') || pathname.startsWith('/ceo'))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -161,5 +171,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/projects/:path*', '/login'],
+  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/projects/:path*', '/marketing/:path*', '/software/:path*', '/branding/:path*', '/influencer/:path*', '/sales/:path*', '/ceo/:path*', '/ceo', '/login'],
 };

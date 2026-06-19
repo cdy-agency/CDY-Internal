@@ -7,8 +7,6 @@ import {
   CommissionStatus,
   LeadSource,
   PipelineStage,
-  LeadSource,
-  PipelineStage,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
@@ -133,117 +131,6 @@ async function main(): Promise<void> {
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
- 
-
-  for (const clientId of legacyClientIds) {
-    await prisma.client.create({
-      data: {
-        id: clientId,
-        companyName: clientId.replace('client-', 'Client '),
-        contactName: 'Legacy Contact',
-        email: `${clientId}@legacy.cdy.local`,
-        createdBy: financeManager.id,
-      },
-    });
-  }
-
-  const sampleClients = await Promise.all([
-    prisma.client.create({
-      data: {
-        companyName: 'Acme Corp Rwanda',
-        contactName: 'Sarah Ingabire',
-        email: 'sarah@acme.rw',
-        country: 'RW',
-        createdBy: salesAgent.id,
-        assignedTo: salesAgent.id,
-      },
-    }),
-    prisma.client.create({
-      data: {
-        companyName: 'BritAid Rwanda',
-        contactName: 'Peter Mugisha',
-        email: 'peter@britaid.rw',
-        country: 'RW',
-        createdBy: salesAgent.id,
-        assignedTo: salesAgent.id,
-      },
-    }),
-  ]);
-
-  const sampleLeads = [
-    {
-      contactName: 'James Kabera',
-      companyName: 'TechStart Rwanda',
-      email: 'james@techstart.rw',
-      stage: PipelineStage.NEGOTIATION,
-      source: LeadSource.REFERRAL,
-      estimatedValue: 24000,
-      serviceInterest: 'software_dev',
-      qualityScore: 82,
-    },
-    {
-      contactName: 'Amina Uwera',
-      companyName: 'Kigali Media Ltd',
-      email: 'amina@kigalimedia.rw',
-      stage: PipelineStage.PROPOSAL_SENT,
-      source: LeadSource.WEBSITE,
-      estimatedValue: 8500,
-      serviceInterest: 'marketing',
-      qualityScore: 65,
-    },
-    {
-      contactName: 'Blaise Nkurunziza',
-      companyName: 'Eco Ventures',
-      email: 'blaise@eco.rw',
-      stage: PipelineStage.CONTACTED,
-      source: LeadSource.SOCIAL_MEDIA,
-      estimatedValue: 15000,
-      serviceInterest: 'branding',
-      qualityScore: 55,
-    },
-    {
-      contactName: 'Claire Mutoni',
-      companyName: 'GreenField Inc',
-      email: 'claire@greenfield.rw',
-      stage: PipelineStage.NEW,
-      source: LeadSource.COLD_OUTREACH,
-      estimatedValue: 5000,
-      serviceInterest: 'marketing',
-      qualityScore: 35,
-    },
-    {
-      contactName: 'David Habimana',
-      companyName: 'Inzozi Tech',
-      email: 'david@inzozi.rw',
-      stage: PipelineStage.NEW,
-      source: LeadSource.EVENT,
-      estimatedValue: 30000,
-      serviceInterest: 'software_dev',
-      qualityScore: 70,
-    },
-  ];
-
-  for (const lead of sampleLeads) {
-    const created = await prisma.lead.create({
-      data: {
-        ...lead,
-        assignedTo: salesAgent.id,
-        createdBy: salesAgent.id,
-      },
-    });
-
-    await prisma.pipelineStageHistory.create({
-      data: {
-        leadId: created.id,
-        fromStage: null,
-        toStage: PipelineStage.NEW,
-        movedBy: salesAgent.id,
-      },
-    });
-  }
-
-  void sampleClients;
 
   const legacyClientIds = [
     'client-001',

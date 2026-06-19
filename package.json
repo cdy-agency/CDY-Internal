@@ -15,7 +15,12 @@
     "prod:docker:down": "docker-compose -f docker-compose.prod.yml down",
     "db:migrate": "docker-compose exec api pnpm --filter api prisma:migrate",
     "db:seed": "docker-compose exec api pnpm --filter api prisma:seed",
-    "db:studio": "docker-compose exec api pnpm --filter api prisma:studio"
+    "db:studio": "docker-compose exec api pnpm --filter api prisma:studio",
+    "db:migrate:local": "pnpm --filter api exec prisma migrate deploy",
+    "db:migrate:dev": "pnpm --filter api prisma:migrate",
+    "db:seed:local": "pnpm --filter api prisma:seed",
+    "db:generate": "pnpm --filter api prisma:generate",
+    "db:reset:local": "pnpm --filter api exec prisma migrate reset --force"
   },
   "devDependencies": {
     "turbo": "^2.5.4",
