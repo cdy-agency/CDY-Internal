@@ -4,6 +4,7 @@ import { NotificationType, TaskStatus } from '@prisma/client';
 import { addHours, format, startOfDay } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { CronLogService } from '../cron-log.service';
 
 @Injectable()
 export class ProjectDeadlineAlertsJob {
@@ -12,79 +13,94 @@ export class ProjectDeadlineAlertsJob {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly cronLog: CronLogService,
   ) {}
 
   @Cron('30 7 * * *', { name: 'project-deadline-alerts' })
   async checkProjectDeadlines(): Promise<void> {
     this.logger.log('Running project deadline alerts...');
+    const startedAt = new Date();
+    let itemsProcessed = 0;
+    let errors = 0;
 
-    const now = new Date();
-    const in48Hours = addHours(now, 48);
+    try {
+      const now = new Date();
+      const in48Hours = addHours(now, 48);
 
-    const dueSoon = await this.prisma.task.findMany({
-      where: {
-        dueDate: { gte: now, lte: in48Hours },
-        status: { notIn: [TaskStatus.DONE] },
-        deletedAt: null,
-        assigneeId: { not: null },
-      },
-      include: {
-        project: { select: { name: true, managerId: true } },
-      },
-    });
-
-    for (const task of dueSoon) {
-      const employee = await this.prisma.employee.findUnique({
-        where: { id: task.assigneeId! },
-        select: { userId: true },
+      const dueSoon = await this.prisma.task.findMany({
+        where: {
+          dueDate: { gte: now, lte: in48Hours },
+          status: { notIn: [TaskStatus.DONE] },
+          deletedAt: null,
+          assigneeId: { not: null },
+        },
+        include: {
+          project: { select: { name: true, managerId: true } },
+        },
       });
-      if (employee) {
-        await this.notificationsService.createNotification({
-          userId: employee.userId,
-          type: NotificationType.SYSTEM,
-          title: `Task due soon — ${task.title}`,
-          body: `This task on ${task.project.name} is due ${format(task.dueDate!, 'MMM d')}. Please update the status.`,
-          link: `/projects/${task.projectId}?task=${task.id}`,
+
+      for (const task of dueSoon) {
+        const employee = await this.prisma.employee.findUnique({
+          where: { id: task.assigneeId! },
+          select: { userId: true },
         });
+        if (employee) {
+          await this.notificationsService.createNotification({
+            userId: employee.userId,
+            type: NotificationType.SYSTEM,
+            title: `Task due soon — ${task.title}`,
+            body: `This task on ${task.project.name} is due ${format(task.dueDate!, 'MMM d')}. Please update the status.`,
+            link: `/projects/${task.projectId}?task=${task.id}`,
+          });
+        }
       }
-    }
 
-    const overdue = await this.prisma.task.findMany({
-      where: {
-        dueDate: { lt: now },
-        status: { notIn: [TaskStatus.DONE] },
-        deletedAt: null,
-      },
-      include: {
-        project: { select: { name: true, managerId: true } },
-      },
-    });
-
-    const byManager: Record<string, typeof overdue> = {};
-    for (const task of overdue) {
-      const mgr = task.project.managerId;
-      if (!byManager[mgr]) byManager[mgr] = [];
-      byManager[mgr].push(task);
-    }
-
-    for (const [managerId, tasks] of Object.entries(byManager)) {
-      const manager = await this.prisma.employee.findUnique({
-        where: { id: managerId },
-        select: { userId: true },
+      const overdue = await this.prisma.task.findMany({
+        where: {
+          dueDate: { lt: now },
+          status: { notIn: [TaskStatus.DONE] },
+          deletedAt: null,
+        },
+        include: {
+          project: { select: { name: true, managerId: true } },
+        },
       });
-      if (manager) {
-        await this.notificationsService.createNotification({
-          userId: manager.userId,
-          type: NotificationType.SYSTEM,
-          title: `${tasks.length} overdue task${tasks.length > 1 ? 's' : ''}`,
-          body: `${tasks.length} task${tasks.length > 1 ? 's are' : ' is'} overdue across your projects. Review immediately.`,
-          link: '/projects',
-        });
+
+      const byManager: Record<string, typeof overdue> = {};
+      for (const task of overdue) {
+        const mgr = task.project.managerId;
+        if (!byManager[mgr]) byManager[mgr] = [];
+        byManager[mgr].push(task);
       }
+
+      for (const [managerId, tasks] of Object.entries(byManager)) {
+        const manager = await this.prisma.employee.findUnique({
+          where: { id: managerId },
+          select: { userId: true },
+        });
+        if (manager) {
+          await this.notificationsService.createNotification({
+            userId: manager.userId,
+            type: NotificationType.SYSTEM,
+            title: `${tasks.length} overdue task${tasks.length > 1 ? 's' : ''}`,
+            body: `${tasks.length} task${tasks.length > 1 ? 's are' : ' is'} overdue across your projects. Review immediately.`,
+            link: '/projects',
+          });
+        }
+      }
+
+      itemsProcessed = dueSoon.length + overdue.length;
+      this.logger.log(
+        `Deadline alerts: ${dueSoon.length} due soon, ${overdue.length} overdue`,
+      );
+    } catch (err: unknown) {
+      errors = 1;
+      this.logger.error('Project deadline alerts failed', String(err));
     }
 
-    this.logger.log(
-      `Deadline alerts: ${dueSoon.length} due soon, ${overdue.length} overdue`,
-    );
+    await this.cronLog.log('project-deadline-alerts', startedAt, {
+      itemsProcessed,
+      errors,
+    });
   }
 }

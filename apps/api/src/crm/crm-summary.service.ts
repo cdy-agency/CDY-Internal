@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { LeadSource, PipelineStage, ProposalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
+import { CacheKeys, CacheTTL } from '../common/cache-keys';
 
-const SUMMARY_CACHE_KEY = 'crm:summary';
-const SUMMARY_TTL_SECONDS = 60;
+const SUMMARY_CACHE_KEY = CacheKeys.CRM_SUMMARY;
+const SUMMARY_TTL_SECONDS = CacheTTL.CRM_SUMMARY;
 
 export interface CrmSummaryData {
   totalLeads: number;

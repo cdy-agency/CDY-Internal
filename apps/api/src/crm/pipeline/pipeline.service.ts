@@ -3,11 +3,12 @@ import { LeadSource, PipelineStage } from '@prisma/client';
 import { startOfMonth } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../cache/cache.service';
+import { CacheKeys } from '../../common/cache-keys';
 import { LeadsService } from '../leads/leads.service';
 import { ConversionFiltersDto } from './dto/conversion-filters.dto';
 
 const CONVERSION_CACHE_PREFIX = 'crm:conversion:';
-const CONVERSION_TTL_SECONDS = 300;
+const CONVERSION_TTL_SECONDS = 3600;
 
 export interface ConversionReportData {
   period: { from: string; to: string };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { X, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EXPENSE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
 import { formatCurrency } from '@/lib/utils';
-import type { ApiResponse, VentureExpenseRecord } from '@cdy/shared';
 import { ExpenseCategory } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 
@@ -30,80 +29,52 @@ export function LogExpenseDrawer({
 }: LogExpenseDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [description, setDescription] = useState('');
-  const [totalAmount, setTotalAmount] = useState('');
+  const [vendorName, setVendorName] = useState('');
+  const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [category, setCategory] = useState<ExpenseCategory>(ExpenseCategory.SUPPLIER);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isShared, setIsShared] = useState(false);
-  const [ventureShare, setVentureShare] = useState('100');
-  const [cdyShare, setCdyShare] = useState('0');
-  const [receiptUrl, setReceiptUrl] = useState('');
+  const [ventureSharePct, setVentureSharePct] = useState('100');
   const [notes, setNotes] = useState('');
-  const [expenseId, setExpenseId] = useState('');
 
   useEffect(() => {
     if (open) {
-      setDescription('');
-      setTotalAmount('');
+      setVendorName('');
+      setAmount('');
       setCurrency('USD');
       setCategory(ExpenseCategory.SUPPLIER);
       setDate(format(new Date(), 'yyyy-MM-dd'));
       setIsShared(false);
-      setVentureShare('100');
-      setCdyShare('0');
-      setReceiptUrl('');
+      setVentureSharePct('100');
       setNotes('');
-      setExpenseId('');
     }
   }, [open]);
 
-  const parsedTotal = parseFloat(totalAmount) || 0;
-  const parsedVentureShare = parseFloat(ventureShare) || 0;
-  const parsedCdyShare = parseFloat(cdyShare) || 0;
-  const totalAllocated = isShared
-    ? parsedVentureShare + parsedCdyShare
-    : parsedVentureShare;
-  const ventureAmount = Number(
-    ((parsedTotal * (isShared ? parsedVentureShare : 100)) / 100).toFixed(2),
-  );
-  const allocationValid = !isShared || totalAllocated === 100;
-  const shareValid = !isShared || parsedVentureShare + parsedCdyShare <= 100;
-
-  const cdyAmount = useMemo(
-    () => Number(((parsedTotal * parsedCdyShare) / 100).toFixed(2)),
-    [parsedTotal, parsedCdyShare],
-  );
-
   if (!open) return null;
+
+  const parsedAmount = parseFloat(amount) || 0;
+  const parsedShare = Math.min(Math.max(parseFloat(ventureSharePct) || 100, 0), 100);
+  const ventureAmount = Number(((parsedAmount * parsedShare) / 100).toFixed(2));
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (!description.trim() || parsedTotal <= 0) return;
-    if (isShared && (!allocationValid || !shareValid)) {
-      toast.error('Share percentages must total 100% and not exceed 100%');
-      return;
-    }
+    if (!vendorName.trim() || parsedAmount <= 0) return;
     setLoading(true);
     try {
-      await api.post<ApiResponse<VentureExpenseRecord>>(
-        `/ventures/${ventureId}/expenses`,
-        {
-          description: description.trim(),
-          totalAmount: parsedTotal,
-          ventureShare: isShared ? parsedVentureShare : 100,
-          currency,
-          category,
-          date,
-          isShared,
-          cdyShare: isShared ? parsedCdyShare : undefined,
-          receiptUrl: receiptUrl.trim() || undefined,
-          notes: notes.trim() || undefined,
-          expenseId: expenseId.trim() || undefined,
-        },
-      );
+      await api.post('/expenses', {
+        vendorName: vendorName.trim(),
+        category,
+        amount: parsedAmount,
+        currency,
+        date,
+        ventureId,
+        ventureSharePercent: isShared ? parsedShare : 100,
+        notes: notes.trim() || undefined,
+      });
       toast.success('Expense logged');
       await queryClient.invalidateQueries({ queryKey: ['ventures'] });
+      await queryClient.invalidateQueries({ queryKey: ['expenses'] });
       await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
       onClose();
     } catch (err) {
@@ -119,7 +90,9 @@ export function LogExpenseDrawer({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} role="presentation" />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
         <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
-          <h2 className="text-lg font-semibold text-cdy-white">Log Expense</h2>
+          <h2 className="text-lg font-semibold text-cdy-white">
+            Log Expense — <span style={{ color: '#94a3b8' }}>{ventureName}</span>
+          </h2>
           <button type="button" onClick={onClose} className="text-cdy-muted hover:text-cdy-white">
             <X className="h-5 w-5" />
           </button>
@@ -127,31 +100,31 @@ export function LogExpenseDrawer({
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto p-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="expense-desc">Description</Label>
+              <Label htmlFor="exp-vendor">Vendor / Description</Label>
               <Input
-                id="expense-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                id="exp-vendor"
+                value={vendorName}
+                onChange={(e) => setVendorName(e.target.value)}
                 required
               />
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label htmlFor="expense-total">Total cost</Label>
+                <Label htmlFor="exp-amount">Amount</Label>
                 <Input
-                  id="expense-total"
+                  id="exp-amount"
                   type="number"
                   min="0.01"
                   step="0.01"
-                  value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   required
                 />
               </div>
               <div className="w-24">
-                <Label htmlFor="expense-currency">Currency</Label>
+                <Label htmlFor="exp-currency">Currency</Label>
                 <select
-                  id="expense-currency"
+                  id="exp-currency"
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                   className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-2 text-sm text-cdy-white"
@@ -163,9 +136,9 @@ export function LogExpenseDrawer({
               </div>
             </div>
             <div>
-              <Label htmlFor="expense-category">Category</Label>
+              <Label htmlFor="exp-category">Category</Label>
               <select
-                id="expense-category"
+                id="exp-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
                 className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
@@ -178,9 +151,9 @@ export function LogExpenseDrawer({
               </select>
             </div>
             <div>
-              <Label htmlFor="expense-date">Date</Label>
+              <Label htmlFor="exp-date">Date</Label>
               <Input
-                id="expense-date"
+                id="exp-date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
@@ -193,81 +166,36 @@ export function LogExpenseDrawer({
                 checked={isShared}
                 onChange={(e) => {
                   setIsShared(e.target.checked);
-                  if (!e.target.checked) {
-                    setVentureShare('100');
-                    setCdyShare('0');
-                  }
+                  if (!e.target.checked) setVentureSharePct('100');
                 }}
                 className="rounded border-cdy-navy-border"
               />
-              This is a shared cost
+              This is a shared cost with CDY main
             </label>
             {isShared && (
-              <div className="space-y-3 rounded-lg border border-cdy-navy-border bg-cdy-navy/50 p-4">
+              <div className="space-y-2 rounded-lg border border-cdy-navy-border bg-cdy-navy/50 p-4">
                 <div>
                   <Label>{ventureName} share (%)</Label>
                   <Input
                     type="number"
                     min="0"
                     max="100"
-                    value={ventureShare}
-                    onChange={(e) => setVentureShare(e.target.value)}
+                    value={ventureSharePct}
+                    onChange={(e) => setVentureSharePct(e.target.value)}
                   />
-                  <p className="mt-1 text-xs text-cdy-muted">
-                    → {formatCurrency(ventureAmount, currency)}
-                  </p>
                 </div>
-                <div>
-                  <Label>CDY main share (%)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={cdyShare}
-                    onChange={(e) => setCdyShare(e.target.value)}
-                  />
-                  <p className="mt-1 text-xs text-cdy-muted">
-                    → {formatCurrency(cdyAmount, currency)}
-                  </p>
-                </div>
-                <div className="border-t border-cdy-navy-border pt-2 text-sm">
-                  Total allocated: {totalAllocated}%
-                  {allocationValid && shareValid ? (
-                    <span className="ml-2 text-green-400">✅</span>
-                  ) : (
-                    <span className="ml-2 text-red-400">⚠️ Must equal 100%</span>
-                  )}
+                <div className="rounded-md bg-cdy-navy/50 px-3 py-2 text-sm">
+                  Venture amount:{' '}
+                  <span className="font-semibold text-cdy-white">
+                    {formatCurrency(ventureAmount, currency)}
+                  </span>
                 </div>
               </div>
             )}
-            <div className="rounded-md bg-cdy-navy/50 px-3 py-2 text-sm">
-              Venture&apos;s amount:{' '}
-              <span className="font-semibold text-cdy-white">
-                {formatCurrency(ventureAmount, currency)}
-              </span>
-            </div>
             <div>
-              <Label htmlFor="expense-receipt">Receipt URL (optional)</Label>
-              <Input
-                id="expense-receipt"
-                value={receiptUrl}
-                onChange={(e) => setReceiptUrl(e.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="expense-expense-id">Link to Finance expense (optional)</Label>
-              <Input
-                id="expense-expense-id"
-                value={expenseId}
-                onChange={(e) => setExpenseId(e.target.value)}
-                placeholder="Expense ID"
-              />
-            </div>
-            <div>
-              <Label htmlFor="expense-notes">Notes (optional)</Label>
+              <Label htmlFor="exp-notes">Notes (optional)</Label>
               <textarea
-                id="expense-notes"
+                id="exp-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
@@ -279,11 +207,7 @@ export function LogExpenseDrawer({
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading || (isShared && (!allocationValid || !shareValid))}
-              className="flex-1"
-            >
+            <Button type="submit" disabled={loading} className="flex-1">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Log Expense'}
             </Button>
           </div>

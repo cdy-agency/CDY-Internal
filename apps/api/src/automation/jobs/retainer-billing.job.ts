@@ -13,6 +13,7 @@ import { InvoicePdfService } from '../../invoices/invoice-pdf.service';
 import { InvoiceEmailService } from '../../invoices/invoice-email.service';
 import { RetainersService } from '../../retainers/retainers.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { CronLogService } from '../cron-log.service';
 
 @Injectable()
 export class RetainerBillingJob {
@@ -25,11 +26,15 @@ export class RetainerBillingJob {
     private readonly invoiceEmailService: InvoiceEmailService,
     private readonly retainersService: RetainersService,
     private readonly notificationsService: NotificationsService,
+    private readonly cronLog: CronLogService,
   ) {}
 
   @Cron('0 7 * * *', { name: 'retainer-auto-billing' })
   async processRetainerBilling(): Promise<void> {
     this.logger.log('Running retainer auto-billing...');
+    const startedAt = new Date();
+    let itemsProcessed = 0;
+    let errors = 0;
 
     const today = startOfDay(new Date());
 
@@ -119,7 +124,9 @@ export class RetainerBillingJob {
         this.logger.log(
           `Retainer invoice created and sent: ${invoiceNumber} for retainer ${retainer.id}`,
         );
+        itemsProcessed++;
       } catch (err) {
+        errors++;
         this.logger.error(
           `Failed to process retainer billing for retainer ${retainer.id}`,
           String(err),
@@ -128,5 +135,10 @@ export class RetainerBillingJob {
     }
 
     this.logger.log('Retainer auto-billing complete');
+
+    await this.cronLog.log('retainer-auto-billing', startedAt, {
+      itemsProcessed,
+      errors,
+    });
   }
 }

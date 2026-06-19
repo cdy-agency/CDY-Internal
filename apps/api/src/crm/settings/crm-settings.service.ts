@@ -1,6 +1,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../cache/cache.service';
+import { CacheKeys } from '../../common/cache-keys';
 
 type CrmSettingKey =
   | 'lost_reasons'
@@ -48,7 +49,7 @@ export class CrmSettingsService implements OnApplicationBootstrap {
   }
 
   async get(key: string): Promise<string | null> {
-    const cacheKey = `crm:settings:${key}`;
+    const cacheKey = CacheKeys.CRM_SETTINGS(key);
     const cached = await this.cache.get<string>(cacheKey);
     if (cached) return cached;
 
@@ -74,7 +75,7 @@ export class CrmSettingsService implements OnApplicationBootstrap {
       create: { key, value, updatedBy: userId },
       update: { value, updatedBy: userId },
     });
-    await this.cache.del(`crm:settings:${key}`);
+    await this.cache.del(CacheKeys.CRM_SETTINGS(key));
   }
 
   async getLostReasons(): Promise<string[]> {

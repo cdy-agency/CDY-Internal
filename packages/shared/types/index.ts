@@ -142,6 +142,25 @@ export interface FinanceSummaryMetrics {
   commissionsPendingValue?: number;
 }
 
+export interface FinanceSummaryExpenseCategory {
+  category: string;
+  amount: number;
+}
+
+export interface FinanceSummaryRecentInvoice {
+  invoiceNumber: string;
+  clientName: string;
+  total: number;
+  status: string;
+}
+
+export interface FinanceSummaryTopClient {
+  companyName: string;
+  totalInvoiced: number;
+  totalCollected: number;
+  outstanding: number;
+}
+
 export interface FinanceSummary {
   totalInvoiced: number;
   totalCollected: number;
@@ -180,6 +199,20 @@ export interface FinanceSummary {
     totalDraftInvoices?: number;
     totalSentInvoices?: number;
   };
+  // Dashboard aggregations
+  revenueTrend: number;
+  collectionTrend: number;
+  outstandingTrend: number;
+  collectionRate: number;
+  monthlyRevenue: number[];
+  monthlyCollected: number[];
+  paidCount: number;
+  overdueCount: number;
+  partialCount: number;
+  expensesByCategory: FinanceSummaryExpenseCategory[];
+  recentInvoices: FinanceSummaryRecentInvoice[];
+  topClients: FinanceSummaryTopClient[];
+  pendingLeaveRequests: number;
 }
 
 export enum NotificationType {
@@ -985,6 +1018,7 @@ export interface VenturePeriodSummary {
   };
   expenses: {
     total: number;
+    ventureTotal: number;
     count: number;
     byCategory: VentureCategoryBreakdown[];
   };
@@ -2540,4 +2574,724 @@ export interface HandoverReport {
     teamSize: number;
   };
   notes: string | null;
+}
+
+// ─── Sprint 18: Marketing Services ──────────────────────────────
+
+export enum ContentType {
+  POST = 'POST',
+  REEL = 'REEL',
+  STORY = 'STORY',
+  CAROUSEL = 'CAROUSEL',
+  VIDEO = 'VIDEO',
+  BLOG = 'BLOG',
+  EMAIL = 'EMAIL',
+  AD = 'AD',
+}
+
+export enum ContentStatus {
+  DRAFT = 'DRAFT',
+  READY = 'READY',
+  APPROVED = 'APPROVED',
+  PUBLISHED = 'PUBLISHED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface MarketingClientRecord {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  retainerId: string | null;
+  platforms: string[];
+  postsPerMonth: number;
+  isActive: boolean;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  client: {
+    companyName: string;
+    contactName: string;
+    email?: string;
+  };
+  _count?: {
+    contentItems: number;
+  };
+}
+
+export interface ContentItemRecord {
+  id: string;
+  marketingClientId: string;
+  title: string;
+  description: string | null;
+  platform: string;
+  contentType: ContentType;
+  scheduledDate: string;
+  publishedAt: string | null;
+  status: ContentStatus;
+  fileUrl: string | null;
+  notes: string | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface ContentCalendarResult {
+  month: string;
+  items: ContentItemRecord[];
+  byDate: Record<string, ContentItemRecord[]>;
+}
+
+export interface MarketingMonthlySummary {
+  month: string;
+  marketingClientId: string;
+  postsTarget: number;
+  planned: number;
+  approved: number;
+  published: number;
+  pending: number;
+  rejected: number;
+  deliveryRate: number;
+  byPlatform: Record<string, { planned: number; published: number }>;
+  invoice: {
+    id: string;
+    invoiceNumber: string;
+    status: string;
+    total: number;
+    currency: string;
+  } | null;
+}
+
+export interface MarketingAllClientsSummaryItem extends MarketingMonthlySummary {
+  clientName: string;
+}
+
+// ─── Sprint 19: Software & Web Dev Services ───────────────────
+
+export enum SoftwareProjectType {
+  WEBSITE = 'WEBSITE',
+  WEB_APP = 'WEB_APP',
+  MOBILE_APP = 'MOBILE_APP',
+  SYSTEM = 'SYSTEM',
+  OTHER = 'OTHER',
+}
+
+export enum SoftwarePhase {
+  REQUIREMENTS = 'REQUIREMENTS',
+  DESIGN = 'DESIGN',
+  DEVELOPMENT = 'DEVELOPMENT',
+  QA = 'QA',
+  DEPLOYMENT = 'DEPLOYMENT',
+  MAINTENANCE = 'MAINTENANCE',
+  COMPLETED = 'COMPLETED',
+}
+
+export enum DocStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  SIGNED = 'SIGNED',
+  REVISED = 'REVISED',
+}
+
+export enum DesignStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  SENT = 'SENT',
+  APPROVED = 'APPROVED',
+  CHANGES_REQUESTED = 'CHANGES_REQUESTED',
+  SKIPPED = 'SKIPPED',
+}
+
+export enum SprintStatus {
+  PLANNED = 'PLANNED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  SKIPPED = 'SKIPPED',
+}
+
+export enum ItemStatus {
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  DONE = 'DONE',
+  BLOCKED = 'BLOCKED',
+}
+
+export enum QaStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  SKIPPED = 'SKIPPED',
+}
+
+export enum BugSeverity {
+  CRITICAL = 'CRITICAL',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
+
+export enum BugStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+  WONT_FIX = 'WONT_FIX',
+}
+
+export enum MaintenanceType {
+  BUG = 'BUG',
+  UPDATE = 'UPDATE',
+  SECURITY = 'SECURITY',
+}
+
+export enum MaintenanceStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+}
+
+export interface SprintItemRecord {
+  id: string;
+  sprintId: string;
+  title: string;
+  description: string | null;
+  status: ItemStatus;
+  assigneeId: string | null;
+  storyPoints: number | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DevSprintRecord {
+  id: string;
+  softwareProjectId: string;
+  name: string;
+  goal: string | null;
+  startDate: string;
+  endDate: string;
+  status: SprintStatus;
+  completedAt: string | null;
+  milestoneId: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  items: SprintItemRecord[];
+}
+
+export interface RequirementDocRecord {
+  id: string;
+  softwareProjectId: string;
+  title: string;
+  content: string;
+  version: number;
+  fileUrl: string | null;
+  status: DocStatus;
+  sentToClientAt: string | null;
+  clientSignedAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DesignPhaseRecord {
+  id: string;
+  softwareProjectId: string;
+  figmaUrl: string | null;
+  isSkipped: boolean;
+  status: DesignStatus;
+  sentToClientAt: string | null;
+  clientApprovedAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BugRecord {
+  id: string;
+  qaPhaseId: string;
+  title: string;
+  description: string | null;
+  severity: BugSeverity;
+  status: BugStatus;
+  assigneeId: string | null;
+  resolvedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QaPhaseRecord {
+  id: string;
+  softwareProjectId: string;
+  isSkipped: boolean;
+  status: QaStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  bugs: BugRecord[];
+}
+
+export interface DeploymentRecord {
+  id: string;
+  softwareProjectId: string;
+  deployedAt: string;
+  deploymentUrl: string | null;
+  serverDetails: string | null;
+  deployedBy: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface MaintenanceLogRecord {
+  id: string;
+  softwareProjectId: string;
+  title: string;
+  description: string;
+  type: MaintenanceType;
+  status: MaintenanceStatus;
+  priority: BugSeverity;
+  reportedAt: string;
+  resolvedAt: string | null;
+  assigneeId: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SoftwareProjectRecord {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  name: string;
+  description: string | null;
+  projectType: SoftwareProjectType;
+  phase: SoftwarePhase;
+  startDate: string;
+  deployedAt: string | null;
+  maintenanceEndsAt: string | null;
+  isActive: boolean;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  client: { companyName: string };
+}
+
+export interface SoftwareProjectDetail extends SoftwareProjectRecord {
+  client: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+  };
+  requirements: RequirementDocRecord[];
+  designPhase: DesignPhaseRecord | null;
+  devSprints: DevSprintRecord[];
+  qaPhase: QaPhaseRecord | null;
+  deployment: DeploymentRecord | null;
+  maintenanceLogs: MaintenanceLogRecord[];
+}
+
+export interface SoftwareProjectListItem extends SoftwareProjectRecord {
+  devSprints: { status: SprintStatus }[];
+  deployment: { deployedAt: string } | null;
+  _count: { maintenanceLogs: number };
+}
+
+// ─── Branding module ──────────────────────────────────────────
+
+export enum BrandingStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  DELIVERED = 'DELIVERED',
+  ON_HOLD = 'ON_HOLD',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ScopeStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  SUBMITTED = 'SUBMITTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  DELIVERED = 'DELIVERED',
+}
+
+export enum SubmissionStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export interface BrandingSupplierRecord {
+  id: string;
+  name: string;
+  contactName: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DesignSubmissionRecord {
+  id: string;
+  scopeItemId: string;
+  version: number;
+  fileUrl: string | null;
+  description: string | null;
+  status: SubmissionStatus;
+  submittedAt: string;
+  reviewedAt: string | null;
+  clientFeedback: string | null;
+  submittedBy: string;
+  reviewedBy: string | null;
+}
+
+export interface BrandingScopeItemRecord {
+  id: string;
+  brandingProjectId: string;
+  title: string;
+  description: string | null;
+  supplierId: string | null;
+  status: ScopeStatus;
+  deliveredAt: string | null;
+  notes: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BrandingScopeItemDetail extends BrandingScopeItemRecord {
+  supplier: BrandingSupplierRecord | null;
+  submissions: DesignSubmissionRecord[];
+}
+
+export interface BrandingProjectRecord {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  name: string;
+  description: string | null;
+  status: BrandingStatus;
+  deliveredAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  client: { companyName: string };
+}
+
+export interface BrandingProjectListItem extends BrandingProjectRecord {
+  scopeItems: { status: ScopeStatus }[];
+}
+
+export interface BrandingProjectDetail extends BrandingProjectRecord {
+  client: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+  };
+  scopeItems: BrandingScopeItemDetail[];
+}
+
+export interface DeliverProjectResult {
+  project: BrandingProjectRecord;
+  warning: string | null;
+}
+
+// ─── Sprint 21: Influencer Marketing ─────────────────────────
+
+export enum CampaignStatus {
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  ON_HOLD = 'ON_HOLD',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum DeliverableStatus {
+  PENDING = 'PENDING',
+  SUBMITTED = 'SUBMITTED',
+  VERIFIED = 'VERIFIED',
+  MISSED = 'MISSED',
+}
+
+export interface InfluencerRecord {
+  id: string;
+  name: string;
+  handle: string;
+  platform: string;
+  otherPlatforms: string[];
+  followersCount: number | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  category: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InfluencerWithCount extends InfluencerRecord {
+  _count: { assignments: number };
+}
+
+export interface DeliverableRecord {
+  id: string;
+  campaignInfluencerId: string;
+  description: string;
+  platform: string;
+  contentType: string;
+  dueDate: string | null;
+  status: DeliverableStatus;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  postUrl: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CampaignInfluencerRecord {
+  id: string;
+  campaignId: string;
+  influencerId: string;
+  agreedFee: string | null;
+  currency: string;
+  isPaid: boolean;
+  paidAt: string | null;
+  paidAmount: string | null;
+  paymentNotes: string | null;
+  notes: string | null;
+  addedAt: string;
+}
+
+export interface CampaignInfluencerDetail extends CampaignInfluencerRecord {
+  influencer: InfluencerRecord;
+  deliverables: DeliverableRecord[];
+}
+
+export interface InfluencerCampaignRecord {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  name: string;
+  brief: string | null;
+  platforms: string[];
+  budget: string | null;
+  currency: string;
+  startDate: string;
+  endDate: string | null;
+  status: CampaignStatus;
+  completedAt: string | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  client: { companyName: string };
+}
+
+export interface InfluencerCampaignListItem extends InfluencerCampaignRecord {
+  influencers: {
+    id: string;
+    isPaid: boolean;
+    agreedFee: string | null;
+    deliverables: { status: DeliverableStatus }[];
+  }[];
+}
+
+export interface InfluencerCampaignDetail extends InfluencerCampaignRecord {
+  client: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+  };
+  influencers: CampaignInfluencerDetail[];
+}
+
+export interface CompleteCampaignResult {
+  campaign: InfluencerCampaignRecord;
+  warnings: string[];
+}
+
+export interface InfluencerDetail extends InfluencerRecord {
+  assignments: {
+    id: string;
+    agreedFee: string | null;
+    isPaid: boolean;
+    addedAt: string;
+    campaign: {
+      id: string;
+      name: string;
+      startDate: string;
+      status: CampaignStatus;
+      client: { companyName: string };
+    };
+    deliverables: { id: string }[];
+  }[];
+}
+
+// ─── Sprint 22: Sales Services ────────────────────────────────
+
+export enum SalesCampaignStatus {
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  ON_HOLD = 'ON_HOLD',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface SalesCampaignRecord {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  name: string;
+  productService: string;
+  territory: string | null;
+  startDate: string;
+  endDate: string | null;
+  status: SalesCampaignStatus;
+  completedAt: string | null;
+  visitTarget: number | null;
+  leadTarget: number | null;
+  salesTarget: number | null;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesCampaignListItem extends SalesCampaignRecord {
+  client: { companyName: string };
+  _count: { agents: number; dailyLogs: number };
+}
+
+export interface SalesAgentRecord {
+  id: string;
+  campaignId: string;
+  employeeId: string;
+  territory: string | null;
+  visitTarget: number | null;
+  leadTarget: number | null;
+  salesTarget: number | null;
+  joinedAt: string;
+  isActive: boolean;
+}
+
+export interface DailyActivityLogRecord {
+  id: string;
+  campaignId: string;
+  agentId: string;
+  employeeId: string;
+  date: string;
+  visitsCount: number;
+  leadsCount: number;
+  salesCount: number;
+  salesAmount: string | null;
+  notes: string | null;
+  challenges: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyReportRecord {
+  id: string;
+  campaignId: string;
+  weekStart: string;
+  weekEnd: string;
+  weekNumber: number;
+  totalVisits: number;
+  totalLeads: number;
+  totalSales: number;
+  totalSalesAmount: string | null;
+  activeAgents: number;
+  highlights: string | null;
+  challenges: string | null;
+  nextWeekPlan: string | null;
+  generatedAt: string;
+  generatedBy: string;
+}
+
+export interface SalesAgentWithLogs extends SalesAgentRecord {
+  dailyLogs: DailyActivityLogRecord[];
+}
+
+export interface SalesCampaignDetail extends SalesCampaignRecord {
+  client: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+  };
+  agents: SalesAgentWithLogs[];
+  weeklyReports: WeeklyReportRecord[];
+}
+
+export interface AgentPerformance {
+  agent: SalesAgentRecord & { campaign: { name: string } };
+  totals: {
+    visits: number;
+    leads: number;
+    sales: number;
+    amount: number;
+  };
+  daysLogged: number;
+  avgVisitsPerDay: number;
+  avgLeadsPerDay: number;
+  logs: DailyActivityLogRecord[];
+}
+
+export interface SalesCampaignStats {
+  totals: {
+    _sum: {
+      visitsCount: number | null;
+      leadsCount: number | null;
+      salesCount: number | null;
+      salesAmount: string | null;
+    };
+    _count: { id: number };
+  };
+  byAgent: {
+    employeeId: string;
+    _sum: {
+      visitsCount: number | null;
+      leadsCount: number | null;
+      salesCount: number | null;
+    };
+  }[];
+}
+
+export interface ClientReportResponse {
+  campaign: {
+    name: string;
+    client: string;
+    productService: string;
+    territory: string | null;
+    startDate: string;
+    targets: {
+      visits: number | null;
+      leads: number | null;
+      sales: number | null;
+    };
+  };
+  campaignTotals: {
+    visits: number;
+    leads: number;
+    sales: number;
+    amount: number;
+  };
+  weeklyReports: WeeklyReportRecord[];
 }

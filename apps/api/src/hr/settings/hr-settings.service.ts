@@ -1,6 +1,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../cache/cache.service';
+import { CacheKeys } from '../../common/cache-keys';
 
 type HrSettingKey =
   | 'working_days'
@@ -54,7 +55,7 @@ export class HrSettingsService implements OnApplicationBootstrap {
   }
 
   async get(key: string): Promise<string | null> {
-    const cacheKey = `hr:settings:${key}`;
+    const cacheKey = CacheKeys.HR_SETTINGS(key);
     const cached = await this.cache.get<string>(cacheKey);
     if (cached) return cached;
 
@@ -78,6 +79,6 @@ export class HrSettingsService implements OnApplicationBootstrap {
       create: { key, value, updatedBy: userId },
       update: { value, updatedBy: userId },
     });
-    await this.cache.del(`hr:settings:${key}`);
+    await this.cache.del(CacheKeys.HR_SETTINGS(key));
   }
 }
