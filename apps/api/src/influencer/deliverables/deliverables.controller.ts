@@ -16,34 +16,38 @@ export class DeliverablesController {
 
   @Post('assignments/:assignmentId/deliverables')
   @RequirePermission('influencer.campaigns', 'write')
-  add(
+  async add(
     @Param('assignmentId') assignmentId: string,
     @Body() dto: CreateDeliverableDto,
   ) {
-    return this.deliverablesService.add(assignmentId, dto);
+    const data = await this.deliverablesService.add(assignmentId, dto);
+    return { data, message: 'Deliverable added', statusCode: 201 };
   }
 
   @Patch('deliverables/:id/submit')
   @RequirePermission('influencer.campaigns', 'write')
-  markSubmitted(
+  async markSubmitted(
     @Param('id') id: string,
     @Body() body: { postUrl?: string },
   ) {
-    return this.deliverablesService.markSubmitted(id, body.postUrl);
+    const data = await this.deliverablesService.markSubmitted(id, body.postUrl);
+    return { data, message: 'Deliverable submitted', statusCode: 200 };
   }
 
   @Patch('deliverables/:id/verify')
   @RequirePermission('influencer.campaigns', 'write')
-  verify(
+  async verify(
     @Param('id') id: string,
     @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    return this.deliverablesService.verify(id, req.user.sub);
+    const data = await this.deliverablesService.verify(id, req.user.sub);
+    return { data, message: 'Deliverable verified', statusCode: 200 };
   }
 
   @Patch('deliverables/:id/missed')
   @RequirePermission('influencer.campaigns', 'write')
-  markMissed(@Param('id') id: string) {
-    return this.deliverablesService.markMissed(id);
+  async markMissed(@Param('id') id: string) {
+    const data = await this.deliverablesService.markMissed(id);
+    return { data, message: 'Deliverable marked missed', statusCode: 200 };
   }
 }

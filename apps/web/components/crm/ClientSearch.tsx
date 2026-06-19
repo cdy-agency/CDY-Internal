@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useClientSearch } from '@/hooks/useCrm';
 import type { ClientSearchResult } from '@cdy/shared';
@@ -11,6 +12,7 @@ interface ClientSearchProps {
   onChange: (client: ClientSearchResult | null) => void;
   placeholder?: string;
   allowManualId?: boolean;
+  onCreateClient?: (initialName: string) => void;
 }
 
 export function ClientSearch({
@@ -18,6 +20,7 @@ export function ClientSearch({
   onChange,
   placeholder = 'Search by company name, contact, or email...',
   allowManualId = true,
+  onCreateClient,
 }: ClientSearchProps): JSX.Element {
   const [query, setQuery] = useState(value?.companyName ?? '');
   const [open, setOpen] = useState(false);
@@ -54,22 +57,36 @@ export function ClientSearch({
           {value.contactName} · {value.email}
         </p>
       )}
-      {allowManualId && !value && query && results.length === 0 && debounced.length >= 2 && (
-        <button
-          type="button"
-          className="mt-1 text-xs text-cdy-red hover:underline"
-          onClick={() =>
-            onChange({
-              id: query,
-              companyName: query,
-              contactName: query,
-              email: `${query}@manual.local`,
-              country: 'RW',
-            })
-          }
-        >
-          Use &quot;{query}&quot; as client ID
-        </button>
+      {!value && query && results.length === 0 && debounced.length >= 2 && (
+        <div className="mt-1 flex flex-col gap-1">
+          {onCreateClient && (
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs text-cdy-red hover:underline"
+              onClick={() => onCreateClient(query)}
+            >
+              <Plus className="h-3 w-3" />
+              Create new client &quot;{query}&quot;
+            </button>
+          )}
+          {allowManualId && !onCreateClient && (
+            <button
+              type="button"
+              className="text-xs text-cdy-red hover:underline"
+              onClick={() =>
+                onChange({
+                  id: query,
+                  companyName: query,
+                  contactName: query,
+                  email: `${query}@manual.local`,
+                  country: 'RW',
+                })
+              }
+            >
+              Use &quot;{query}&quot; as client ID
+            </button>
+          )}
+        </div>
       )}
       {open && results.length > 0 && (
         <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-cdy-navy-border bg-cdy-navy-light shadow-lg">

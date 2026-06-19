@@ -8,6 +8,7 @@ export interface JwtPayload {
   email: string;
   roleKey: string;
   roleName: string;
+  homeModule: string;
   permissions: PermissionMap;
 }
 

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InvoiceStatus } from '@prisma/client';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ClientSource, InvoiceStatus } from '@prisma/client';
 import { format } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { CrmAuditService } from '../audit/crm-audit.service';
 import { CrmActor } from '../common/crm-actor.interface';
 import { buildCsvRow } from '../common/csv.util';
@@ -20,10 +21,42 @@ export class ClientsService {
     private readonly crmAuditService: CrmAuditService,
   ) {}
 
-  async findAll(search?: string) {
+  async createDirect(dto: CreateDirectClientDto, userId: string) {
+    const existing = await this.prisma.client.findFirst({
+      where: { email: dto.email, deletedAt: null },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `A client with email ${dto.email} already exists (${existing.companyName})`,
+      );
+    }
+
+    return this.prisma.client.create({
+      data: {
+        companyName: dto.companyName,
+        contactName: dto.contactName,
+        email: dto.email,
+        phone: dto.phone,
+        country: dto.country ?? 'RW',
+        city: dto.city,
+        address: dto.address,
+        website: dto.website,
+        industry: dto.industry,
+        notes: dto.notes,
+        assignedTo: dto.assignedTo,
+        source: dto.source ?? ClientSource.DIRECT,
+        leadId: null,
+        createdBy: userId,
+      },
+    });
+  }
+
+  async findAll(search?: string, source?: ClientSource) {
     const clients = await this.prisma.client.findMany({
       where: {
         deletedAt: null,
+        ...(source && { source }),
         ...(search && {
           OR: [
             { companyName: { contains: search, mode: 'insensitive' } },

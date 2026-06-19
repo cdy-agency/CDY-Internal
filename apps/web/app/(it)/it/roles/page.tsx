@@ -47,27 +47,33 @@ export default function ItRolesPage(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {roles.map((role) => (
-              <tr
-                key={role.id}
-                className="border-t border-cdy-navy-border hover:bg-cdy-navy-light/50"
-              >
-                <td className="p-3">
-                  <Link href={`/it/roles/${role.id}`} className="text-cdy-white hover:underline">
-                    {role.name}
-                  </Link>
-                </td>
-                <td className="p-3 text-cdy-muted">{role.userCount}</td>
-                <td className="p-3 text-cdy-muted">{role.permissionCount}</td>
-                <td className="p-3">
-                  {role.isSystem ? (
-                    <span className="text-xs text-amber-400">🔒 System</span>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-            ))}
+            {roles.map((role) => {
+              const isProtected = role.key === 'CEO' || role.key === 'IT_ADMINISTRATOR';
+              return (
+                <tr
+                  key={role.id}
+                  className="border-t border-cdy-navy-border hover:bg-cdy-navy-light/50"
+                >
+                  <td className="p-3">
+                    <Link href={`/it/roles/${role.id}`} className="text-cdy-white hover:underline">
+                      {role.name}
+                    </Link>
+                    {isProtected && (
+                      <span className="ml-2 text-xs text-amber-400">read-only</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-cdy-muted">{role.userCount}</td>
+                  <td className="p-3 text-cdy-muted">{role.permissionCount}</td>
+                  <td className="p-3">
+                    {role.isSystem ? (
+                      <span className="text-xs text-amber-400">🔒 System</span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

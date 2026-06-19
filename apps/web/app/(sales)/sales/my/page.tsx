@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyLogs, useSalesCampaigns, useCreateLog, useUpdateLog } from '@/hooks/useSales';
+import { PermissionGate } from '@/components/PermissionGate';
 import type { DailyActivityLogRecord } from '@cdy/shared';
 
 function LogForm({
@@ -187,10 +188,12 @@ export default function MyActivityPage() {
                   <p className="text-xs text-cdy-muted">{selectedCampaign.name}</p>
                 )}
               </div>
-              <Button onClick={() => setFormOpen(true)} size="sm"
-                className="bg-cdy-red text-white hover:bg-cdy-red/90">
-                {todayLog ? 'Edit' : '+ Log Today'}
-              </Button>
+              <PermissionGate feature="sales.reporting" action="write">
+                <Button onClick={() => setFormOpen(true)} size="sm"
+                  className="bg-cdy-red text-white hover:bg-cdy-red/90">
+                  {todayLog ? 'Edit' : '+ Log Today'}
+                </Button>
+              </PermissionGate>
             </div>
             {todayLog ? (
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">

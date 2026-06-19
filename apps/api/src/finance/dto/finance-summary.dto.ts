@@ -35,4 +35,28 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   totalActiveEmployees!: number;
   totalMonthlyPayroll!: number;
   previousMonth!: FinanceSummaryMetrics;
+  // Dashboard aggregations
+  revenueTrend!: number;
+  collectionTrend!: number;
+  outstandingTrend!: number;
+  collectionRate!: number;
+  monthlyRevenue!: number[];
+  monthlyCollected!: number[];
+  paidCount!: number;
+  overdueCount!: number;
+  partialCount!: number;
+  expensesByCategory!: Array<{ category: string; amount: number }>;
+  recentInvoices!: Array<{
+    invoiceNumber: string;
+    clientName: string;
+    total: number;
+    status: string;
+  }>;
+  topClients!: Array<{
+    companyName: string;
+    totalInvoiced: number;
+    totalCollected: number;
+    outstanding: number;
+  }>;
+  pendingLeaveRequests!: number;
 }

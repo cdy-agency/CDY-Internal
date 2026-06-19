@@ -194,9 +194,9 @@ export class ItManagementService {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
     if (!role) throw new NotFoundException('Role not found');
 
-    if (role.key === 'IT') {
+    if (role.key === 'CEO' || role.key === 'IT_ADMINISTRATOR') {
       throw new BadRequestException(
-        'The IT role permissions cannot be modified through the dashboard. Contact a system administrator.',
+        'CEO and IT Administrator role permissions cannot be modified through the dashboard.',
       );
     }
 

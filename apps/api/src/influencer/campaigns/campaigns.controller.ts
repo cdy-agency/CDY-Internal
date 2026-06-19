@@ -17,31 +17,36 @@ export class CampaignsController {
 
   @Get()
   @RequirePermission('influencer.campaigns', 'read')
-  findAll() {
-    return this.campaignsService.findAll();
+  async findAll() {
+    const data = await this.campaignsService.findAll();
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Post()
   @RequirePermission('influencer.campaigns', 'write')
-  create(@Body() dto: CreateCampaignDto, @Req() req: Express.Request & { user: { sub: string } }) {
-    return this.campaignsService.create(dto, req.user.sub);
+  async create(@Body() dto: CreateCampaignDto, @Req() req: Express.Request & { user: { sub: string } }) {
+    const data = await this.campaignsService.create(dto, req.user.sub);
+    return { data, message: 'Campaign created', statusCode: 201 };
   }
 
   @Get(':id')
   @RequirePermission('influencer.campaigns', 'read')
-  findOne(@Param('id') id: string) {
-    return this.campaignsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.campaignsService.findOne(id);
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Patch(':id')
   @RequirePermission('influencer.campaigns', 'write')
-  update(@Param('id') id: string, @Body() data: { status?: string; notes?: string }) {
-    return this.campaignsService.update(id, data as Parameters<typeof this.campaignsService.update>[1]);
+  async update(@Param('id') id: string, @Body() body: { status?: string; notes?: string }) {
+    const data = await this.campaignsService.update(id, body as Parameters<typeof this.campaignsService.update>[1]);
+    return { data, message: 'Campaign updated', statusCode: 200 };
   }
 
   @Post(':id/complete')
   @RequirePermission('influencer.campaigns', 'write')
-  complete(@Param('id') id: string, @Req() req: Express.Request & { user: { sub: string } }) {
-    return this.campaignsService.complete(id, req.user.sub);
+  async complete(@Param('id') id: string, @Req() req: Express.Request & { user: { sub: string } }) {
+    const data = await this.campaignsService.complete(id, req.user.sub);
+    return { data, message: 'Campaign completed', statusCode: 200 };
   }
 }

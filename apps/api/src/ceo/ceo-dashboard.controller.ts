@@ -14,11 +14,11 @@ export class CeoDashboardController {
   @Get('summary')
   @RequirePermission('ceo.dashboard', 'read')
   async getSummary() {
-    const cached = await this.cacheService.get<ReturnType<CeoDashboardService['getFullSummary']>>(CacheKeys.CEO_SUMMARY);
-    if (cached) return cached;
+    const cached = await this.cacheService.get<Awaited<ReturnType<CeoDashboardService['getFullSummary']>>>(CacheKeys.CEO_SUMMARY);
+    if (cached) return { data: cached, message: 'OK', statusCode: 200 };
 
-    const summary = await this.ceoDashboardService.getFullSummary();
-    await this.cacheService.set(CacheKeys.CEO_SUMMARY, summary, CacheTTL.CEO_SUMMARY);
-    return summary;
+    const data = await this.ceoDashboardService.getFullSummary();
+    await this.cacheService.set(CacheKeys.CEO_SUMMARY, data, CacheTTL.CEO_SUMMARY);
+    return { data, message: 'OK', statusCode: 200 };
   }
 }

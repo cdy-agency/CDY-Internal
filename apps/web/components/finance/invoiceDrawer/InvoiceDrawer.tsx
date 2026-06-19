@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import type { ApiResponse, ClientSearchResult, InvoiceDetail, InvoiceRecord } from '@cdy/shared';
 import { InvoiceStatus } from '@cdy/shared';
 import { ClientSearch } from '@/components/crm/ClientSearch';
+import { AddClientDrawer } from '@/components/crm/clients/AddClientDrawer';
 
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -50,6 +51,8 @@ export function InvoiceDrawer({
   const [submitAction, setSubmitAction] = useState<'draft' | 'send' | null>(null);
   const [statusText, setStatusText] = useState('');
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
+  const [createClientOpen, setCreateClientOpen] = useState(false);
+  const [createClientName, setCreateClientName] = useState('');
 
   const isEdit = Boolean(invoice);
   const isReadOnly = isEdit && invoice?.status !== InvoiceStatus.DRAFT;
@@ -251,6 +254,10 @@ export function InvoiceDrawer({
                     setSelectedClient(client);
                     setValue('clientId', client?.id ?? '', { shouldValidate: true });
                   }}
+                  onCreateClient={(name) => {
+                    setCreateClientName(name);
+                    setCreateClientOpen(true);
+                  }}
                 />
               )}
               {errors.clientId && (
@@ -444,6 +451,22 @@ export function InvoiceDrawer({
           )}
         </form>
       </div>
+
+      <AddClientDrawer
+        open={createClientOpen}
+        onClose={() => setCreateClientOpen(false)}
+        initialCompanyName={createClientName}
+        onSuccess={(clientId) => {
+          setSelectedClient({
+            id: clientId,
+            companyName: createClientName,
+            contactName: '',
+            email: '',
+            country: 'RW',
+          });
+          setValue('clientId', clientId, { shouldValidate: true });
+        }}
+      />
     </>
   );
 }

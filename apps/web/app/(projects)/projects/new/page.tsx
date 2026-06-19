@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn, formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 type Tab = 'info' | 'timeline' | 'team' | 'milestones';
 
@@ -440,12 +441,14 @@ export default function NewProjectPage(): JSX.Element {
         <Link href="/projects">
           <Button variant="outline">Cancel</Button>
         </Link>
-        <Button
-          onClick={() => void handleSubmit()}
-          disabled={createProject.isPending}
-        >
-          Create Project
-        </Button>
+        <PermissionGate feature="projects.all" action="write">
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={createProject.isPending}
+          >
+            Create Project
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );

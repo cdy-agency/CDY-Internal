@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   const ceoRoleId = await getRoleIdByKey(prisma, 'CEO');
   const financeRoleId = await getRoleIdByKey(prisma, 'FINANCE_MANAGER');
   const salesRoleId = await getRoleIdByKey(prisma, 'SALES_AGENT');
-  const itRoleId = await getRoleIdByKey(prisma, 'IT');
+  const itRoleId = await getRoleIdByKey(prisma, 'IT_ADMINISTRATOR');
 
   const ceo = await prisma.user.create({
     data: {

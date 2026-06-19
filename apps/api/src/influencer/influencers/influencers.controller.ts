@@ -18,38 +18,43 @@ export class InfluencersController {
 
   @Get()
   @RequirePermission('influencer.database', 'read')
-  findAll(
+  async findAll(
     @Query('platform') platform?: string,
     @Query('category') category?: string,
     @Query('search') search?: string,
   ) {
-    return this.influencersService.findAll({ platform, category, search });
+    const data = await this.influencersService.findAll({ platform, category, search });
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Post()
   @RequirePermission('influencer.database', 'write')
-  create(
+  async create(
     @Body() dto: CreateInfluencerDto,
     @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    return this.influencersService.create(dto, req.user.sub);
+    const data = await this.influencersService.create(dto, req.user.sub);
+    return { data, message: 'Influencer created', statusCode: 201 };
   }
 
   @Get(':id')
   @RequirePermission('influencer.database', 'read')
-  findOne(@Param('id') id: string) {
-    return this.influencersService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.influencersService.findOne(id);
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Patch(':id')
   @RequirePermission('influencer.database', 'write')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateInfluencerDto>) {
-    return this.influencersService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateInfluencerDto>) {
+    const data = await this.influencersService.update(id, dto);
+    return { data, message: 'Influencer updated', statusCode: 200 };
   }
 
   @Patch(':id/deactivate')
   @RequirePermission('influencer.database', 'write')
-  deactivate(@Param('id') id: string) {
-    return this.influencersService.deactivate(id);
+  async deactivate(@Param('id') id: string) {
+    const data = await this.influencersService.deactivate(id);
+    return { data, message: 'Influencer deactivated', statusCode: 200 };
   }
 }

@@ -10,21 +10,23 @@ export class SubmissionsController {
 
   @Post('scope/:scopeItemId/submit')
   @RequirePermission('branding.delivery', 'write')
-  submit(
+  async submit(
     @Param('scopeItemId') scopeItemId: string,
     @Body() dto: CreateSubmissionDto,
     @Request() req: { user: { sub: string } },
   ) {
-    return this.service.submit(scopeItemId, dto, req.user.sub);
+    const data = await this.service.submit(scopeItemId, dto, req.user.sub);
+    return { data, message: 'Submission created', statusCode: 201 };
   }
 
   @Post('submissions/:id/review')
   @RequirePermission('branding.delivery', 'write')
-  review(
+  async review(
     @Param('id') id: string,
     @Body() dto: ReviewSubmissionDto,
     @Request() req: { user: { sub: string } },
   ) {
-    return this.service.review(id, dto, req.user.sub);
+    const data = await this.service.review(id, dto, req.user.sub);
+    return { data, message: 'Submission reviewed', statusCode: 200 };
   }
 }

@@ -226,34 +226,41 @@ export class ReportsService {
     to: Date,
     ventureId: string,
   ): Promise<PlPeriodData> {
-    const [incomeRaw, expenseRaw] = await Promise.all([
-      this.prisma.ventureIncome.groupBy({
-        by: ['category'],
+    const [invoiceRaw, expenseRows] = await Promise.all([
+      this.prisma.invoice.groupBy({
+        by: ['serviceType'],
         where: {
           ventureId,
-          date: { gte: from, lte: to },
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: from, lte: to },
           deletedAt: null,
         },
-        _sum: { amount: true },
+        _sum: { total: true },
       }),
-      this.prisma.ventureExpense.groupBy({
-        by: ['category'],
+      this.prisma.expense.findMany({
         where: {
           ventureId,
           date: { gte: from, lte: to },
           deletedAt: null,
         },
-        _sum: { ventureAmount: true },
+        select: { category: true, amount: true, ventureSharePercent: true },
       }),
     ]);
 
-    const revenueByServiceType = incomeRaw.map((r) => ({
-      serviceType: r.category,
-      amount: this.toNumber(r._sum.amount),
+    const revenueByServiceType = invoiceRaw.map((r) => ({
+      serviceType: r.serviceType ?? 'general',
+      amount: this.toNumber(r._sum.total),
     }));
-    const opexByCategory = expenseRaw.map((r) => ({
-      category: r.category,
-      amount: this.toNumber(r._sum.ventureAmount),
+
+    const opexByCat = new Map<ExpenseCategory, number>();
+    for (const e of expenseRows) {
+      const raw = this.toNumber(e.amount);
+      const sharePct = e.ventureSharePercent != null ? this.toNumber(e.ventureSharePercent) : 100;
+      opexByCat.set(e.category, (opexByCat.get(e.category) ?? 0) + (raw * sharePct) / 100);
+    }
+    const opexByCategory = Array.from(opexByCat.entries()).map(([category, amount]) => ({
+      category,
+      amount: Number(amount.toFixed(2)),
     }));
 
     const totalRevenue = revenueByServiceType.reduce((s, r) => s + r.amount, 0);
@@ -285,26 +292,41 @@ export class ReportsService {
     from: Date,
     to: Date,
   ): Promise<PlPeriodData> {
-    const [incomeRaw, expenseRaw] = await Promise.all([
-      this.prisma.ventureIncome.groupBy({
-        by: ['category'],
-        where: { date: { gte: from, lte: to }, deletedAt: null },
-        _sum: { amount: true },
+    const [invoiceRaw, expenseRows] = await Promise.all([
+      this.prisma.invoice.groupBy({
+        by: ['serviceType'],
+        where: {
+          ventureId: { not: null },
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { total: true },
       }),
-      this.prisma.ventureExpense.groupBy({
-        by: ['category'],
-        where: { date: { gte: from, lte: to }, deletedAt: null },
-        _sum: { ventureAmount: true },
+      this.prisma.expense.findMany({
+        where: {
+          ventureId: { not: null },
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        select: { category: true, amount: true, ventureSharePercent: true },
       }),
     ]);
 
-    const revenueByServiceType = incomeRaw.map((r) => ({
-      serviceType: r.category,
-      amount: this.toNumber(r._sum.amount),
+    const revenueByServiceType = invoiceRaw.map((r) => ({
+      serviceType: r.serviceType ?? 'general',
+      amount: this.toNumber(r._sum.total),
     }));
-    const opexByCategory = expenseRaw.map((r) => ({
-      category: r.category,
-      amount: this.toNumber(r._sum.ventureAmount),
+
+    const opexByCat = new Map<ExpenseCategory, number>();
+    for (const e of expenseRows) {
+      const raw = this.toNumber(e.amount);
+      const sharePct = e.ventureSharePercent != null ? this.toNumber(e.ventureSharePercent) : 100;
+      opexByCat.set(e.category, (opexByCat.get(e.category) ?? 0) + (raw * sharePct) / 100);
+    }
+    const opexByCategory = Array.from(opexByCat.entries()).map(([category, amount]) => ({
+      category,
+      amount: Number(amount.toFixed(2)),
     }));
 
     const totalRevenue = revenueByServiceType.reduce((s, r) => s + r.amount, 0);

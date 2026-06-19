@@ -1,8 +1,5 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVentureDto } from './dto/create-venture.dto';
 
@@ -21,6 +18,7 @@ export interface VenturePeriodSummary {
   };
   expenses: {
     total: number;
+    ventureTotal: number;
     count: number;
     byCategory: VentureCategorySummary[];
   };
@@ -73,69 +71,79 @@ export class VenturesService {
   ): Promise<VenturePeriodSummary> {
     await this.findOne(ventureId);
 
-    const [totalIncome, totalExpenses, incomeByCategory, expenseByCategory] =
-      await Promise.all([
-        this.prisma.ventureIncome.aggregate({
-          where: {
-            ventureId,
-            date: { gte: from, lte: to },
-            deletedAt: null,
-          },
-          _sum: { amount: true },
-          _count: { id: true },
-        }),
-        this.prisma.ventureExpense.aggregate({
-          where: {
-            ventureId,
-            date: { gte: from, lte: to },
-            deletedAt: null,
-          },
-          _sum: { ventureAmount: true },
-          _count: { id: true },
-        }),
-        this.prisma.ventureIncome.groupBy({
-          by: ['category'],
-          where: {
-            ventureId,
-            date: { gte: from, lte: to },
-            deletedAt: null,
-          },
-          _sum: { amount: true },
-        }),
-        this.prisma.ventureExpense.groupBy({
-          by: ['category'],
-          where: {
-            ventureId,
-            date: { gte: from, lte: to },
-            deletedAt: null,
-          },
-          _sum: { ventureAmount: true },
-        }),
-      ]);
+    const [invoiceAgg, invoiceByCategory, expenseRows] = await Promise.all([
+      this.prisma.invoice.aggregate({
+        where: {
+          ventureId,
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+      this.prisma.invoice.groupBy({
+        by: ['serviceType'],
+        where: {
+          ventureId,
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { total: true },
+      }),
+      this.prisma.expense.findMany({
+        where: {
+          ventureId,
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        select: {
+          amount: true,
+          ventureSharePercent: true,
+          category: true,
+        },
+      }),
+    ]);
 
-    const income = Number(totalIncome._sum.amount ?? 0);
-    const expenses = Number(totalExpenses._sum.ventureAmount ?? 0);
-    const netProfit = income - expenses;
-    const margin =
-      income > 0 ? Number(((netProfit / income) * 100).toFixed(2)) : 0;
+    const income = Number(invoiceAgg._sum.total ?? 0);
+    const incomeCount = invoiceAgg._count.id;
+
+    let expenseTotal = 0;
+    let ventureExpenseTotal = 0;
+    const expenseByCat: Record<string, number> = {};
+
+    for (const e of expenseRows) {
+      const raw = Number(e.amount);
+      const sharePct = e.ventureSharePercent != null ? Number(e.ventureSharePercent) : 100;
+      const ventureAmount = (raw * sharePct) / 100;
+      expenseTotal += raw;
+      ventureExpenseTotal += ventureAmount;
+      const cat = String(e.category);
+      expenseByCat[cat] = (expenseByCat[cat] ?? 0) + ventureAmount;
+    }
+
+    const netProfit = income - ventureExpenseTotal;
+    const margin = income > 0 ? Number(((netProfit / income) * 100).toFixed(2)) : 0;
 
     return {
       ventureId,
       period: { from, to },
       income: {
         total: Number(income.toFixed(2)),
-        count: totalIncome._count.id,
-        byCategory: incomeByCategory.map((r) => ({
-          category: r.category,
-          amount: Number(r._sum.amount ?? 0),
+        count: incomeCount,
+        byCategory: invoiceByCategory.map((r) => ({
+          category: r.serviceType,
+          amount: Number(r._sum.total ?? 0),
         })),
       },
       expenses: {
-        total: Number(expenses.toFixed(2)),
-        count: totalExpenses._count.id,
-        byCategory: expenseByCategory.map((r) => ({
-          category: r.category,
-          amount: Number(r._sum.ventureAmount ?? 0),
+        total: Number(expenseTotal.toFixed(2)),
+        ventureTotal: Number(ventureExpenseTotal.toFixed(2)),
+        count: expenseRows.length,
+        byCategory: Object.entries(expenseByCat).map(([category, amount]) => ({
+          category,
+          amount: Number(amount.toFixed(2)),
         })),
       },
       netProfit: Number(netProfit.toFixed(2)),
@@ -160,7 +168,7 @@ export class VenturesService {
 
     const totals = {
       totalIncome: summaries.reduce((s, v) => s + v.income.total, 0),
-      totalExpenses: summaries.reduce((s, v) => s + v.expenses.total, 0),
+      totalExpenses: summaries.reduce((s, v) => s + v.expenses.ventureTotal, 0),
       totalNetProfit: summaries.reduce((s, v) => s + v.netProfit, 0),
     };
 
@@ -168,22 +176,38 @@ export class VenturesService {
   }
 
   async getMtdTotals(from: Date, to: Date) {
-    const [activeCount, incomeAgg, expenseAgg] = await Promise.all([
+    const [activeCount, invoiceAgg, expenseRows] = await Promise.all([
       this.prisma.venture.count({ where: { isActive: true } }),
-      this.prisma.ventureIncome.aggregate({
-        where: { date: { gte: from, lte: to }, deletedAt: null },
-        _sum: { amount: true },
+      this.prisma.invoice.aggregate({
+        where: {
+          ventureId: { not: null },
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        _sum: { total: true },
       }),
-      this.prisma.ventureExpense.aggregate({
-        where: { date: { gte: from, lte: to }, deletedAt: null },
-        _sum: { ventureAmount: true },
+      this.prisma.expense.findMany({
+        where: {
+          ventureId: { not: null },
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        },
+        select: { amount: true, ventureSharePercent: true },
       }),
     ]);
 
+    let totalExpensesMTD = 0;
+    for (const e of expenseRows) {
+      const raw = Number(e.amount);
+      const sharePct = e.ventureSharePercent != null ? Number(e.ventureSharePercent) : 100;
+      totalExpensesMTD += (raw * sharePct) / 100;
+    }
+
     return {
       count: activeCount,
-      totalIncomeMTD: Number(incomeAgg._sum.amount ?? 0),
-      totalExpensesMTD: Number(expenseAgg._sum.ventureAmount ?? 0),
+      totalIncomeMTD: Number(invoiceAgg._sum.total ?? 0),
+      totalExpensesMTD: Number(totalExpensesMTD.toFixed(2)),
     };
   }
 }

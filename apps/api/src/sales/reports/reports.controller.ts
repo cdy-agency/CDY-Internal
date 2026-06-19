@@ -17,33 +17,29 @@ export class ReportsController {
 
   @Post(':id/reports')
   @RequirePermission('sales.reporting', 'write')
-  generate(
+  async generate(
     @Param('id') campaignId: string,
     @Body() dto: GenerateWeeklyReportDto,
     @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    return this.reportsService.generateWeeklyReport(
-      campaignId,
-      dto,
-      req.user.sub,
-    );
+    const data = await this.reportsService.generateWeeklyReport(campaignId, dto, req.user.sub);
+    return { data, message: 'Report generated', statusCode: 201 };
   }
 
   @Get(':id/reports')
   @RequirePermission('sales.reporting', 'read')
-  getReports(@Param('id') campaignId: string) {
-    return this.reportsService.getReports(campaignId);
+  async getReports(@Param('id') campaignId: string) {
+    const data = await this.reportsService.getReports(campaignId);
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Get(':id/client-report')
   @RequirePermission('sales.campaigns', 'read')
-  getClientReport(
+  async getClientReport(
     @Param('id') campaignId: string,
     @Query('week') week?: string,
   ) {
-    return this.reportsService.getClientReport(
-      campaignId,
-      week ? Number(week) : undefined,
-    );
+    const data = await this.reportsService.getClientReport(campaignId, week ? Number(week) : undefined);
+    return { data, message: 'OK', statusCode: 200 };
   }
 }

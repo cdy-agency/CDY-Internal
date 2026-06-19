@@ -136,13 +136,42 @@ export function useSalesAgents() {
   });
 }
 
-export function useClients(search?: string) {
+export function useClients(search?: string, source?: string) {
   return useQuery({
-    queryKey: ['crm', 'clients', search],
+    queryKey: ['crm', 'clients', search, source],
     queryFn: async (): Promise<ClientRecord[]> => {
-      const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (source) params.set('source', source);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await api.get<ApiResponse<ClientRecord[]>>(`/crm/clients${qs}`);
       return res.data.data;
+    },
+  });
+}
+
+export function useCreateClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      companyName: string;
+      contactName: string;
+      email: string;
+      phone?: string;
+      country?: string;
+      city?: string;
+      address?: string;
+      website?: string;
+      industry?: string;
+      notes?: string;
+      assignedTo?: string;
+      source?: string;
+    }) => {
+      const res = await api.post<ApiResponse<ClientRecord>>('/crm/clients', data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'clients'] });
     },
   });
 }

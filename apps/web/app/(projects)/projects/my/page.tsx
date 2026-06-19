@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const STATUS_OPTIONS: TaskStatus[] = [
   TaskStatus.TODO,
@@ -287,12 +288,14 @@ export default function MyTasksPage(): JSX.Element {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => void handleLogTime()}
-                  disabled={logTime.isPending}
-                >
-                  Log Time
-                </Button>
+                <PermissionGate feature="projects.time" action="write">
+                  <Button
+                    onClick={() => void handleLogTime()}
+                    disabled={logTime.isPending}
+                  >
+                    Log Time
+                  </Button>
+                </PermissionGate>
               </div>
             </div>
           </div>

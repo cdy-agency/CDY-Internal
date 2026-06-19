@@ -36,7 +36,7 @@ export default function ItLayout({
     api
       .get<ApiResponse<UserProfile>>('/auth/me')
       .then((res) => {
-        if (res.data.data.roleKey !== 'IT') {
+        if (res.data.data.roleKey !== 'IT_ADMINISTRATOR') {
           router.push('/403');
           return;
         }
@@ -45,10 +45,9 @@ export default function ItLayout({
       .catch(() => void redirectToLoginAfterAuthFailure(router));
   }, [router]);
 
-  async function handleLogout(): Promise<void> {
-    await fetch('/api/auth/logout', { method: 'POST' });
+  function handleLogout(): void {
     router.push('/login');
-    router.refresh();
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
   }
 
   return (

@@ -5,12 +5,14 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
   Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { format } from 'date-fns';
+import { ClientSource } from '@prisma/client';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
 import {
   CurrentUser,
@@ -18,6 +20,7 @@ import {
 } from '../../auth/decorators/current-user.decorator';
 import { ClientsService } from './clients.service';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 
 function toActor(user: JwtPayload) {
   return { userId: user.sub, userEmail: user.email };
@@ -29,11 +32,25 @@ function toActor(user: JwtPayload) {
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
+  @Post()
+  @RequirePermission('crm.clients', 'write')
+  @ApiOperation({ summary: 'Create a direct client (no pipeline lead)' })
+  async createDirect(
+    @Body() dto: CreateDirectClientDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.clientsService.createDirect(dto, user.sub);
+    return { data, message: 'Client created', statusCode: HttpStatus.OK };
+  }
+
   @Get()
   @RequirePermission('crm.clients', 'read')
   @ApiOperation({ summary: 'List clients' })
-  async findAll(@Query('search') search?: string) {
-    const data = await this.clientsService.findAll(search);
+  async findAll(
+    @Query('search') search?: string,
+    @Query('source') source?: ClientSource,
+  ) {
+    const data = await this.clientsService.findAll(search, source);
     return { data, message: 'Clients retrieved', statusCode: HttpStatus.OK };
   }
 
