@@ -6,5 +6,6 @@ export type PermissionMap = Record<
 export interface PermissionProfile {
   roleKey: string;
   roleName: string;
+  homeModule: string;
   permissions: PermissionMap;
 }

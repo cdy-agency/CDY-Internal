@@ -19,46 +19,52 @@ export class CampaignsController {
 
   @Get()
   @RequirePermission('sales.campaigns', 'read')
-  findAll() {
-    return this.campaignsService.findAll();
+  async findAll() {
+    const data = await this.campaignsService.findAll();
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Post()
   @RequirePermission('sales.campaigns', 'write')
-  create(
+  async create(
     @Body() dto: CreateSalesCampaignDto,
     @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    return this.campaignsService.create(dto, req.user.sub);
+    const data = await this.campaignsService.create(dto, req.user.sub);
+    return { data, message: 'Campaign created', statusCode: 201 };
   }
 
   @Get(':id')
   @RequirePermission('sales.campaigns', 'read')
-  findOne(@Param('id') id: string) {
-    return this.campaignsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.campaignsService.findOne(id);
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Patch(':id')
   @RequirePermission('sales.campaigns', 'write')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() data: { status?: SalesCampaignStatus; notes?: string },
   ) {
-    return this.campaignsService.update(id, data);
+    const result = await this.campaignsService.update(id, data);
+    return { data: result, message: 'Campaign updated', statusCode: 200 };
   }
 
   @Post(':id/complete')
   @RequirePermission('sales.campaigns', 'write')
-  complete(
+  async complete(
     @Param('id') id: string,
     @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    return this.campaignsService.complete(id, req.user.sub);
+    const data = await this.campaignsService.complete(id, req.user.sub);
+    return { data, message: 'Campaign completed', statusCode: 200 };
   }
 
   @Get(':id/stats')
   @RequirePermission('sales.campaigns', 'read')
-  getStats(@Param('id') id: string) {
-    return this.campaignsService.getCampaignStats(id);
+  async getStats(@Param('id') id: string) {
+    const data = await this.campaignsService.getCampaignStats(id);
+    return { data, message: 'OK', statusCode: 200 };
   }
 }

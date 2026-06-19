@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function statusColor(status: LeaveStatus): string {
   const map: Record<LeaveStatus, string> = {
@@ -92,7 +93,9 @@ export default function MyLeavePage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-lg font-semibold text-cdy-white">My Leave</h2>
-        <Button onClick={() => setDrawerOpen(true)}>Request Leave</Button>
+        <PermissionGate feature="hr.attendance" action="write">
+          <Button onClick={() => setDrawerOpen(true)}>Request Leave</Button>
+        </PermissionGate>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

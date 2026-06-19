@@ -65,4 +65,8 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsString()
   country?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 }

@@ -57,6 +57,7 @@ export class AuthService {
       email: user.email,
       roleKey: profile.roleKey,
       roleName: profile.roleName,
+      homeModule: profile.homeModule,
       permissions: profile.permissions,
     };
 
@@ -69,6 +70,7 @@ export class AuthService {
         email: user.email,
         roleKey: profile.roleKey,
         roleName: profile.roleName,
+        homeModule: profile.homeModule,
         firstName: user.firstName,
         lastName: user.lastName,
         permissions: profile.permissions,
@@ -101,6 +103,7 @@ export class AuthService {
         email: user.email,
         roleKey: profile.roleKey,
         roleName: profile.roleName,
+        homeModule: profile.homeModule,
         permissions: profile.permissions,
       };
 
@@ -136,6 +139,7 @@ export class AuthService {
       email: user.email,
       roleKey: profile.roleKey,
       roleName: profile.roleName,
+      homeModule: profile.homeModule,
       firstName: user.firstName,
       lastName: user.lastName,
       permissions: profile.permissions,

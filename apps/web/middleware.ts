@@ -8,8 +8,21 @@ interface JwtPayload {
   email: string;
   roleKey: string;
   roleName: string;
+  homeModule?: string;
   permissions: PermissionMap;
   exp?: number;
+}
+
+function decodeJwtPayload(token: string): JwtPayload {
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    throw new Error('Invalid token');
+  }
+
+  const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+  const json = atob(padded);
+  return JSON.parse(json) as JwtPayload;
 }
 
 function parseJwtPayload(token: string): JwtPayload | null {
@@ -35,6 +48,11 @@ function redirectToLogin(request: NextRequest): NextResponse {
     NextResponse.redirect(new URL('/login', request.url)),
   );
 }
+
+const PROTECTED_PREFIXES = [
+  '/finance', '/it', '/crm', '/hr', '/projects',
+  '/marketing', '/software', '/branding', '/influencer', '/sales', '/ceo',
+];
 
 const ROUTE_PERMISSIONS: Array<{
   pattern: RegExp;
@@ -80,21 +98,13 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/finance\/bills/, feature: 'finance.bills', action: 'read' },
   { pattern: /^\/finance\/ar/, feature: 'finance.ar', action: 'read' },
   { pattern: /^\/finance\/reports/, feature: 'finance.reports', action: 'read' },
-  {
-    pattern: /^\/finance\/commissions\/my/,
-    feature: 'finance.commissions.own',
-    action: 'read',
-  },
+  { pattern: /^\/finance\/commissions\/my/, feature: 'finance.commissions.own', action: 'read' },
   { pattern: /^\/finance\/commissions/, feature: 'finance.commissions', action: 'read' },
   { pattern: /^\/finance\/payroll/, feature: 'finance.payroll', action: 'read' },
   { pattern: /^\/finance\/retainers/, feature: 'finance.retainers', action: 'read' },
   { pattern: /^\/finance\/ventures/, feature: 'ventures.view', action: 'read' },
   { pattern: /^\/finance\/budget/, feature: 'finance.budget', action: 'read' },
-  {
-    pattern: /^\/finance\/reconciliation/,
-    feature: 'finance.reconciliation',
-    action: 'read',
-  },
+  { pattern: /^\/finance\/reconciliation/, feature: 'finance.reconciliation', action: 'read' },
   { pattern: /^\/finance\/audit/, feature: 'finance.audit', action: 'read' },
   { pattern: /^\/finance\/settings/, feature: 'finance.settings', action: 'read' },
   { pattern: /^\/finance/, feature: 'finance.dashboard', action: 'read' },
@@ -113,23 +123,21 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/ceo/, feature: 'ceo.dashboard', action: 'read' },
 ];
 
-function decodeJwtPayload(token: string): JwtPayload {
-  const parts = token.split('.');
-  if (parts.length < 2) {
-    throw new Error('Invalid token');
-  }
-
-  const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-  const json = atob(padded);
-  return JSON.parse(json) as JwtPayload;
-}
-
 export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  if (!token && (pathname.startsWith('/finance') || pathname.startsWith('/it') || pathname.startsWith('/crm') || pathname.startsWith('/hr') || pathname.startsWith('/projects') || pathname.startsWith('/marketing') || pathname.startsWith('/software') || pathname.startsWith('/branding') || pathname.startsWith('/influencer') || pathname.startsWith('/sales') || pathname.startsWith('/ceo'))) {
+  // Root: redirect to homeModule or login
+  if (pathname === '/') {
+    if (!token) return NextResponse.redirect(new URL('/login', request.url));
+    const payload = parseJwtPayload(token);
+    if (!payload) return redirectToLogin(request);
+    return NextResponse.redirect(new URL(payload.homeModule ?? '/finance', request.url));
+  }
+
+  // Protected modules: require auth
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+  if (isProtected && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -139,16 +147,21 @@ export function middleware(request: NextRequest): NextResponse {
 
   const payload = parseJwtPayload(token);
 
+  // Login page: redirect authenticated users to homeModule
   if (pathname === '/login') {
     if (payload) {
-      const destination = payload.roleKey === 'IT' ? '/it' : '/finance';
-      return NextResponse.redirect(new URL(destination, request.url));
+      return NextResponse.redirect(new URL(payload.homeModule ?? '/finance', request.url));
     }
     return clearAuthCookies(NextResponse.next());
   }
 
   if (!payload) {
     return redirectToLogin(request);
+  }
+
+  // CEO bypasses all permission checks
+  if (payload.roleKey === 'CEO') {
+    return NextResponse.next();
   }
 
   const routeRule = ROUTE_PERMISSIONS.find((r) => r.pattern.test(pathname));
@@ -161,15 +174,28 @@ export function middleware(request: NextRequest): NextResponse {
     routeRule.action === 'read' ? permission?.canRead : permission?.canWrite;
 
   if (!allowed) {
-    if (payload.roleKey === 'IT') {
-      return NextResponse.redirect(new URL('/it', request.url));
-    }
-    return NextResponse.redirect(new URL('/403', request.url));
+    const homeModule = payload.homeModule ?? '/finance';
+    return NextResponse.redirect(new URL(homeModule, request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/finance/:path*', '/it/:path*', '/crm/:path*', '/hr/:path*', '/projects/:path*', '/marketing/:path*', '/software/:path*', '/branding/:path*', '/influencer/:path*', '/sales/:path*', '/ceo/:path*', '/ceo', '/login'],
+  matcher: [
+    '/',
+    '/finance/:path*',
+    '/it/:path*',
+    '/crm/:path*',
+    '/hr/:path*',
+    '/projects/:path*',
+    '/marketing/:path*',
+    '/software/:path*',
+    '/branding/:path*',
+    '/influencer/:path*',
+    '/sales/:path*',
+    '/ceo/:path*',
+    '/ceo',
+    '/login',
+  ],
 };

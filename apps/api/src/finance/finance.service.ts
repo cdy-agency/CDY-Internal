@@ -28,6 +28,11 @@ export class FinanceService {
     private readonly venturesService: VenturesService,
   ) {}
 
+  private pctChange(current: number, previous: number): number {
+    if (previous === 0) return 0;
+    return Number(((current - previous) / previous * 100).toFixed(1));
+  }
+
   async getSummary(): Promise<FinanceSummaryDto> {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -93,6 +98,15 @@ export class FinanceService {
       totalClients,
       newClientsThisMonth,
       hrMetrics,
+      monthlyRevenue,
+      monthlyCollected,
+      paidCount,
+      overdueCount,
+      partialCount,
+      expensesByCategory,
+      recentInvoices,
+      topClients,
+      pendingLeaveRequests,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -134,6 +148,15 @@ export class FinanceService {
         where: { deletedAt: null, createdAt: { gte: currentMonthStart } },
       }),
       this.getHrPayrollMetrics(),
+      this.getMonthlyRevenueSeries(now, 6),
+      this.getMonthlyCollectedSeries(now, 6),
+      this.countInvoicesByStatusExact('PAID'),
+      this.countInvoicesByStatusExact('OVERDUE'),
+      this.countInvoicesByStatusExact('PARTIALLY_PAID'),
+      this.getExpensesByCategory(currentMonthStart, currentMonthEnd),
+      this.getRecentInvoices(5),
+      this.getTopClientsByRevenue(5),
+      this.getPendingLeaveRequests(),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -189,6 +212,21 @@ export class FinanceService {
       totalActiveEmployees,
       totalMonthlyPayroll,
       previousMonth: previousMetrics,
+      revenueTrend: this.pctChange(currentInvoiced, previousInvoiced),
+      collectionTrend: this.pctChange(currentCollected, previousCollected),
+      outstandingTrend: this.pctChange(outstanding, previousOutstanding),
+      collectionRate: currentInvoiced > 0
+        ? Number(((currentCollected / currentInvoiced) * 100).toFixed(1))
+        : 0,
+      monthlyRevenue,
+      monthlyCollected,
+      paidCount,
+      overdueCount,
+      partialCount,
+      expensesByCategory,
+      recentInvoices,
+      topClients,
+      pendingLeaveRequests,
     };
   }
 
@@ -454,5 +492,124 @@ export class FinanceService {
       return 0;
     }
     return Number(value);
+  }
+
+  private async getMonthlyRevenueSeries(
+    now: Date,
+    months: number,
+  ): Promise<number[]> {
+    const series: number[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      series.push(await this.sumInvoices(start, end));
+    }
+    return series;
+  }
+
+  private async getMonthlyCollectedSeries(
+    now: Date,
+    months: number,
+  ): Promise<number[]> {
+    const series: number[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      series.push(await this.sumPayments(start, end));
+    }
+    return series;
+  }
+
+  private async countInvoicesByStatusExact(status: string): Promise<number> {
+    return this.prisma.invoice.count({
+      where: { deletedAt: null, status: status as InvoiceStatus },
+    });
+  }
+
+  private async getExpensesByCategory(
+    start: Date,
+    end: Date,
+  ): Promise<Array<{ category: string; amount: number }>> {
+    const rows = await this.prisma.expense.groupBy({
+      by: ['category'],
+      where: { deletedAt: null, date: { gte: start, lte: end } },
+      _sum: { amount: true },
+      orderBy: { _sum: { amount: 'desc' } },
+    });
+    return rows.map((r) => ({
+      category: r.category as string,
+      amount: this.toNumber(r._sum.amount),
+    }));
+  }
+
+  private async getRecentInvoices(limit: number): Promise<
+    Array<{ invoiceNumber: string; clientName: string; total: number; status: string }>
+  > {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        invoiceNumber: true,
+        total: true,
+        status: true,
+        client: { select: { companyName: true } },
+      },
+    });
+    return invoices.map((inv) => ({
+      invoiceNumber: inv.invoiceNumber,
+      clientName: inv.client?.companyName ?? '—',
+      total: this.toNumber(inv.total),
+      status: inv.status as string,
+    }));
+  }
+
+  private async getTopClientsByRevenue(limit: number): Promise<
+    Array<{ companyName: string; totalInvoiced: number; totalCollected: number; outstanding: number }>
+  > {
+    const result = await this.prisma.$queryRaw<
+      Array<{
+        companyName: string;
+        totalInvoiced: Prisma.Decimal;
+        totalCollected: Prisma.Decimal;
+        outstanding: Prisma.Decimal;
+      }>
+    >`
+      SELECT
+        c."companyName",
+        COALESCE(SUM(i.total), 0) AS "totalInvoiced",
+        COALESCE(SUM(
+          (SELECT COALESCE(SUM(p.amount), 0) FROM "Payment" p
+           WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL)
+        ), 0) AS "totalCollected",
+        COALESCE(SUM(
+          CASE WHEN i.status NOT IN ('PAID', 'WRITTEN_OFF', 'DRAFT') THEN
+            i.total - COALESCE(
+              (SELECT SUM(p.amount) FROM "Payment" p
+               WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL), 0)
+          ELSE 0 END
+        ), 0) AS outstanding
+      FROM "Client" c
+      LEFT JOIN "Invoice" i ON i."clientId" = c.id AND i."deletedAt" IS NULL
+      WHERE c."deletedAt" IS NULL
+      GROUP BY c.id, c."companyName"
+      ORDER BY "totalInvoiced" DESC
+      LIMIT ${limit}
+    `;
+    return result.map((r) => ({
+      companyName: r.companyName,
+      totalInvoiced: this.toNumber(r.totalInvoiced),
+      totalCollected: this.toNumber(r.totalCollected),
+      outstanding: this.toNumber(r.outstanding),
+    }));
+  }
+
+  private async getPendingLeaveRequests(): Promise<number> {
+    const result = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*)::int AS count
+      FROM "LeaveRequest"
+      WHERE status = 'PENDING'
+    `;
+    return Number(result[0]?.count ?? 0);
   }
 }

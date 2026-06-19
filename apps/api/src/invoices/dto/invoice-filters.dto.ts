@@ -28,6 +28,10 @@ export class InvoiceFiltersDto {
   dateTo?: string;
 
   @IsOptional()
+  @IsString()
+  ventureId?: string;
+
+  @IsOptional()
   @Transform(({ value }: { value: string }) => parseInt(value, 10))
   @IsInt()
   @Min(1)

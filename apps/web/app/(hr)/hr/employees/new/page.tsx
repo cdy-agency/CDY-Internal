@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 type Tab = 'account' | 'personal' | 'employment' | 'compensation';
 
@@ -389,12 +390,14 @@ export default function NewEmployeePage(): JSX.Element {
         <Link href="/hr/employees">
           <Button variant="outline">Cancel</Button>
         </Link>
-        <Button
-          onClick={() => void handleSubmit()}
-          disabled={createEmployee.isPending}
-        >
-          {createEmployee.isPending ? 'Creating…' : 'Create Employee'}
-        </Button>
+        <PermissionGate feature="hr.employees" action="write">
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={createEmployee.isPending}
+          >
+            {createEmployee.isPending ? 'Creating…' : 'Create Employee'}
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );

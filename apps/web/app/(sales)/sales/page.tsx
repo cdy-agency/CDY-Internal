@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSalesCampaigns, useCreateSalesCampaign } from '@/hooks/useSales';
+import { PermissionGate } from '@/components/PermissionGate';
 import type { SalesCampaignStatus } from '@cdy/shared';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -31,7 +32,7 @@ function ClientSearch({ value, onChange }: { value: string; onChange: (id: strin
         credentials: 'include',
       });
       const data = await res.json();
-      setResults(data?.data?.data ?? []);
+      setResults(data?.data ?? []);
     } catch { setResults([]); }
   }
 
@@ -200,9 +201,11 @@ export default function SalesCampaignsPage() {
           <h1 className="text-2xl font-bold text-cdy-white">Sales Campaigns</h1>
           <p className="text-sm text-cdy-muted">Field sales team management</p>
         </div>
-        <Button onClick={() => setDrawerOpen(true)} className="bg-cdy-red text-white hover:bg-cdy-red/90">
-          <Plus className="mr-2 h-4 w-4" /> New Campaign
-        </Button>
+        <PermissionGate feature="sales.campaigns" action="write">
+          <Button onClick={() => setDrawerOpen(true)} className="bg-cdy-red text-white hover:bg-cdy-red/90">
+            <Plus className="mr-2 h-4 w-4" /> New Campaign
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

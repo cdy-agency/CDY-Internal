@@ -46,6 +46,17 @@ export class RbacService {
 
     if (!user) return {};
 
+    if (user.role.key === 'CEO') {
+      const features = await this.prisma.systemFeature.findMany({
+        where: { isActive: true },
+      });
+      const permissionMap: PermissionMap = Object.fromEntries(
+        features.map((f) => [f.key, { canRead: true, canWrite: true }]),
+      );
+      await this.cache.set(cacheKey, permissionMap, RbacService.CACHE_TTL_SECONDS);
+      return permissionMap;
+    }
+
     const permissionMap: PermissionMap = Object.fromEntries(
       user.role.permissions.map((p) => [
         p.feature.key,
@@ -78,12 +89,27 @@ export class RbacService {
     });
 
     if (!user) {
-      return { roleKey: '', roleName: '', permissions: {} };
+      return { roleKey: '', roleName: '', homeModule: '/finance', permissions: {} };
+    }
+
+    if (user.role.key === 'CEO') {
+      const features = await this.prisma.systemFeature.findMany({
+        where: { isActive: true },
+      });
+      return {
+        roleKey: user.role.key,
+        roleName: user.role.name,
+        homeModule: user.role.homeModule,
+        permissions: Object.fromEntries(
+          features.map((f) => [f.key, { canRead: true, canWrite: true }]),
+        ),
+      };
     }
 
     return {
       roleKey: user.role.key,
       roleName: user.role.name,
+      homeModule: user.role.homeModule,
       permissions: Object.fromEntries(
         user.role.permissions.map((p) => [
           p.feature.key,

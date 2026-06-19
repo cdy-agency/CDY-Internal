@@ -102,7 +102,7 @@ export default function ItRoleDetailPage(): JSX.Element {
   );
 
   async function handleSave(): Promise<void> {
-    if (!role || role.key === 'IT') return;
+    if (!role || role.key === 'CEO' || role.key === 'IT_ADMINISTRATOR') return;
     const userCount = role._count?.users ?? 0;
     if (
       !confirm(
@@ -131,7 +131,7 @@ export default function ItRoleDetailPage(): JSX.Element {
     return <p className="text-cdy-muted">Loading role...</p>;
   }
 
-  const isItRole = role.key === 'IT';
+  const isProtected = role.key === 'CEO' || role.key === 'IT_ADMINISTRATOR';
 
   return (
     <div className="space-y-6">
@@ -140,9 +140,11 @@ export default function ItRoleDetailPage(): JSX.Element {
         {role.description && (
           <p className="mt-1 text-sm text-cdy-muted">{role.description}</p>
         )}
-        {isItRole && (
+        {isProtected && (
           <p className="mt-2 text-sm text-amber-400">
-            IT role permissions cannot be modified through the dashboard.
+            {role.key === 'CEO'
+              ? 'CEO permissions are enforced in code and cannot be modified here.'
+              : 'IT Administrator permissions cannot be modified through the dashboard.'}
           </p>
         )}
       </div>
@@ -179,7 +181,7 @@ export default function ItRoleDetailPage(): JSX.Element {
                       <input
                         type="checkbox"
                         checked={perm.canRead}
-                        disabled={isItRole}
+                        disabled={isProtected}
                         onChange={(e) =>
                           setPermissions((prev) =>
                             handleToggle(prev, feature.id, 'canRead', e.target.checked),
@@ -192,7 +194,7 @@ export default function ItRoleDetailPage(): JSX.Element {
                       <input
                         type="checkbox"
                         checked={perm.canWrite}
-                        disabled={isItRole}
+                        disabled={isProtected}
                         onChange={(e) =>
                           setPermissions((prev) =>
                             handleToggle(prev, feature.id, 'canWrite', e.target.checked),
@@ -208,7 +210,7 @@ export default function ItRoleDetailPage(): JSX.Element {
         </div>
       ))}
 
-      {!isItRole && (
+      {!isProtected && (
         <Button onClick={handleSave} disabled={saving || changedCount === 0}>
           {saving ? 'Saving...' : `Save Changes (${changedCount} modified)`}
         </Button>

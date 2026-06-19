@@ -4,10 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { InvoiceStatus } from '@cdy/shared';
+import { InvoiceStatus, type ClientSource } from '@cdy/shared';
 import { useClient } from '@/hooks/useCrm';
 import { formatCurrency } from '@/lib/utils';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+
+const SOURCE_CONFIG: Record<ClientSource, { label: string; color: string; bg: string; border: string }> = {
+  PIPELINE:  { label: 'From pipeline',    color: 'text-blue-400',   bg: 'bg-blue-900/20',   border: 'border-blue-800' },
+  DIRECT:    { label: 'Direct client',    color: 'text-green-400',  bg: 'bg-green-900/20',  border: 'border-green-800' },
+  REFERRAL:  { label: 'Referral',         color: 'text-amber-400',  bg: 'bg-amber-900/20',  border: 'border-amber-800' },
+  RETURNING: { label: 'Returning client', color: 'text-purple-400', bg: 'bg-purple-900/20', border: 'border-purple-800' },
+};
 
 type ClientTab = 'overview' | 'leads' | 'activities' | 'invoices';
 
@@ -36,7 +43,27 @@ export default function ClientDetailPage(): JSX.Element {
         <span className="text-cdy-white">{client.companyName}</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-cdy-white">{client.companyName}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold text-cdy-white">{client.companyName}</h1>
+        {(() => {
+          const src = SOURCE_CONFIG[client.source as ClientSource] ?? SOURCE_CONFIG.DIRECT;
+          return (
+            <span className={`rounded border px-2 py-0.5 text-xs font-medium ${src.color} ${src.bg} ${src.border}`}>
+              {src.label}
+            </span>
+          );
+        })()}
+      </div>
+      {client.source === 'PIPELINE' && client.leadId && (
+        <Link href={`/crm/leads/${client.leadId}`} className="text-xs text-cdy-red hover:underline">
+          View original lead →
+        </Link>
+      )}
+      {client.source !== 'PIPELINE' && (
+        <p className="text-xs text-cdy-muted">
+          Registered directly on {format(new Date(client.createdAt), 'MMM d, yyyy')}
+        </p>
+      )}
 
       <div className="flex gap-2 border-b border-cdy-navy-border">
         {tabs.map((t) => (

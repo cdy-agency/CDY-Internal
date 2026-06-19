@@ -17,6 +17,7 @@ interface PermissionContextValue {
   permissions: PermissionMap;
   roleKey: string;
   roleName: string;
+  homeModule: string;
   isLoading: boolean;
   can: (featureKey: string, action: 'read' | 'write') => boolean;
   canRead: (featureKey: string) => boolean;
@@ -38,18 +39,20 @@ export function PermissionProvider({
   initialProfile,
 }: {
   children: ReactNode;
-  initialProfile?: Pick<UserProfile, 'roleKey' | 'roleName' | 'permissions'>;
+  initialProfile?: Pick<UserProfile, 'roleKey' | 'roleName' | 'homeModule' | 'permissions'>;
 }): JSX.Element {
   const [permissions, setPermissions] = useState<PermissionMap>(
     initialProfile?.permissions ?? emptyPermissions,
   );
   const [roleKey, setRoleKey] = useState(initialProfile?.roleKey ?? '');
   const [roleName, setRoleName] = useState(initialProfile?.roleName ?? '');
+  const [homeModule, setHomeModule] = useState(initialProfile?.homeModule ?? '/finance');
   const [isLoading, setIsLoading] = useState(!initialProfile);
 
   const applyProfile = useCallback((profile: UserProfile, showToast = false) => {
     setRoleKey(profile.roleKey);
     setRoleName(profile.roleName);
+    setHomeModule(profile.homeModule ?? '/finance');
     setPermissions((current) => {
       const next = profile.permissions ?? emptyPermissions;
       if (showToast && !permissionsEqual(current, next)) {
@@ -74,31 +77,40 @@ export function PermissionProvider({
       .catch(() => setIsLoading(false));
   }, [initialProfile, applyProfile]);
 
+  // Only poll when authenticated
   useEffect(() => {
+    if (!roleKey) return;
+
     const interval = setInterval(() => {
       void refreshPermissions().catch(() => undefined);
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [refreshPermissions]);
+  }, [refreshPermissions, roleKey]);
 
   const value = useMemo<PermissionContextValue>(
     () => ({
       permissions,
       roleKey,
       roleName,
+      homeModule,
       isLoading,
-      can: (featureKey, action) =>
-        action === 'read'
+      can: (featureKey, action) => {
+        if (roleKey === 'CEO') return true;
+        return action === 'read'
           ? (permissions[featureKey]?.canRead ?? false)
-          : (permissions[featureKey]?.canWrite ?? false),
-      canRead: (featureKey) => permissions[featureKey]?.canRead ?? false,
-      canWrite: (featureKey) => permissions[featureKey]?.canWrite ?? false,
+          : (permissions[featureKey]?.canWrite ?? false);
+      },
+      canRead: (featureKey) =>
+        roleKey === 'CEO' ? true : (permissions[featureKey]?.canRead ?? false),
+      canWrite: (featureKey) =>
+        roleKey === 'CEO' ? true : (permissions[featureKey]?.canWrite ?? false),
       hasModule: (module) =>
+        roleKey === 'CEO' ||
         Object.keys(permissions).some((key) => key.startsWith(`${module}.`)),
       refreshPermissions,
     }),
-    [permissions, roleKey, roleName, isLoading, refreshPermissions],
+    [permissions, roleKey, roleName, homeModule, isLoading, refreshPermissions],
   );
 
   return (

@@ -29,7 +29,7 @@ export const SYSTEM_FEATURES = [
   { key: 'hr.employees', name: 'Employees', module: 'hr', description: 'Employee profiles and directory' },
   { key: 'hr.attendance', name: 'Attendance & Leave', module: 'hr', description: 'Leave requests and attendance' },
   { key: 'hr.payroll', name: 'HR Payroll View', module: 'hr', description: 'HR view of payroll data' },
-  { key: 'hr.performance', name: 'Performance Reviews', module: 'hr', description: 'Performance review tracking (Sprint 14)' },
+  { key: 'hr.performance', name: 'Performance Reviews', module: 'hr', description: 'Performance review tracking' },
   { key: 'hr.settings', name: 'HR Settings', module: 'hr', description: 'HR configuration (working days, leave year)' },
   { key: 'projects.all', name: 'All Projects', module: 'projects', description: 'View and manage all projects' },
   { key: 'projects.own', name: 'Own Projects', module: 'projects', description: 'View own assigned projects only' },
@@ -60,6 +60,7 @@ type PermissionSeed = { key: string; canRead: boolean; canWrite: boolean };
 export const DEFAULT_ROLES: Array<{
   key: string;
   name: string;
+  homeModule: string;
   description: string;
   isDefault: boolean;
   isSystem: boolean;
@@ -68,57 +69,16 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'CEO',
     name: 'Chief Executive Officer',
-    description: 'Executive read access across all modules',
+    homeModule: '/ceo',
+    description: 'Full access across all modules — enforced in code, not DB',
     isDefault: true,
     isSystem: true,
-    permissions: [
-      { key: 'finance.dashboard', canRead: true, canWrite: false },
-      { key: 'finance.invoices', canRead: true, canWrite: false },
-      { key: 'finance.payments', canRead: true, canWrite: false },
-      { key: 'finance.expenses', canRead: true, canWrite: false },
-      { key: 'finance.bills', canRead: true, canWrite: false },
-      { key: 'finance.ar', canRead: true, canWrite: false },
-      { key: 'finance.credit_notes', canRead: true, canWrite: false },
-      { key: 'finance.payment_plans', canRead: true, canWrite: false },
-      { key: 'finance.tax', canRead: true, canWrite: false },
-      { key: 'finance.retainers', canRead: true, canWrite: false },
-      { key: 'finance.commissions', canRead: true, canWrite: false },
-      { key: 'finance.payroll', canRead: true, canWrite: false },
-      { key: 'finance.budget', canRead: true, canWrite: false },
-      { key: 'finance.reports', canRead: true, canWrite: false },
-      { key: 'finance.audit', canRead: true, canWrite: false },
-      { key: 'finance.settings', canRead: true, canWrite: true },
-      { key: 'ventures.view', canRead: true, canWrite: false },
-      { key: 'ventures.manage', canRead: true, canWrite: true },
-      { key: 'crm.leads', canRead: true, canWrite: false },
-      { key: 'crm.pipeline', canRead: true, canWrite: false },
-      { key: 'crm.clients', canRead: true, canWrite: false },
-      { key: 'crm.proposals', canRead: true, canWrite: false },
-      { key: 'crm.reports', canRead: true, canWrite: true },
-      { key: 'hr.employees', canRead: true, canWrite: false },
-      { key: 'hr.attendance', canRead: true, canWrite: false },
-      { key: 'hr.payroll', canRead: true, canWrite: false },
-      { key: 'hr.performance', canRead: true, canWrite: true },
-      { key: 'hr.settings', canRead: true, canWrite: true },
-      { key: 'projects.all', canRead: true, canWrite: false },
-      { key: 'projects.reports', canRead: true, canWrite: false },
-      { key: 'marketing.clients', canRead: true, canWrite: false },
-      { key: 'marketing.content', canRead: true, canWrite: false },
-      { key: 'marketing.reports', canRead: true, canWrite: false },
-      { key: 'software.projects', canRead: true, canWrite: false },
-      { key: 'software.delivery', canRead: true, canWrite: false },
-      { key: 'branding.projects', canRead: true, canWrite: false },
-      { key: 'branding.delivery', canRead: true, canWrite: false },
-      { key: 'influencer.campaigns', canRead: true, canWrite: false },
-      { key: 'influencer.database', canRead: true, canWrite: false },
-      { key: 'sales.campaigns', canRead: true, canWrite: false },
-      { key: 'sales.reporting', canRead: true, canWrite: false },
-      { key: 'ceo.dashboard', canRead: true, canWrite: true },
-    ],
+    permissions: SYSTEM_FEATURES.map((f) => ({ key: f.key, canRead: true, canWrite: true })),
   },
   {
     key: 'FINANCE_MANAGER',
     name: 'Finance Manager',
+    homeModule: '/finance',
     description: 'Full finance module access with separation of duties controls',
     isDefault: true,
     isSystem: false,
@@ -157,6 +117,7 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'SALES_AGENT',
     name: 'Sales Agent',
+    homeModule: '/crm',
     description: 'Own commission records and CRM access',
     isDefault: true,
     isSystem: false,
@@ -174,6 +135,7 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'PROJECT_MANAGER',
     name: 'Project Manager',
+    homeModule: '/projects',
     description: 'Own projects and linked finance data',
     isDefault: true,
     isSystem: false,
@@ -201,6 +163,7 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'OPERATIONS_MANAGER',
     name: 'Operations Manager',
+    homeModule: '/projects',
     description: 'Operational oversight across projects and budget approvals',
     isDefault: true,
     isSystem: false,
@@ -238,6 +201,7 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'TEAM_MEMBER',
     name: 'Team Member',
+    homeModule: '/hr/leave/my',
     description: 'Own project tasks only — no finance access',
     isDefault: true,
     isSystem: false,
@@ -249,14 +213,17 @@ export const DEFAULT_ROLES: Array<{
       { key: 'hr.attendance', canRead: true, canWrite: true },
       { key: 'marketing.content', canRead: true, canWrite: true },
       { key: 'software.delivery', canRead: true, canWrite: true },
+      { key: 'branding.projects', canRead: true, canWrite: false },
       { key: 'branding.delivery', canRead: true, canWrite: true },
       { key: 'influencer.campaigns', canRead: true, canWrite: true },
+      { key: 'sales.campaigns', canRead: true, canWrite: false },
       { key: 'sales.reporting', canRead: true, canWrite: true },
     ],
   },
   {
     key: 'CLIENT',
     name: 'Client',
+    homeModule: '/finance/invoices',
     description: 'Own invoices and project portal only',
     isDefault: true,
     isSystem: false,
@@ -266,8 +233,9 @@ export const DEFAULT_ROLES: Array<{
     ],
   },
   {
-    key: 'IT',
+    key: 'IT_ADMINISTRATOR',
     name: 'IT Administrator',
+    homeModule: '/it',
     description: 'User management, role management, and permission assignment only',
     isDefault: true,
     isSystem: true,
@@ -288,10 +256,16 @@ const MIGRATION_ROLE_IDS: Record<string, string> = {
   OPERATIONS_MANAGER: 'rbac_role_operations_manager',
   TEAM_MEMBER: 'rbac_role_team_member',
   CLIENT: 'rbac_role_client',
-  IT: 'rbac_role_it',
+  IT_ADMINISTRATOR: 'rbac_role_it',
 };
 
 export async function seedRbac(prisma: PrismaClient): Promise<void> {
+  // Migrate old IT key to IT_ADMINISTRATOR if still present
+  await prisma.role.updateMany({
+    where: { key: 'IT' },
+    data: { key: 'IT_ADMINISTRATOR' },
+  });
+
   for (const feature of SYSTEM_FEATURES) {
     await prisma.systemFeature.upsert({
       where: { key: feature.key },
@@ -316,12 +290,14 @@ export async function seedRbac(prisma: PrismaClient): Promise<void> {
         id: roleId,
         key: roleDef.key,
         name: roleDef.name,
+        homeModule: roleDef.homeModule,
         description: roleDef.description,
         isDefault: roleDef.isDefault,
         isSystem: roleDef.isSystem,
       },
       update: {
         name: roleDef.name,
+        homeModule: roleDef.homeModule,
         description: roleDef.description,
         isDefault: roleDef.isDefault,
         isSystem: roleDef.isSystem,
@@ -332,21 +308,21 @@ export async function seedRbac(prisma: PrismaClient): Promise<void> {
       const featureId = featureMap.get(perm.key);
       if (!featureId) continue;
 
-      await prisma.rolePermission.upsert({
-        where: {
-          roleId_featureId: { roleId: role.id, featureId },
-        },
-        create: {
-          roleId: role.id,
-          featureId,
-          canRead: perm.canRead,
-          canWrite: perm.canWrite,
-        },
-        update: {
-          canRead: perm.canRead,
-          canWrite: perm.canWrite,
-        },
+      // createIfNotExists — never overwrite IT-admin changes
+      const exists = await prisma.rolePermission.findUnique({
+        where: { roleId_featureId: { roleId: role.id, featureId } },
+        select: { roleId: true },
       });
+      if (!exists) {
+        await prisma.rolePermission.create({
+          data: {
+            roleId: role.id,
+            featureId,
+            canRead: perm.canRead,
+            canWrite: perm.canWrite,
+          },
+        });
+      }
     }
   }
 }

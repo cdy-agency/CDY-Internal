@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsNumber,
   Min,
+  Max,
   IsDateString,
   IsOptional,
 } from 'class-validator';
@@ -37,4 +38,15 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  ventureId?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  ventureSharePercent?: number;
 }

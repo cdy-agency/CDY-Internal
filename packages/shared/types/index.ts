@@ -6,7 +6,7 @@
   OPERATIONS_MANAGER = 'OPERATIONS_MANAGER',
   TEAM_MEMBER = 'TEAM_MEMBER',
   CLIENT = 'CLIENT',
-  IT = 'IT',
+  IT_ADMINISTRATOR = 'IT_ADMINISTRATOR',
 }
 
 export type PermissionMap = Record<
@@ -116,6 +116,7 @@ export interface UserProfile {
   email: string;
   roleKey: string;
   roleName: string;
+  homeModule?: string;
   firstName: string;
   lastName: string;
   permissions?: PermissionMap;
@@ -1138,6 +1139,8 @@ export interface ProposalRecord {
   };
 }
 
+export type ClientSource = 'PIPELINE' | 'DIRECT' | 'REFERRAL' | 'RETURNING';
+
 export interface ClientRecord {
   id: string;
   companyName: string;
@@ -1151,6 +1154,8 @@ export interface ClientRecord {
   industry: string | null;
   notes: string | null;
   assignedTo: string | null;
+  source: ClientSource;
+  leadId: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

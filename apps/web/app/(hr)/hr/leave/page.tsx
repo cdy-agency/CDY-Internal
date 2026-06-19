@@ -8,6 +8,7 @@ import { LeaveStatus } from '@cdy/shared';
 import { useLeaveRequests, useReviewLeaveRequest } from '@/hooks/useHr';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 function statusColor(status: LeaveStatus): string {
   const map: Record<LeaveStatus, string> = {
@@ -224,25 +225,27 @@ export default function LeaveManagementPage(): JSX.Element {
                                 }
                                 className="w-24 rounded border border-cdy-navy-border bg-cdy-navy px-1 py-0.5 text-xs text-cdy-white"
                               />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={
-                                  !rejectReason.trim() || reviewLeave.isPending
-                                }
-                                onClick={() =>
-                                  void handleReview(
-                                    req.id,
-                                    'REJECT',
-                                    rejectReason,
-                                  )
-                                }
-                              >
-                                OK
-                              </Button>
+                              <PermissionGate feature="hr.attendance" action="write">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={
+                                    !rejectReason.trim() || reviewLeave.isPending
+                                  }
+                                  onClick={() =>
+                                    void handleReview(
+                                      req.id,
+                                      'REJECT',
+                                      rejectReason,
+                                    )
+                                  }
+                                >
+                                  OK
+                                </Button>
+                              </PermissionGate>
                             </div>
                           ) : (
-                            <>
+                            <PermissionGate feature="hr.attendance" action="write">
                               <Button
                                 size="sm"
                                 disabled={reviewLeave.isPending}
@@ -260,7 +263,7 @@ export default function LeaveManagementPage(): JSX.Element {
                               >
                                 Reject
                               </Button>
-                            </>
+                            </PermissionGate>
                           )}
                         </div>
                       )}

@@ -1,10 +1,9 @@
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 /** Clear session cookies and send the user to login (avoids /login ↔ /finance redirect loops). */
-export async function redirectToLoginAfterAuthFailure(
+export function redirectToLoginAfterAuthFailure(
   router: AppRouterInstance,
-): Promise<void> {
-  await fetch('/api/auth/logout', { method: 'POST' });
+): void {
   router.push('/login');
-  router.refresh();
+  fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
 }

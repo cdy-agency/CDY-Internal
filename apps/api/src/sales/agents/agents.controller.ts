@@ -17,27 +17,30 @@ export class AgentsController {
 
   @Post('campaigns/:id/agents')
   @RequirePermission('sales.campaigns', 'write')
-  deploy(@Param('id') campaignId: string, @Body() dto: DeployAgentDto) {
-    return this.agentsService.deploy(campaignId, dto);
+  async deploy(@Param('id') campaignId: string, @Body() dto: DeployAgentDto) {
+    const data = await this.agentsService.deploy(campaignId, dto);
+    return { data, message: 'Agent deployed', statusCode: 201 };
   }
 
   @Delete('agents/:agentId')
   @RequirePermission('sales.campaigns', 'write')
-  remove(@Param('agentId') agentId: string) {
-    return this.agentsService.remove(agentId);
+  async remove(@Param('agentId') agentId: string) {
+    const data = await this.agentsService.remove(agentId);
+    return { data, message: 'Agent removed', statusCode: 200 };
   }
 
   @Get('agents/:agentId/performance')
   @RequirePermission('sales.reporting', 'read')
-  getPerformance(
+  async getPerformance(
     @Param('agentId') agentId: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    return this.agentsService.getAgentPerformance(
+    const data = await this.agentsService.getAgentPerformance(
       agentId,
       from ? new Date(from) : undefined,
       to ? new Date(to) : undefined,
     );
+    return { data, message: 'OK', statusCode: 200 };
   }
 }

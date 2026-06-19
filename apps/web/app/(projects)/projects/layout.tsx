@@ -23,10 +23,9 @@ export default function ProjectsLayout({
       .catch(() => void redirectToLoginAfterAuthFailure(router));
   }, [router]);
 
-  async function handleLogout(): Promise<void> {
-    await fetch('/api/auth/logout', { method: 'POST' });
+  function handleLogout(): void {
     router.push('/login');
-    router.refresh();
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
   }
 
   return (

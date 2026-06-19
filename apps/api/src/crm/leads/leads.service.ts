@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ClientSource,
   InvoiceStatus,
   Lead,
   NotificationType,
@@ -532,6 +533,8 @@ export class LeadsService {
           phone: lead.phone,
           country: lead.country,
           assignedTo: lead.assignedTo,
+          source: ClientSource.PIPELINE,
+          leadId: lead.id,
           createdBy: userId,
         },
       });

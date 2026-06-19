@@ -2,11 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, Coins, Code2, Megaphone, Palette, Star, TrendingUp, UserCircle, Users } from 'lucide-react';
+import { Briefcase, Coins, Code2, LayoutDashboard, Megaphone, Palette, Star, TrendingUp, UserCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/context/PermissionContext';
 
 const MODULES = [
+  {
+    label: 'CEO',
+    href: '/ceo',
+    feature: 'ceo.dashboard',
+    icon: LayoutDashboard,
+  },
   {
     label: 'Finance',
     href: '/finance',
@@ -68,7 +74,7 @@ export function ModuleSwitcher(): JSX.Element | null {
   const pathname = usePathname();
   const { canRead, roleKey } = usePermissions();
 
-  if (roleKey === 'IT') {
+  if (roleKey === 'IT_ADMINISTRATOR') {
     return null;
   }
 

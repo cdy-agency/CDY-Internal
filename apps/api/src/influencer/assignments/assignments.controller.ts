@@ -16,25 +16,28 @@ export class AssignmentsController {
 
   @Post('campaigns/:id/assign')
   @RequirePermission('influencer.campaigns', 'write')
-  assign(
+  async assign(
     @Param('id') campaignId: string,
     @Body() dto: AssignInfluencerDto,
   ) {
-    return this.assignmentsService.assign(campaignId, dto);
+    const data = await this.assignmentsService.assign(campaignId, dto);
+    return { data, message: 'Influencer assigned', statusCode: 201 };
   }
 
   @Delete('assignments/:assignmentId')
   @RequirePermission('influencer.campaigns', 'write')
-  remove(@Param('assignmentId') assignmentId: string) {
-    return this.assignmentsService.remove(assignmentId);
+  async remove(@Param('assignmentId') assignmentId: string) {
+    const data = await this.assignmentsService.remove(assignmentId);
+    return { data, message: 'Assignment removed', statusCode: 200 };
   }
 
   @Post('assignments/:assignmentId/pay')
   @RequirePermission('influencer.campaigns', 'write')
-  logPayment(
+  async logPayment(
     @Param('assignmentId') assignmentId: string,
     @Body() dto: LogPaymentDto,
   ) {
-    return this.assignmentsService.logPayment(assignmentId, dto);
+    const data = await this.assignmentsService.logPayment(assignmentId, dto);
+    return { data, message: 'Payment logged', statusCode: 200 };
   }
 }

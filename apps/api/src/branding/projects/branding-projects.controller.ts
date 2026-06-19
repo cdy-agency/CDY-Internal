@@ -18,40 +18,46 @@ export class BrandingProjectsController {
 
   @Get()
   @RequirePermission('branding.projects', 'read')
-  findAll() {
-    return this.service.findAll();
+  async findAll() {
+    const data = await this.service.findAll();
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Post()
   @RequirePermission('branding.projects', 'write')
-  create(@Body() dto: CreateBrandingProjectDto, @Request() req: { user: { sub: string } }) {
-    return this.service.create(dto, req.user.sub);
+  async create(@Body() dto: CreateBrandingProjectDto, @Request() req: { user: { sub: string } }) {
+    const data = await this.service.create(dto, req.user.sub);
+    return { data, message: 'Branding project created', statusCode: 201 };
   }
 
   @Get(':id')
   @RequirePermission('branding.projects', 'read')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.service.findOne(id);
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Patch(':id')
   @RequirePermission('branding.projects', 'write')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateBrandingProjectDto>) {
-    return this.service.addScopeItem(id, dto as CreateScopeItemDto);
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateBrandingProjectDto>) {
+    const data = await this.service.addScopeItem(id, dto as CreateScopeItemDto);
+    return { data, message: 'Project updated', statusCode: 200 };
   }
 
   @Post(':id/scope')
   @RequirePermission('branding.projects', 'write')
-  addScopeItem(
+  async addScopeItem(
     @Param('id') id: string,
     @Body() dto: CreateScopeItemDto,
   ) {
-    return this.service.addScopeItem(id, dto);
+    const data = await this.service.addScopeItem(id, dto);
+    return { data, message: 'Scope item added', statusCode: 201 };
   }
 
   @Post(':id/deliver')
   @RequirePermission('branding.projects', 'write')
-  markDelivered(@Param('id') id: string, @Request() req: { user: { sub: string } }) {
-    return this.service.markDelivered(id, req.user.sub);
+  async markDelivered(@Param('id') id: string, @Request() req: { user: { sub: string } }) {
+    const data = await this.service.markDelivered(id, req.user.sub);
+    return { data, message: 'Project marked delivered', statusCode: 200 };
   }
 }

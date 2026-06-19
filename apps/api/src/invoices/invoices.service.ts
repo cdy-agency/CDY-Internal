@@ -116,6 +116,7 @@ export class InvoicesService {
         invoiceNumber,
         clientId: dto.clientId,
         projectId: dto.projectId,
+        ventureId: dto.ventureId,
         status: InvoiceStatus.DRAFT,
         lineItems: lineItemsWithAmounts as unknown as Prisma.InputJsonValue,
         subtotal,
@@ -172,6 +173,10 @@ export class InvoicesService {
         end.setHours(23, 59, 59, 999);
         where.createdAt.lte = end;
       }
+    }
+
+    if (filters.ventureId) {
+      where.ventureId = filters.ventureId === 'none' ? null : filters.ventureId;
     }
 
     const [invoices, total] = await Promise.all([

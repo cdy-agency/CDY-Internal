@@ -9,16 +9,18 @@ export class SuppliersController {
 
   @Get()
   @RequirePermission('branding.projects', 'read')
-  findAll() {
-    return this.service.findAll();
+  async findAll() {
+    const data = await this.service.findAll();
+    return { data, message: 'OK', statusCode: 200 };
   }
 
   @Post()
   @RequirePermission('branding.projects', 'write')
-  create(
+  async create(
     @Body() dto: CreateSupplierDto,
     @Request() req: { user: { sub: string } },
   ) {
-    return this.service.create(dto, req.user.sub);
+    const data = await this.service.create(dto, req.user.sub);
+    return { data, message: 'Supplier created', statusCode: 201 };
   }
 }
