@@ -62,7 +62,7 @@ export default function EmployeeProfilePage(): JSX.Element {
   const [attendanceMonth, setAttendanceMonth] = useState(currentMonthParam());
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [newSalary, setNewSalary] = useState('');
-  const [salaryCurrency, setSalaryCurrency] = useState('USD');
+  const [salaryCurrency, setSalaryCurrency] = useState('RWF');
   const [effectiveFrom, setEffectiveFrom] = useState('');
   const [salaryReason, setSalaryReason] = useState('Annual review');
 
@@ -384,8 +384,7 @@ export default function EmployeeProfilePage(): JSX.Element {
                         onChange={(e) => setSalaryCurrency(e.target.value)}
                         className="rounded-md border border-cdy-navy-border bg-cdy-navy px-2 text-sm text-cdy-white"
                       >
-                        <option value="USD">USD</option>
-                        <option value="GHS">GHS</option>
+                        <option value="RWF">RWF</option>
                       </select>
                     </div>
                   </div>

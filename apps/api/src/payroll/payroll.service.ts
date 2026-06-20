@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -336,7 +336,7 @@ export class PayrollService {
         employeeName: dto.employeeName,
         employeeEmail: dto.employeeEmail,
         baseSalary: dto.baseSalary,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         effectiveFrom: dto.effectiveFrom
           ? new Date(dto.effectiveFrom)
           : new Date(),

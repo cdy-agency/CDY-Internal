@@ -1,4 +1,4 @@
-import {
+﻿import {
   EmploymentType,
   EmployeeStatus,
   MemberRole,
@@ -112,7 +112,7 @@ export async function seedProjectsData(
         status: EmployeeStatus.ACTIVE,
         startDate: new Date('2024-03-01'),
         baseSalary,
-        currency: 'USD',
+        currency: 'RWF',
         createdBy,
       },
     });
@@ -553,7 +553,7 @@ async function createProjectWithMilestones(
       startDate,
       endDate: def.endDate,
       estimatedBudget: def.estimatedBudget,
-      currency: 'USD',
+      currency: 'RWF',
       createdBy,
     },
   });
@@ -583,7 +583,7 @@ async function createProjectWithMilestones(
         projectId: project.id,
         name: m.name,
         billingAmount: m.billingAmount,
-        currency: 'USD',
+        currency: 'RWF',
         status: m.status,
         order: m.order,
         ...(m.status === MilestoneStatus.COMPLETED && {

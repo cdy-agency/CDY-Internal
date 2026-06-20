@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ export default function CrmSettingsPage(): JSX.Element {
   const { data: settings, isLoading } = useCrmSettings();
   const updateSetting = useUpdateCrmSetting();
 
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [expiryDays, setExpiryDays] = useState('30');
   const [autoAssign, setAutoAssign] = useState('false');
   const [lostReasons, setLostReasons] = useState<string[]>([]);
@@ -32,7 +32,7 @@ export default function CrmSettingsPage(): JSX.Element {
 
   useEffect(() => {
     if (!settings) return;
-    setCurrency(settings.default_currency ?? 'USD');
+    setCurrency(settings.default_currency ?? 'RWF');
     setExpiryDays(settings.proposal_expiry_days ?? '30');
     setAutoAssign(settings.lead_auto_assign ?? 'false');
     setLostReasons(JSON.parse(settings.lost_reasons ?? '[]') as string[]);
@@ -110,9 +110,7 @@ export default function CrmSettingsPage(): JSX.Element {
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
-              <option value="USD">USD</option>
               <option value="RWF">RWF</option>
-              <option value="EUR">EUR</option>
             </select>
           </div>
           <div>

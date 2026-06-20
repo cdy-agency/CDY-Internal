@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
@@ -18,7 +18,7 @@ interface BillDrawerProps {
   bill?: BillRecord | null;
 }
 
-const CURRENCIES = ['USD', 'RWF', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 function todayString(): string {
   return format(new Date(), 'yyyy-MM-dd');
@@ -37,7 +37,7 @@ export function BillDrawer({
   const [vendorName, setVendorName] = useState('');
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -53,7 +53,7 @@ export function BillDrawer({
       setVendorName('');
       setCategory('');
       setAmount('');
-      setCurrency('USD');
+      setCurrency('RWF');
       setDueDate('');
       setNotes('');
     }

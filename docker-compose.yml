@@ -58,27 +58,22 @@ services:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
-      target: development
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3251/api/v1}
+        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret}
     container_name: cdy_web
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3251/api/v1}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret}
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     ports:
       - '3250:3250'
-    volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/web/node_modules
-      - /app/packages/shared/node_modules
-      - /app/apps/web/.next
     depends_on:
       - api
-    command: sh -c "pnpm --filter @cdy/shared build && pnpm --filter web dev"
     networks:
       - cdy_network
 

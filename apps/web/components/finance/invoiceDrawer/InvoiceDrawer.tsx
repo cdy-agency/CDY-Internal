@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
@@ -25,7 +25,7 @@ const lineItemSchema = z.object({
 const invoiceSchema = z.object({
   clientId: z.string().min(1, 'Client is required'),
   projectId: z.string().optional(),
-  currency: z.string().default('USD'),
+  currency: z.string().default('RWF'),
   dueDate: z.string().min(1, 'Due date is required'),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   notes: z.string().optional(),
@@ -40,7 +40,7 @@ interface InvoiceDrawerProps {
   invoice?: InvoiceDetail | InvoiceRecord | null;
 }
 
-const CURRENCIES = ['USD', 'RWF', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 export function InvoiceDrawer({
   open,
@@ -72,7 +72,7 @@ export function InvoiceDrawer({
     defaultValues: {
       clientId: '',
       projectId: '',
-      currency: 'USD',
+      currency: 'RWF',
       dueDate: '',
       taxRate: 0,
       notes: '',
@@ -87,7 +87,7 @@ export function InvoiceDrawer({
 
   const watchedItems = watch('lineItems');
   const watchedTaxRate = watch('taxRate') ?? 0;
-  const watchedCurrency = watch('currency') ?? 'USD';
+  const watchedCurrency = watch('currency') ?? 'RWF';
 
   useEffect(() => {
     if (open && invoice) {
@@ -115,7 +115,7 @@ export function InvoiceDrawer({
       reset({
         clientId: '',
         projectId: '',
-        currency: 'USD',
+        currency: 'RWF',
         dueDate: '',
         taxRate: 0,
         notes: '',

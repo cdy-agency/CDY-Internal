@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -53,7 +53,7 @@ export default function NewEmployeePage(): JSX.Element {
     employmentType: EmploymentType.FULL_TIME,
     startDate: new Date().toISOString().slice(0, 10),
     baseSalary: '',
-    currency: 'USD',
+    currency: 'RWF',
     nationalId: '',
     bankName: '',
     bankAccount: '',

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+﻿import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import puppeteer, { Browser } from 'puppeteer';
 import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 import { format } from 'date-fns';
@@ -61,7 +61,7 @@ export class ReportPdfService implements OnModuleDestroy {
   private fmt(n: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'RWF',
     }).format(n);
   }
 

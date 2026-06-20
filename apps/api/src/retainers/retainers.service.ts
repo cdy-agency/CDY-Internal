@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -58,7 +58,7 @@ export class RetainersService {
         serviceName: dto.serviceName,
         description: dto.description,
         amount: dto.amount,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         billingDayOfMonth: dto.billingDayOfMonth,
         startDate: new Date(dto.startDate),
         endDate: dto.endDate ? new Date(dto.endDate) : null,

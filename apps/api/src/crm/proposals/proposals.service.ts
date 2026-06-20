@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   NotFoundException,
@@ -48,7 +48,7 @@ export class ProposalsService {
         title: dto.title,
         serviceType: dto.serviceType,
         estimatedValue: dto.estimatedValue,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
         notes: dto.notes,
         createdBy: userId,

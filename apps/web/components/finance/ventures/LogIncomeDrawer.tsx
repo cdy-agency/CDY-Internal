@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
@@ -13,7 +13,7 @@ import { ClientSearch } from '@/components/crm/ClientSearch';
 import type { ClientSearchResult } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 
-const CURRENCIES = ['USD', 'RWF', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 interface LogIncomeDrawerProps {
   open: boolean;
@@ -33,7 +33,7 @@ export function LogIncomeDrawer({
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -42,7 +42,7 @@ export function LogIncomeDrawer({
       setSelectedClient(null);
       setDescription('');
       setAmount('');
-      setCurrency('USD');
+      setCurrency('RWF');
       setDueDate(format(new Date(), 'yyyy-MM-dd'));
       setNotes('');
     }

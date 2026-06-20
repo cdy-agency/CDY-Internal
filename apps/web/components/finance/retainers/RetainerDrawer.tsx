@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ interface RetainerDrawerProps {
 }
 
 const BILLING_DAYS = Array.from({ length: 28 }, (_, i) => i + 1);
-const CURRENCIES = ['USD', 'RWF', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
@@ -30,7 +30,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
   const [serviceName, setServiceName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [billingDay, setBillingDay] = useState('1');
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState('');
@@ -61,7 +61,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
       setServiceName('');
       setDescription('');
       setAmount('');
-      setCurrency('USD');
+      setCurrency('RWF');
       setBillingDay('1');
       setStartDate(format(new Date(), 'yyyy-MM-dd'));
       setEndDate('');

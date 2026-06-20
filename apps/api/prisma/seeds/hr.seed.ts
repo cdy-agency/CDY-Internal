@@ -1,4 +1,4 @@
-import { EmploymentType, EmployeeStatus, PrismaClient } from '@prisma/client';
+﻿import { EmploymentType, EmployeeStatus, PrismaClient } from '@prisma/client';
 
 export async function seedHrData(
   prisma: PrismaClient,
@@ -170,7 +170,7 @@ export async function seedHrData(
         status: EmployeeStatus.ACTIVE,
         startDate: new Date('2024-01-05'),
         baseSalary: emp.baseSalary,
-        currency: 'USD',
+        currency: 'RWF',
         createdBy,
       },
     });

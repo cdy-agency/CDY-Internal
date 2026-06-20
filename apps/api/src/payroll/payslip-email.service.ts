@@ -36,9 +36,9 @@ export class PayslipEmailService {
       this.configService.get<string>('RESEND_FROM_EMAIL') ?? 'finance@cdy.com';
     const periodDate = parse(month, 'yyyy-MM', new Date());
     const monthLabel = format(periodDate, 'MMMM yyyy');
-    const currency = 'USD';
+    const currency = 'RWF';
     const fmt = (n: number): string =>
-      new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
+      new Intl.NumberFormat('fr-RW', { style: 'currency', currency }).format(n);
 
     const gross = Number(lineItem.grossPay);
     const deductions =

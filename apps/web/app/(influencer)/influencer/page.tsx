@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -42,7 +42,7 @@ function NewCampaignDrawer({
   const [brief, setBrief] = useState('');
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [budget, setBudget] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
@@ -53,7 +53,7 @@ function NewCampaignDrawer({
     setBrief('');
     setPlatforms([]);
     setBudget('');
-    setCurrency('USD');
+    setCurrency('RWF');
     setStartDate('');
     setEndDate('');
     setError('');
@@ -189,9 +189,7 @@ function NewCampaignDrawer({
                   onChange={(e) => setCurrency(e.target.value)}
                   className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white focus:outline-none focus:ring-1 focus:ring-cdy-red"
                 >
-                  <option value="USD">USD</option>
                   <option value="RWF">RWF</option>
-                  <option value="EUR">EUR</option>
                 </select>
               </div>
             </div>

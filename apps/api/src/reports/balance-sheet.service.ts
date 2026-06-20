@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   Logger,
   NotFoundException,
@@ -167,7 +167,7 @@ export class BalanceSheetService {
         type: dto.type,
         label: dto.label,
         amount: dto.amount,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         asOfDate: dto.asOfDate ? new Date(dto.asOfDate) : new Date(),
         notes: dto.notes,
         createdBy: userId,

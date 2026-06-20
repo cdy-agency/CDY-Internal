@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   ConflictException,
   Injectable,
@@ -48,7 +48,7 @@ export class AssignmentsService {
         campaignId,
         influencerId: dto.influencerId,
         agreedFee: dto.agreedFee ? dto.agreedFee : undefined,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         notes: dto.notes,
         ...(dto.deliverables?.length && {
           deliverables: {

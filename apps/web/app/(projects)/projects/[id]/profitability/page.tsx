@@ -17,7 +17,7 @@ export default function ProjectProfitabilityPage(): JSX.Element {
   const { data: project } = useProject(projectId);
   const { data, isLoading } = useProjectProfitability(projectId);
 
-  const currency = project?.currency ?? 'USD';
+  const currency = project?.currency ?? 'RWF';
   const margin = data?.profitability.grossMargin ?? 0;
   const maxBar = Math.max(
     data?.revenue.invoiced ?? 0,

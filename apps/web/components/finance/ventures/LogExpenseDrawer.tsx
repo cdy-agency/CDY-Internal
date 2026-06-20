@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
@@ -31,7 +31,7 @@ export function LogExpenseDrawer({
   const [loading, setLoading] = useState(false);
   const [vendorName, setVendorName] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [category, setCategory] = useState<ExpenseCategory>(ExpenseCategory.SUPPLIER);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isShared, setIsShared] = useState(false);
@@ -42,7 +42,7 @@ export function LogExpenseDrawer({
     if (open) {
       setVendorName('');
       setAmount('');
-      setCurrency('USD');
+      setCurrency('RWF');
       setCategory(ExpenseCategory.SUPPLIER);
       setDate(format(new Date(), 'yyyy-MM-dd'));
       setIsShared(false);
@@ -129,9 +129,7 @@ export function LogExpenseDrawer({
                   onChange={(e) => setCurrency(e.target.value)}
                   className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-2 text-sm text-cdy-white"
                 >
-                  <option value="USD">USD</option>
                   <option value="RWF">RWF</option>
-                  <option value="GHS">GHS</option>
                 </select>
               </div>
             </div>

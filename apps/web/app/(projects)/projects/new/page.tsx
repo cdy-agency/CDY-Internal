@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,7 +64,7 @@ export default function NewProjectPage(): JSX.Element {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: '',
     estimatedBudget: '',
-    currency: 'USD',
+    currency: 'RWF',
     managerId: '',
     memberIds: [] as string[],
     notes: '',
@@ -305,9 +305,7 @@ export default function NewProjectPage(): JSX.Element {
                   }
                   className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
                 >
-                  <option value="USD">USD</option>
                   <option value="RWF">RWF</option>
-                  <option value="EUR">EUR</option>
                 </select>
               </div>
             </div>
