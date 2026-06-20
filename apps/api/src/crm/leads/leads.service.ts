@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   Logger,
@@ -89,7 +89,7 @@ export class LeadsService {
         serviceInterest: dto.serviceInterest,
         source: dto.source,
         estimatedValue: dto.estimatedValue,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         assignedTo: dto.assignedTo,
         notes: dto.notes,
         qualityScore,

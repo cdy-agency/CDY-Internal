@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   NotFoundException,
@@ -29,7 +29,7 @@ export class CampaignsService {
         brief: dto.brief,
         platforms: dto.platforms,
         budget: dto.budget ? dto.budget : undefined,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         startDate: new Date(dto.startDate),
         endDate: dto.endDate ? new Date(dto.endDate) : null,
         notes: dto.notes,

@@ -22,7 +22,7 @@ export class CrmSettingsService implements OnApplicationBootstrap {
       'Out of scope',
       'Other',
     ]),
-    default_currency: 'USD',
+    default_currency: 'RWF',
     lead_auto_assign: 'false',
     proposal_expiry_days: '30',
     score_weights: JSON.stringify({

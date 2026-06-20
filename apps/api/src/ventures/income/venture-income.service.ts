@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -29,7 +29,7 @@ export class VentureIncomeService {
         ventureId,
         description: dto.description,
         amount: dto.amount,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         category: dto.category,
         date: new Date(dto.date),
         reference: dto.reference,

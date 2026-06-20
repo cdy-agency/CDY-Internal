@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -59,7 +59,7 @@ export class ExpensesService {
         vendorName: dto.vendorName,
         category: dto.category,
         amount: dto.amount,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         date: new Date(dto.date),
         projectId: dto.projectId,
         ventureId: dto.ventureId,

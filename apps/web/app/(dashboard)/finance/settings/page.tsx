@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -45,7 +45,7 @@ export default function FinanceSettingsPage(): JSX.Element {
     company_address: '',
     company_email: '',
     company_phone: '',
-    default_currency: 'USD',
+    default_currency: 'RWF',
     default_payment_terms: '30',
     fiscal_year_start: '01',
     invoice_prefix: 'CDY',

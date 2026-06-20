@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   ConflictException,
   Injectable,
@@ -65,7 +65,7 @@ export class EmployeesService {
         employmentType: dto.employmentType,
         startDate: new Date(dto.startDate),
         baseSalary: dto.baseSalary,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         salaryEffectiveFrom: dto.salaryEffectiveFrom
           ? new Date(dto.salaryEffectiveFrom)
           : new Date(),

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_SETTINGS: Record<string, string> = {
-  default_currency: 'USD',
+  default_currency: 'RWF',
   default_payment_terms: '30',
   invoice_prefix: 'CDY',
   fiscal_year_start: '01',

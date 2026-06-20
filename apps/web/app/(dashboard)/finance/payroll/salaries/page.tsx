@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ function SalaryModal({
   const [baseSalary, setBaseSalary] = useState(
     existing ? String(existing.baseSalary) : '',
   );
-  const [currency, setCurrency] = useState(existing?.currency ?? 'USD');
+  const [currency, setCurrency] = useState(existing?.currency ?? 'RWF');
   const [effectiveFrom, setEffectiveFrom] = useState(
     existing
       ? format(new Date(existing.effectiveFrom), 'yyyy-MM-dd')

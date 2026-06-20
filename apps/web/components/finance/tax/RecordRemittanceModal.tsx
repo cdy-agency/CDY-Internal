@@ -17,7 +17,7 @@ interface RecordRemittanceModalProps {
   onClose: () => void;
 }
 
-const CURRENCIES = ['RWF', 'USD', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 export function RecordRemittanceModal({
   open,

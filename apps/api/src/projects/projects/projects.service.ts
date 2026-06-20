@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   Logger,
@@ -125,7 +125,7 @@ export class ProjectsService {
           startDate: new Date(dto.startDate),
           endDate: dto.endDate ? new Date(dto.endDate) : null,
           estimatedBudget: dto.estimatedBudget,
-          currency: dto.currency ?? 'USD',
+          currency: dto.currency ?? 'RWF',
           notes: dto.notes,
           createdBy: userId,
         },
@@ -164,7 +164,7 @@ export class ProjectsService {
             projectName: project.name,
             clientId: dto.clientId,
             approvedBudget: Number(dto.estimatedBudget),
-            currency: dto.currency ?? 'USD',
+            currency: dto.currency ?? 'RWF',
           },
           userId,
         );

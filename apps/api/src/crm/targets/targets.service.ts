@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PipelineStage } from '@prisma/client';
 import {
   endOfMonth,
@@ -32,13 +32,13 @@ export class TargetsService {
         month: dto.month,
         revenueTarget: dto.revenueTarget,
         dealsTarget: dto.dealsTarget,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         setBy,
       },
       update: {
         revenueTarget: dto.revenueTarget,
         dealsTarget: dto.dealsTarget,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         setBy,
       },
     });
@@ -158,7 +158,7 @@ export class TargetsService {
           month,
           revenueTarget: 0,
           dealsTarget: 0,
-          currency: 'USD',
+          currency: 'RWF',
           setBy: null,
           createdAt: null,
           updatedAt: null,

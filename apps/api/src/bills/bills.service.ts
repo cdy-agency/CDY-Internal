@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -27,7 +27,7 @@ export class BillsService {
         vendorName: dto.vendorName,
         category: dto.category,
         amount: dto.amount,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         dueDate: new Date(dto.dueDate),
         notes: dto.notes,
         createdBy: userId,

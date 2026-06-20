@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -124,7 +124,7 @@ export class InvoicesService {
         taxAmount,
         total,
         taxRateId,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         dueDate: new Date(dto.dueDate),
         notes: dto.notes,
         serviceType: dto.serviceType ?? 'general',

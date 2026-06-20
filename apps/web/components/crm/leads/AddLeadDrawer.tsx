@@ -42,7 +42,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
   const [serviceInterest, setServiceInterest] = useState('marketing');
   const [source, setSource] = useState<LeadSource>(LeadSource.REFERRAL);
   const [estimatedValue, setEstimatedValue] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [assignedTo, setAssignedTo] = useState('');
   const [notes, setNotes] = useState('');
 

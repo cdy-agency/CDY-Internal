@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ interface ExpenseDrawerProps {
   expense?: ExpenseRecord | null;
 }
 
-const CURRENCIES = ['USD', 'RWF', 'GHS', 'KES', 'NGN'];
+const CURRENCIES = ['RWF'];
 
 function todayString(): string {
   return format(new Date(), 'yyyy-MM-dd');
@@ -50,7 +50,7 @@ export function ExpenseDrawer({
     ExpenseCategory.OTHER,
   );
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [date, setDate] = useState(todayString());
   const [projectId, setProjectId] = useState('');
   const [notes, setNotes] = useState('');
@@ -72,7 +72,7 @@ export function ExpenseDrawer({
       setVendorName('');
       setCategory(ExpenseCategory.OTHER);
       setAmount('');
-      setCurrency('USD');
+      setCurrency('RWF');
       setDate(todayString());
       setProjectId('');
       setNotes('');

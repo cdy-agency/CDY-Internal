@@ -60,7 +60,7 @@ export default function LeadDetailPage(): JSX.Element {
   const [proposalTitle, setProposalTitle] = useState('');
   const [proposalService, setProposalService] = useState('software_dev');
   const [proposalValue, setProposalValue] = useState('');
-  const [proposalCurrency, setProposalCurrency] = useState('USD');
+  const [proposalCurrency, setProposalCurrency] = useState('RWF');
   const [proposalExpires, setProposalExpires] = useState('');
   const [proposalNotes, setProposalNotes] = useState('');
   const [savingProposal, setSavingProposal] = useState(false);
@@ -522,7 +522,6 @@ export default function LeadDetailPage(): JSX.Element {
                   onChange={(e) => setProposalCurrency(e.target.value)}
                   className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
                 >
-                  <option value="USD">USD</option>
                   <option value="RWF">RWF</option>
                 </select>
               </div>

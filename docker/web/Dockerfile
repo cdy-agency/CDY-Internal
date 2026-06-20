@@ -18,6 +18,10 @@ EXPOSE 3250
 
 # ─── Build ────────────────────────────────────────────────────
 FROM deps AS builder
+ARG NEXT_PUBLIC_API_URL=http://localhost:3251/api/v1
+ARG NEXTAUTH_SECRET=dev-nextauth-secret
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 COPY apps/web/ ./apps/web/
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN mkdir -p apps/web/public

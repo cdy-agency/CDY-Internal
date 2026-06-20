@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -44,7 +44,7 @@ export class BudgetService {
         projectName: dto.projectName,
         clientId: dto.clientId,
         approvedBudget: dto.approvedBudget,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         alertThresholdPct: dto.alertThresholdPct ?? 80,
         createdBy: userId,
       },

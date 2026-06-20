@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SetHourlyRateDto, UpdateHourlyRateDto } from '../approvals/approval.dto';
 
@@ -17,12 +17,12 @@ export class HourlyRateService {
       create: {
         employeeId: dto.employeeId,
         ratePerHour: dto.ratePerHour,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         createdBy: userId,
       },
       update: {
         ratePerHour: dto.ratePerHour,
-        currency: dto.currency ?? 'USD',
+        currency: dto.currency ?? 'RWF',
         effectiveFrom: new Date(),
       },
     });

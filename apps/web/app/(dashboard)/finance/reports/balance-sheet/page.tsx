@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -39,7 +39,7 @@ function EntryModal({
 }): JSX.Element {
   const [label, setLabel] = useState(entry?.label ?? '');
   const [amount, setAmount] = useState(entry ? String(entry.amount) : '');
-  const [currency, setCurrency] = useState(entry?.currency ?? 'USD');
+  const [currency, setCurrency] = useState(entry?.currency ?? 'RWF');
   const [asOfDate, setAsOfDate] = useState(
     entry ? format(new Date(entry.asOfDate), 'yyyy-MM-dd') : date,
   );
