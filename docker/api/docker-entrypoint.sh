@@ -13,7 +13,7 @@ else
   echo "SEED_ON_STARTUP=false — skipping seed"
 fi
 
-if [ "${MIGRATE_OLD_DATA:-false}" = "true" ]; then
+if [ "${MIGRATE_OLD_DATA:-true}" = "true" ]; then
   echo "Running old data migration..."
   pnpm run prisma:migrate-old-data
 else
