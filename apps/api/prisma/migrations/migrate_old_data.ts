@@ -28,7 +28,7 @@ async function migrate() {
     {
       date: new Date('2025-07-31'),
       description: 'buying of 2 chairs',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 35000,
       currency: 'RWF',
@@ -37,7 +37,7 @@ async function migrate() {
     {
       date: new Date('2025-07-31'),
       description: 'advance payment on tables',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 40000,
       currency: 'RWF',
@@ -73,7 +73,7 @@ async function migrate() {
     {
       date: new Date('2025-08-08'),
       description: 'cleaning equipments',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 18000,
       currency: 'RWF',
@@ -100,7 +100,7 @@ async function migrate() {
     {
       date: new Date('2025-08-24'),
       description: 'Buying light of the Camera',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 50000,
       currency: 'RWF',
@@ -109,7 +109,7 @@ async function migrate() {
     {
       date: new Date('2025-08-24'),
       description: 'Buying a card of the Camera',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 10000,
       currency: 'RWF',
@@ -244,7 +244,7 @@ async function migrate() {
     {
       date: new Date('2025-09-27'),
       description: 'Buying Chris Phone for the job',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 100000,
       currency: 'RWF',
@@ -325,7 +325,7 @@ async function migrate() {
     {
       date: new Date('2025-11-07'),
       description: 'Buying board for using in Teaching chinese and also company meetings',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 40000,
       currency: 'RWF',
@@ -334,7 +334,7 @@ async function migrate() {
     {
       date: new Date('2025-11-05'),
       description: 'puchasing teaching board and markers',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 40000,
       currency: 'RWF',
@@ -343,7 +343,7 @@ async function migrate() {
     {
       date: new Date('2025-11-30'),
       description: 'Purchase of microphones',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 30000,
       currency: 'RWF',
@@ -379,7 +379,7 @@ async function migrate() {
     {
       date: new Date('2025-08-11'),
       description: 'edgereach tech money on affiliate platform buying it',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 70000,
       currency: 'RWF',
@@ -415,7 +415,7 @@ async function migrate() {
     {
       date: new Date('2025-08-23'),
       description: 'buying tripod of Camera',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 75000,
       currency: 'RWF',
@@ -469,7 +469,7 @@ async function migrate() {
     {
       date: new Date('2025-06-01'),
       description: 'Computer purchase and office equipements,',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 250000,
       currency: 'RWF',
@@ -514,7 +514,7 @@ async function migrate() {
     {
       date: new Date('2025-11-23'),
       description: 'Paying chinese people on the hone loan payment',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 95000,
       currency: 'RWF',
@@ -631,7 +631,7 @@ async function migrate() {
     {
       date: new Date('2025-07-26'),
       description: 'WIFI laoter purchase and bandle',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 36200,
       currency: 'RWF',
@@ -667,7 +667,7 @@ async function migrate() {
     {
       date: new Date('2025-08-16'),
       description: 'bought 2 chairs, 1 big chair and 1 small one',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 80000,
       currency: 'RWF',
@@ -694,7 +694,7 @@ async function migrate() {
     {
       date: new Date('2025-08-08'),
       description: 'remaining chairs and tables',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 35000,
       currency: 'RWF',
@@ -730,7 +730,7 @@ async function migrate() {
     {
       date: new Date('2025-07-16'),
       description: 'Camera  purchasing',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 800000,
       currency: 'RWF',
@@ -775,7 +775,7 @@ async function migrate() {
     {
       date: new Date('2025-07-16'),
       description: 'camera accessories like the card and other office eqip',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 20000,
       currency: 'RWF',
@@ -793,7 +793,7 @@ async function migrate() {
     {
       date: new Date('2025-09-28'),
       description: 'Remaning on Phone Purchase',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 50000,
       currency: 'RWF',
@@ -802,7 +802,7 @@ async function migrate() {
     {
       date: new Date('2025-10-23'),
       description: 'Payment on Phone loan',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 93000,
       currency: 'RWF',
@@ -937,7 +937,7 @@ async function migrate() {
     {
       date: new Date('2025-08-07'),
       description: 'Furniture buying, 1 big table, above cardboard and sofa',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 200000,
       currency: 'RWF',
@@ -1360,7 +1360,7 @@ async function migrate() {
     {
       date: new Date('2026-02-04'),
       description: 'last phone payment',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 140000,
       currency: 'RWF',
@@ -1405,7 +1405,7 @@ async function migrate() {
     {
       date: new Date('2026-02-09'),
       description: 'payment on computer, to rodrige',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 70000,
       currency: 'RWF',
@@ -1927,7 +1927,7 @@ async function migrate() {
     {
       date: new Date('2026-04-02'),
       description: 'machine and it\'s accessories',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 432000,
       currency: 'RWF',
@@ -1981,7 +1981,7 @@ async function migrate() {
     {
       date: new Date('2026-04-04'),
       description: 'Buying a plot of land to be given to chris',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 1270000,
       currency: 'RWF',
@@ -2566,7 +2566,7 @@ async function migrate() {
     {
       date: new Date('2026-05-19'),
       description: 'Buying the chair snd office equips',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 101000,
       currency: 'RWF',
@@ -2701,7 +2701,7 @@ async function migrate() {
     {
       date: new Date('2026-06-02'),
       description: 'Buying the phone for using in ops',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 120000,
       currency: 'RWF',
@@ -2818,7 +2818,7 @@ async function migrate() {
     {
       date: new Date('2026-06-07'),
       description: 'last payment to kagenza on buying chairs',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 70000,
       currency: 'RWF',
@@ -2845,7 +2845,7 @@ async function migrate() {
     {
       date: new Date('2026-06-07'),
       description: 'booking fees on 900K scootter remaining 800K',
-      category: 'EQUIPMENT',
+      category: 'OTHER',
       vendor: 'Various',
       amount: 100000,
       currency: 'RWF',
@@ -3126,14 +3126,14 @@ async function migrate() {
   for (const expense of expenses) {
     await prisma.expense.create({
       data: {
-        description: expense.description,
+        vendorName: expense.vendor,
         amount: expense.amount,
         currency: expense.currency,
         category: expense.category as any,
-        vendor: expense.vendor,
         date: expense.date,
-        notes: expense.notes,
+        notes: `${expense.description} | ${expense.notes}`,
         createdBy: userId,
+        createdAt: expense.date,
       },
     })
     expenseCount++
@@ -3836,6 +3836,21 @@ async function migrate() {
     },
   ]
 
+  // Create a placeholder client for all historical invoices (clientId is required)
+  const historicalClient = await prisma.client.upsert({
+    where: { id: 'historical-import-client' },
+    create: {
+      id: 'historical-import-client',
+      companyName: 'CDY Historical Import',
+      contactName: 'CDY Historical Data',
+      email: 'historical-import@cdy.internal',
+      source: 'DIRECT',
+      notes: 'Placeholder client for historical data migration. Do not delete.',
+      createdBy: userId,
+    },
+    update: {},
+  })
+
   // NOTE: Income entries are created as paid invoices with no client linked
   // (historical data — clients may not exist in new system yet)
   // They use a special "Historical Import" service type
@@ -3845,6 +3860,7 @@ async function migrate() {
     await prisma.invoice.create({
       data: {
         invoiceNumber,
+        clientId: historicalClient.id,
         serviceType: 'historical_import',
         lineItems: [{
           description: entry.description,
@@ -3860,6 +3876,7 @@ async function migrate() {
         status: 'PAID',
         paidAt: entry.date,
         dueDate: entry.date,
+        createdAt: entry.date,
         notes: 'Imported from old system — historical client payment. No original invoice existed.',
         createdBy: userId,
       },
@@ -4033,6 +4050,7 @@ async function migrate() {
         description: txn.description,
         reference: 'MIGRATION-OLD-SYSTEM',
         createdBy: userId,
+        createdAt: txn.date,
       },
     })
   }
@@ -4079,6 +4097,7 @@ async function migrate() {
     await prisma.invoice.create({
       data: {
         invoiceNumber,
+        clientId: historicalClient.id,
         serviceType: 'owner_capital',
         lineItems: [{ description: entry.description, quantity: 1, unitPrice: entry.amount, amount: entry.amount }],
         subtotal: entry.amount,
@@ -4089,6 +4108,7 @@ async function migrate() {
         status: 'PAID',
         paidAt: entry.date,
         dueDate: entry.date,
+        createdAt: entry.date,
         notes: 'Owner capital injection — imported from old system. Not client revenue.',
         createdBy: userId,
       },
@@ -4117,14 +4137,14 @@ async function migrate() {
   for (const loan of loanEntries) {
     await prisma.bill.create({
       data: {
-        vendor: loan.vendor,
-        description: loan.description,
+        vendorName: loan.vendor,
         amount: loan.amount,
         currency: 'RWF',
         category: 'OTHER',
         dueDate: loan.date,
         status: 'UNPAID',
-        notes: 'Loan liability imported from old system. Repayment status unknown — review and update.',
+        createdAt: loan.date,
+        notes: `${loan.description} | Loan liability imported from old system. Repayment status unknown — review and update.`,
         createdBy: userId,
       },
     })
