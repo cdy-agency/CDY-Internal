@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   SoftwarePhase,
@@ -13,6 +14,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { InvoiceNumberService } from '../../invoices/invoice-number.service';
 import {
   CreateSoftwareProjectDto,
   UpdateSoftwareProjectDto,
@@ -20,9 +22,12 @@ import {
 
 @Injectable()
 export class SoftwareProjectsService {
+  private readonly logger = new Logger(SoftwareProjectsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly invoiceNumberService: InvoiceNumberService,
   ) {}
 
   async create(dto: CreateSoftwareProjectDto, userId: string) {
@@ -31,7 +36,10 @@ export class SoftwareProjectsService {
     });
     if (!client) throw new NotFoundException('Client not found in CRM');
 
-    return this.prisma.softwareProject.create({
+    const totalCost = dto.totalCost ? parseFloat(dto.totalCost) : null;
+    const currency = dto.currency ?? 'RWF';
+
+    const project = await this.prisma.softwareProject.create({
       data: {
         clientId: dto.clientId,
         projectId: dto.projectId,
@@ -41,9 +49,64 @@ export class SoftwareProjectsService {
         startDate: new Date(dto.startDate),
         notes: dto.notes,
         phase: SoftwarePhase.REQUIREMENTS,
+        totalCost: totalCost ?? undefined,
+        currency,
         createdBy: userId,
       },
       include: { client: { select: { companyName: true } } },
+    });
+
+    if (totalCost && totalCost > 0) {
+      setImmediate(() => {
+        this.createDraftInvoice(project.id, dto.clientId, project.name, totalCost, currency, userId)
+          .catch((err: unknown) => this.logger.error('Auto-invoice failed for software project', err));
+      });
+    }
+
+    return project;
+  }
+
+  private async createDraftInvoice(
+    projectId: string,
+    clientId: string,
+    projectName: string,
+    totalCost: number,
+    currency: string,
+    userId: string,
+  ): Promise<void> {
+    const invoiceNumber = await this.invoiceNumberService.generate();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        clientId,
+        projectId,
+        status: 'DRAFT',
+        lineItems: [{ description: projectName, quantity: 1, unitPrice: totalCost, amount: totalCost }],
+        subtotal: totalCost,
+        taxRate: 0,
+        taxAmount: 0,
+        total: totalCost,
+        currency,
+        dueDate,
+        creditTermsDays: 30,
+        serviceType: 'software',
+        createdBy: userId,
+      },
+    });
+
+    await this.prisma.softwareProject.update({
+      where: { id: projectId },
+      data: { invoiceId: invoice.id },
+    });
+
+    await this.notificationsService.createForRole('FINANCE_MANAGER', {
+      type: 'SYSTEM',
+      title: `Draft invoice created — ${projectName}`,
+      body: `A DRAFT invoice for ${projectName} has been created. Please review.`,
+      link: `/finance/invoices/${invoice.id}`,
     });
   }
 

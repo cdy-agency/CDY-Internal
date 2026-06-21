@@ -12,9 +12,10 @@ import { SprintsService } from './sprints/sprints.service';
 import { QaService } from './qa/qa.service';
 import { DeploymentService } from './deployment/deployment.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { InvoicesModule } from '../invoices/invoices.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, InvoicesModule],
   controllers: [
     SoftwareProjectsController,
     RequirementsController,

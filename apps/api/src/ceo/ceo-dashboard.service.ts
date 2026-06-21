@@ -49,7 +49,6 @@ export class CeoDashboardService {
       activeProjects,
       overdueTasks,
       blockedTasks,
-      milestonesAwaitingApproval,
       recentProjects,
 
       marketingClients,
@@ -188,7 +187,6 @@ export class CeoDashboardService {
         where: { dueDate: { lt: now }, status: { not: 'DONE' }, deletedAt: null },
       }),
       this.prisma.task.count({ where: { status: 'BLOCKED', deletedAt: null } }),
-      this.prisma.milestone.count({ where: { status: 'COMPLETED' } }),
       this.prisma.project.findMany({
         where: { status: 'ACTIVE', deletedAt: null },
         select: {
@@ -307,7 +305,6 @@ export class CeoDashboardService {
         activeProjects,
         overdueTasks,
         blockedTasks,
-        milestonesAwaitingApproval,
         recentProjects,
       },
 
@@ -334,7 +331,6 @@ export class CeoDashboardService {
         pendingLeaveRequests,
         pendingBudgetRequests,
         overdueInvoices: overdueInvoices._count.id,
-        milestonesAwaitingApproval,
         blockedTasks,
       },
     };

@@ -80,12 +80,14 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   const [visitTarget, setVisitTarget] = useState('');
   const [leadTarget, setLeadTarget] = useState('');
   const [salesTarget, setSalesTarget] = useState('');
+  const [totalCost, setTotalCost] = useState('');
+  const [currency, setCurrency] = useState('RWF');
   const [notes, setNotes] = useState('');
 
   function reset() {
     setClientId(''); setName(''); setProductService(''); setTerritory('');
     setStartDate(''); setEndDate(''); setVisitTarget(''); setLeadTarget('');
-    setSalesTarget(''); setNotes('');
+    setSalesTarget(''); setTotalCost(''); setCurrency('RWF'); setNotes('');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -99,6 +101,8 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
       visitTarget: visitTarget ? Number(visitTarget) : undefined,
       leadTarget: leadTarget ? Number(leadTarget) : undefined,
       salesTarget: salesTarget ? Number(salesTarget) : undefined,
+      totalCost: totalCost || undefined,
+      currency: totalCost ? currency : undefined,
       notes: notes || undefined,
     });
     reset();
@@ -162,6 +166,23 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               <Input type="number" min="0" value={salesTarget} onChange={(e) => setSalesTarget(e.target.value)}
                 className="bg-cdy-navy border-cdy-navy-border text-cdy-white" />
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-cdy-muted">Total contract cost (optional)</Label>
+            <div className="flex gap-2">
+              <Input type="number" min="0" step="0.01" value={totalCost}
+                onChange={(e) => setTotalCost(e.target.value)} placeholder="0.00"
+                className="flex-1 bg-cdy-navy border-cdy-navy-border text-cdy-white" />
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                className="w-24 rounded-md border border-cdy-navy-border bg-cdy-navy px-2 py-2 text-sm text-cdy-white focus:outline-none focus:ring-1 focus:ring-cdy-red">
+                <option value="RWF">RWF</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+            {totalCost && (
+              <p className="text-xs text-cdy-muted">A DRAFT invoice will be created automatically.</p>
+            )}
           </div>
           <div className="space-y-1">
             <Label className="text-cdy-muted">Notes</Label>

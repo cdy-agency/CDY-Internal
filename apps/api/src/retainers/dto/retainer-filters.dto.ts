@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum } from 'class-validator';
+import { IsOptional, IsEnum, IsString } from 'class-validator';
 import { RetainerStatus } from '@prisma/client';
 
 export class RetainerFiltersDto {
@@ -7,5 +7,10 @@ export class RetainerFiltersDto {
   status?: RetainerStatus;
 
   @IsOptional()
+  @IsString()
   clientId?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

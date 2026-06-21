@@ -12,15 +12,11 @@ import { Type } from 'class-transformer';
 export class CreateMarketingClientDto {
   @IsString()
   @IsNotEmpty()
-  clientId!: string;
+  retainerId!: string;
 
   @IsOptional()
   @IsString()
   projectId?: string;
-
-  @IsOptional()
-  @IsString()
-  retainerId?: string;
 
   @IsArray()
   @IsString({ each: true })

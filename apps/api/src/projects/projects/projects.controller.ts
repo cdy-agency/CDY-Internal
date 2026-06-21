@@ -18,19 +18,13 @@ import {
 import { ProjectsService } from './projects.service';
 import { ProjectsSummaryService } from '../summary/projects-summary.service';
 import { TasksService } from '../tasks/tasks.service';
-import { TimeService } from '../time/time.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFiltersDto } from './dto/project-filters.dto';
 import { AddProjectMembersDto } from './dto/add-project-members.dto';
 import { CompleteProjectDto } from './dto/complete-project.dto';
 import { ProjectActivityService } from '../activity/project-activity.service';
-import { HourlyRateService } from '../hourly-rates/hourly-rate.service';
-import {
-  SetHourlyRateDto,
-  UpdateHourlyRateDto,
-  WorkloadFiltersDto,
-} from '../approvals/approval.dto';
+import { WorkloadFiltersDto } from '../approvals/approval.dto';
 
 @ApiTags('projects')
 @ApiBearerAuth()
@@ -40,9 +34,7 @@ export class ProjectsController {
     private readonly projectsService: ProjectsService,
     private readonly projectsSummaryService: ProjectsSummaryService,
     private readonly tasksService: TasksService,
-    private readonly timeService: TimeService,
     private readonly projectActivityService: ProjectActivityService,
-    private readonly hourlyRateService: HourlyRateService,
   ) {}
 
   @Get('summary')
@@ -61,14 +53,6 @@ export class ProjectsController {
     return { data, message: 'Tasks retrieved', statusCode: HttpStatus.OK };
   }
 
-  @Get('time/my')
-  @RequirePermission('projects.time', 'read')
-  @ApiOperation({ summary: 'My time entries across projects' })
-  async getMyTime(@CurrentUser() user: JwtPayload) {
-    const data = await this.timeService.findMyEntries(user.sub);
-    return { data, message: 'Time entries retrieved', statusCode: HttpStatus.OK };
-  }
-
   @Get('my')
   @RequirePermission('projects.own', 'read')
   @ApiOperation({ summary: 'My projects' })
@@ -83,41 +67,6 @@ export class ProjectsController {
   async getWorkload(@Query() filters: WorkloadFiltersDto) {
     const data = await this.projectsService.getTeamWorkload(filters);
     return { data, message: 'Workload retrieved', statusCode: HttpStatus.OK };
-  }
-
-  @Get('hourly-rates')
-  @RequirePermission('projects.reports', 'read')
-  @ApiOperation({ summary: 'List hourly rates' })
-  async getHourlyRates() {
-    const data = await this.hourlyRateService.getAllRates();
-    return { data, message: 'Rates retrieved', statusCode: HttpStatus.OK };
-  }
-
-  @Post('hourly-rates')
-  @RequirePermission('projects.reports', 'write')
-  @ApiOperation({ summary: 'Set hourly rate for employee' })
-  async setHourlyRate(
-    @Body() dto: SetHourlyRateDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    const data = await this.hourlyRateService.setRate(dto, user.sub);
-    return { data, message: 'Rate saved', statusCode: HttpStatus.CREATED };
-  }
-
-  @Patch('hourly-rates/:employeeId')
-  @RequirePermission('projects.reports', 'write')
-  @ApiOperation({ summary: 'Update hourly rate for employee' })
-  async updateHourlyRate(
-    @Param('employeeId') employeeId: string,
-    @Body() dto: UpdateHourlyRateDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    const data = await this.hourlyRateService.updateRate(
-      employeeId,
-      dto,
-      user.sub,
-    );
-    return { data, message: 'Rate updated', statusCode: HttpStatus.OK };
   }
 
   @Get()
@@ -175,28 +124,12 @@ export class ProjectsController {
     return { data, message: 'Activity retrieved', statusCode: HttpStatus.OK };
   }
 
-  @Get(':id/profitability')
-  @RequirePermission('projects.reports', 'read')
-  @ApiOperation({ summary: 'Project profitability' })
-  async getProfitability(@Param('id') id: string) {
-    const data = await this.projectsService.getProfitability(id);
-    return {
-      data,
-      message: 'Profitability retrieved',
-      statusCode: HttpStatus.OK,
-    };
-  }
-
   @Get(':id/status-report')
   @RequirePermission('projects.all', 'read')
   @ApiOperation({ summary: 'Generate project status report' })
   async getStatusReport(@Param('id') id: string) {
     const data = await this.projectsService.generateStatusReport(id);
-    return {
-      data,
-      message: 'Status report generated',
-      statusCode: HttpStatus.OK,
-    };
+    return { data, message: 'Status report generated', statusCode: HttpStatus.OK };
   }
 
   @Get(':id/progress')
@@ -215,11 +148,7 @@ export class ProjectsController {
     @Body() dto: AddProjectMembersDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.projectsService.addMembers(
-      id,
-      dto.employeeIds,
-      user.sub,
-    );
+    const data = await this.projectsService.addMembers(id, dto.employeeIds, user.sub);
     return { data, message: 'Members added', statusCode: HttpStatus.OK };
   }
 
@@ -231,11 +160,7 @@ export class ProjectsController {
     @Param('employeeId') employeeId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.projectsService.removeMember(
-      id,
-      employeeId,
-      user.sub,
-    );
+    const data = await this.projectsService.removeMember(id, employeeId, user.sub);
     return { data, message: 'Member removed', statusCode: HttpStatus.OK };
   }
 
@@ -255,10 +180,7 @@ export class ProjectsController {
   @Patch(':id/on-hold')
   @RequirePermission('projects.all', 'write')
   @ApiOperation({ summary: 'Put project on hold' })
-  async onHold(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async onHold(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const data = await this.projectsService.onHold(id, user.sub);
     await this.projectsSummaryService.invalidateSummaryCache();
     return { data, message: 'Project on hold', statusCode: HttpStatus.OK };
@@ -267,10 +189,7 @@ export class ProjectsController {
   @Patch(':id/reactivate')
   @RequirePermission('projects.all', 'write')
   @ApiOperation({ summary: 'Reactivate project' })
-  async reactivate(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async reactivate(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const data = await this.projectsService.reactivate(id, user.sub);
     await this.projectsSummaryService.invalidateSummaryCache();
     return { data, message: 'Project reactivated', statusCode: HttpStatus.OK };
@@ -283,15 +202,8 @@ export class ProjectsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.projectsService.generateHandoverReport(
-      id,
-      user.sub,
-    );
-    return {
-      data,
-      message: 'Handover report generated',
-      statusCode: HttpStatus.CREATED,
-    };
+    const data = await this.projectsService.generateHandoverReport(id, user.sub);
+    return { data, message: 'Handover report generated', statusCode: HttpStatus.CREATED };
   }
 
   @Get(':id/handover-report')
@@ -299,20 +211,13 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Get latest handover report' })
   async getHandover(@Param('id') id: string) {
     const data = await this.projectsService.getHandoverReport(id);
-    return {
-      data,
-      message: 'Handover report retrieved',
-      statusCode: HttpStatus.OK,
-    };
+    return { data, message: 'Handover report retrieved', statusCode: HttpStatus.OK };
   }
 
   @Patch(':id/archive')
   @RequirePermission('projects.all', 'write')
   @ApiOperation({ summary: 'Archive project' })
-  async archive(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async archive(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const data = await this.projectsService.archive(id, user.sub);
     await this.projectsSummaryService.invalidateSummaryCache();
     return { data, message: 'Project archived', statusCode: HttpStatus.OK };

@@ -24,16 +24,4 @@ export class ProjectReportsController {
     };
   }
 
-  @Get('budget')
-  @RequirePermission('projects.reports', 'read')
-  @ApiOperation({ summary: 'Budget vs actual across all projects' })
-  async getBudget(@Query() filters: PortfolioReportFiltersDto) {
-    const data =
-      await this.projectReportsService.getBudgetVsActualReport(filters);
-    return {
-      data,
-      message: 'Budget report retrieved',
-      statusCode: HttpStatus.OK,
-    };
-  }
 }

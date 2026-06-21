@@ -5,14 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import type { HandoverReport } from '@cdy/shared';
-import { MilestoneStatus } from '@cdy/shared';
 import {
   useGenerateHandoverReport,
   useHandoverReport,
   useProject,
 } from '@/hooks/useProjects';
 import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/lib/utils';
 
 function buildHandoverText(report: HandoverReport): string {
   const lines = [
@@ -41,7 +39,7 @@ function buildHandoverText(report: HandoverReport): string {
     'DELIVERABLES COMPLETED',
     '',
     ...report.deliverables.milestones.flatMap((m) => [
-      `${m.name}    ${m.status}    ${m.billingAmount != null ? formatCurrency(m.billingAmount) : '—'}`,
+      `${m.name}    ${m.status}`,
       ...m.tasks.map((t) => `  • ${t.title}`),
       '',
     ]),
@@ -53,22 +51,6 @@ function buildHandoverText(report: HandoverReport): string {
       (a) =>
         `  ${a.title}    Approved ${a.approvedAt ? format(parseISO(a.approvedAt), 'MMM d') : '—'}`,
     ),
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'FINANCIAL SUMMARY',
-    '',
-    `Total invoiced:    ${formatCurrency(report.financials.totalInvoiced)}`,
-    `Total collected:   ${formatCurrency(report.financials.totalCollected)}`,
-    `Total costs:       ${formatCurrency(report.financials.totalCosts)}`,
-    `Gross margin:      ${report.financials.grossMargin.toFixed(1)}%`,
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'TEAM CONTRIBUTION',
-    '',
-    `Total hours: ${report.teamSummary.totalHours}h    Billable: ${report.teamSummary.billableHours}h`,
-    `Team size: ${report.teamSummary.teamSize} members`,
   ];
   return lines.filter(Boolean).join('\n');
 }
@@ -123,14 +105,6 @@ export default function HandoverReportPage(): JSX.Element {
       </div>
     );
   }
-
-  const billablePct =
-    report.teamSummary.totalHours > 0
-      ? (
-          (report.teamSummary.billableHours / report.teamSummary.totalHours) *
-          100
-        ).toFixed(1)
-      : '0';
 
   return (
     <div className="space-y-6">
@@ -192,13 +166,7 @@ export default function HandoverReportPage(): JSX.Element {
         <p className="mt-6 font-bold">DELIVERABLES COMPLETED</p>
         {report.deliverables.milestones.map((m) => (
           <div key={m.name} className="mt-3">
-            <p>
-              {m.name}{' '}
-              {m.status === MilestoneStatus.INVOICED ? '✅ Invoiced' : m.status}{' '}
-              {m.billingAmount != null
-                ? formatCurrency(m.billingAmount)
-                : ''}
-            </p>
+            <p>{m.name} — {m.status}</p>
             <ul className="ml-4 list-disc text-cdy-muted print:text-gray-700">
               {m.tasks.map((t) => (
                 <li key={t.title}>{t.title}</li>
@@ -218,21 +186,6 @@ export default function HandoverReportPage(): JSX.Element {
             </li>
           ))}
         </ul>
-
-        <p className="mt-6 font-bold">FINANCIAL SUMMARY</p>
-        <p>Total invoiced: {formatCurrency(report.financials.totalInvoiced)}</p>
-        <p>
-          Total collected: {formatCurrency(report.financials.totalCollected)}
-        </p>
-        <p>Total costs: {formatCurrency(report.financials.totalCosts)}</p>
-        <p>Gross margin: {report.financials.grossMargin.toFixed(1)}%</p>
-
-        <p className="mt-6 font-bold">TEAM CONTRIBUTION</p>
-        <p>
-          Total hours: {report.teamSummary.totalHours}h · Billable:{' '}
-          {report.teamSummary.billableHours}h ({billablePct}%)
-        </p>
-        <p>Team size: {report.teamSummary.teamSize} members</p>
 
         {report.notes && (
           <>

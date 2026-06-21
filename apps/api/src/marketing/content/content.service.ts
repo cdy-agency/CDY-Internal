@@ -104,7 +104,7 @@ export class ContentService {
       this.notificationsService.createForRoleAsync('OPERATIONS_MANAGER', {
         type: 'SYSTEM',
         title: `Content approved — ${item.title}`,
-        body: `"${item.title}" for ${item.marketingClient.client.companyName} has been approved and is ready to publish.`,
+        body: `"${item.title}" for ${item.marketingClient.client?.companyName ?? 'client'} has been approved and is ready to publish.`,
         link: `/marketing/${item.marketingClientId}`,
       });
     }

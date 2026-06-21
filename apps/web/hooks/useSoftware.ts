@@ -56,6 +56,8 @@ export function useCreateSoftwareProject() {
       startDate: string;
       description?: string;
       projectId?: string;
+      totalCost?: string;
+      currency?: string;
       notes?: string;
     }) => {
       const res = await api.post<ApiResponse<SoftwareProjectDetail>>(

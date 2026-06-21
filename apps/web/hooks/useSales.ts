@@ -124,6 +124,8 @@ export function useCreateSalesCampaign() {
       visitTarget?: number;
       leadTarget?: number;
       salesTarget?: number;
+      totalCost?: string;
+      currency?: string;
       notes?: string;
     }) => {
       const res = await api.post<ApiResponse<SalesCampaignDetail>>(

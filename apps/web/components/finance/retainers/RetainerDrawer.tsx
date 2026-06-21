@@ -10,8 +10,9 @@ import { useTaxRates } from '@/hooks/useTax';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ClientSearch } from '@/components/crm/ClientSearch';
 import { formatCurrency } from '@/lib/utils';
-import type { ApiResponse, RetainerRecord } from '@cdy/shared';
+import type { ApiResponse, RetainerRecord, ClientSearchResult } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 
 interface RetainerDrawerProps {
@@ -26,7 +27,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
   const queryClient = useQueryClient();
   const { data: taxRates } = useTaxRates();
   const [loading, setLoading] = useState(false);
-  const [clientId, setClientId] = useState('');
+  const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
   const [serviceName, setServiceName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -57,7 +58,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
 
   useEffect(() => {
     if (open) {
-      setClientId('');
+      setSelectedClient(null);
       setServiceName('');
       setDescription('');
       setAmount('');
@@ -73,8 +74,9 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
     e.preventDefault();
     setLoading(true);
     try {
+      if (!selectedClient) { toast.error('Please select a client'); return; }
       await api.post<ApiResponse<RetainerRecord>>('/retainers', {
-        clientId,
+        clientId: selectedClient.id,
         serviceName,
         description: description || undefined,
         amount: parsedAmount,
@@ -109,8 +111,12 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
         </div>
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-2">
-            <Label>Client ID</Label>
-            <Input value={clientId} onChange={(e) => setClientId(e.target.value)} required />
+            <Label>Client</Label>
+            <ClientSearch
+              value={selectedClient}
+              onChange={setSelectedClient}
+              placeholder="Search CRM clients..."
+            />
           </div>
           <div className="space-y-2">
             <Label>Service name</Label>

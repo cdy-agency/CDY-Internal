@@ -27,6 +27,14 @@ export class CreateBrandingProjectDto {
 
   @IsOptional()
   @IsString()
+  totalCost?: string;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @IsOptional()

@@ -28,6 +28,10 @@ const CATEGORY_CONFIG: Record<
     label: 'Supplier',
     className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
   },
+  [ExpenseCategory.COMMISSION]: {
+    label: 'Commission',
+    className: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  },
   [ExpenseCategory.OTHER]: {
     label: 'Other',
     className: 'bg-gray-500/10 text-gray-400 border-gray-500/30',

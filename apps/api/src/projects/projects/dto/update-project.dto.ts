@@ -43,7 +43,7 @@ export class UpdateProjectDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  estimatedBudget?: number;
+  totalCost?: number;
 
   @IsOptional()
   @IsString()

@@ -57,6 +57,8 @@ export function useCreateBrandingProject() {
       clientId: string;
       name: string;
       description?: string;
+      totalCost?: string;
+      currency?: string;
       notes?: string;
       scopeItems?: { title: string; description?: string }[];
     }) => {

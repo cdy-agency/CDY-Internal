@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Injectable,
   Logger,
@@ -9,7 +9,6 @@ import {
   ApprovalStatus,
   InvoiceStatus,
   MemberRole,
-  MilestoneStatus,
   NotificationType,
   Prisma,
   ProjectStatus,
@@ -19,12 +18,10 @@ import {
 import { addDays } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
-import { BudgetService } from '../../budget/budget.service';
 import { CacheService } from '../../cache/cache.service';
 import { ProjectCodeService } from './project-code.service';
 import { ProjectActivityService } from '../activity/project-activity.service';
-import { HourlyRateService } from '../hourly-rates/hourly-rate.service';
-import { TimeService } from '../time/time.service';
+import { InvoiceNumberService } from '../../invoices/invoice-number.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFiltersDto } from './dto/project-filters.dto';
@@ -33,52 +30,6 @@ import { WorkloadFiltersDto } from '../approvals/approval.dto';
 
 const LIMITED_ROLES = ['TEAM_MEMBER', 'SALES_AGENT'];
 
-export interface ProjectProfitabilityResult {
-  projectId: string;
-  projectName: string;
-  revenue: {
-    invoiced: number;
-    collected: number;
-    outstanding: number;
-  };
-  costs: {
-    labour: number;
-    directExpenses: number;
-    total: number;
-  };
-  time: {
-    totalHours: number;
-    billableHours: number;
-    utilisation: number;
-  };
-  profitability: {
-    grossProfit: number;
-    grossMargin: number;
-    isHealthy: boolean;
-  };
-  budget: {
-    approved: number;
-    consumed: number;
-    remaining: number;
-    percentConsumed: number | null;
-    alertThresholdPct: number;
-    isBlocked: boolean;
-  } | null;
-  milestones: Array<{
-    id: string;
-    name: string;
-    billingAmount: number;
-    status: MilestoneStatus;
-    invoiceId: string | null;
-    invoiceNumber: string | null;
-  }>;
-  milestoneBilling: {
-    total: number;
-    invoiced: number;
-    percentInvoiced: number;
-  };
-}
-
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
@@ -86,12 +37,10 @@ export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectCodeService: ProjectCodeService,
-    private readonly budgetService: BudgetService,
     private readonly notificationsService: NotificationsService,
     private readonly projectActivityService: ProjectActivityService,
-    private readonly hourlyRateService: HourlyRateService,
+    private readonly invoiceNumberService: InvoiceNumberService,
     private readonly cache: CacheService,
-    private readonly timeService: TimeService,
   ) {}
 
   async create(dto: CreateProjectDto, userId: string) {
@@ -124,7 +73,7 @@ export class ProjectsService {
           managerId: dto.managerId,
           startDate: new Date(dto.startDate),
           endDate: dto.endDate ? new Date(dto.endDate) : null,
-          estimatedBudget: dto.estimatedBudget,
+          totalCost: dto.totalCost,
           currency: dto.currency ?? 'RWF',
           notes: dto.notes,
           createdBy: userId,
@@ -156,23 +105,22 @@ export class ProjectsService {
       return p;
     });
 
-    if (dto.estimatedBudget && dto.clientId) {
-      try {
-        await this.budgetService.createBudget(
-          {
-            projectId: project.id,
-            projectName: project.name,
-            clientId: dto.clientId,
-            approvedBudget: Number(dto.estimatedBudget),
-            currency: dto.currency ?? 'RWF',
-          },
+    // Auto-create DRAFT invoice if totalCost is set — fire-and-forget
+    if (dto.totalCost && Number(dto.totalCost) > 0 && dto.clientId) {
+      const snapshot = { ...project };
+      const managerId = manager.userId;
+      setImmediate(() => {
+        void this.createProjectInvoice(
+          snapshot,
+          dto.clientId!,
+          dto.serviceType,
+          Number(dto.totalCost),
+          dto.currency ?? 'RWF',
+          projectCode,
           userId,
+          managerId,
         );
-      } catch (err: unknown) {
-        this.logger.warn(
-          `Budget tracking not created for project ${project.id}: ${String(err)}`,
-        );
-      }
+      });
     }
 
     await this.notificationsService.createNotification({
@@ -195,6 +143,77 @@ export class ProjectsService {
     });
 
     return this.serializeProject(created);
+  }
+
+  private async createProjectInvoice(
+    project: { id: string; name: string },
+    clientId: string,
+    serviceType: string,
+    totalCost: number,
+    currency: string,
+    projectCode: string,
+    userId: string,
+    managerUserId: string,
+  ): Promise<void> {
+    try {
+      const invoiceNumber = await this.invoiceNumberService.generate();
+
+      const invoice = await this.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          clientId,
+          serviceType,
+          lineItems: [
+            {
+              description: `${project.name} — Project delivery`,
+              quantity: 1,
+              unitPrice: totalCost,
+              amount: totalCost,
+            },
+          ] as Prisma.InputJsonValue,
+          subtotal: totalCost,
+          taxRate: 0,
+          taxAmount: 0,
+          total: totalCost,
+          currency,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          status: InvoiceStatus.DRAFT,
+          notes: `Auto-created for project ${projectCode}. Review and adjust before sending to client.`,
+          createdBy: userId,
+        },
+      });
+
+      await this.prisma.project.update({
+        where: { id: project.id },
+        data: { invoiceId: invoice.id },
+      });
+
+      await this.notificationsService.createForRole('FINANCE_MANAGER', {
+        type: NotificationType.SYSTEM,
+        title: `New project invoice ready — ${project.name}`,
+        body: `Draft invoice ${invoiceNumber} created for ${currency} ${totalCost.toFixed(2)}. Review and send when ready.`,
+        link: `/finance/invoices/${invoice.id}`,
+      });
+
+      if (managerUserId) {
+        await this.notificationsService.createNotification({
+          userId: managerUserId,
+          type: NotificationType.SYSTEM,
+          title: `Project created — ${project.name}`,
+          body: `${projectCode} has been set up. Draft invoice ${invoiceNumber} created for ${currency} ${totalCost.toFixed(2)}.`,
+          link: `/projects/${project.id}`,
+        });
+      }
+
+      this.logger.log(
+        `Draft invoice ${invoiceNumber} created for project ${projectCode}`,
+      );
+    } catch (err: unknown) {
+      this.logger.error(
+        `Failed to create invoice for project ${project.id}`,
+        String(err),
+      );
+    }
   }
 
   async findAll(
@@ -255,12 +274,6 @@ export class ProjectsService {
   }
 
   async findMyProjects(userId: string) {
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId },
-      select: { id: true },
-    });
-    if (!employee) return [];
-
     return this.findAll({}, { id: userId, roleKey: 'TEAM_MEMBER' });
   }
 
@@ -290,9 +303,7 @@ export class ProjectsService {
         ...(dto.endDate !== undefined && {
           endDate: dto.endDate ? new Date(dto.endDate) : null,
         }),
-        ...(dto.estimatedBudget !== undefined && {
-          estimatedBudget: dto.estimatedBudget,
-        }),
+        ...(dto.totalCost !== undefined && { totalCost: dto.totalCost }),
         ...(dto.currency !== undefined && { currency: dto.currency }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
       },
@@ -327,7 +338,6 @@ export class ProjectsService {
         tasks: {
           where: { deletedAt: null, parentTaskId: null },
         },
-        milestones: true,
       },
     });
     if (!project) throw new NotFoundException('Project not found');
@@ -341,24 +351,11 @@ export class ProjectsService {
     const incompleteTasks = project.tasks.filter(
       (t) => t.status !== TaskStatus.DONE,
     );
-    const uninvoicedMilestones = project.milestones.filter(
-      (m) =>
-        m.billingAmount &&
-        Number(m.billingAmount) > 0 &&
-        m.status !== MilestoneStatus.INVOICED,
-    );
 
     if (incompleteTasks.length > 0 && !dto.acknowledgeIncompleteTasks) {
       throw new BadRequestException(
         `${incompleteTasks.length} task${incompleteTasks.length > 1 ? 's are' : ' is'} not yet complete. ` +
           'Set acknowledgeIncompleteTasks: true to complete the project anyway.',
-      );
-    }
-
-    if (uninvoicedMilestones.length > 0 && !dto.acknowledgeUninvoicedMilestones) {
-      throw new BadRequestException(
-        `${uninvoicedMilestones.length} milestone${uninvoicedMilestones.length > 1 ? 's have' : ' has'} ` +
-          'not been invoiced. Set acknowledgeUninvoicedMilestones: true to complete anyway.',
       );
     }
 
@@ -375,7 +372,7 @@ export class ProjectsService {
         client: { select: { id: true, companyName: true, contactName: true } },
         members: { select: { employeeId: true, role: true } },
         milestones: {
-          select: { id: true, status: true, name: true, billingAmount: true },
+          select: { id: true, status: true, name: true },
           orderBy: { order: 'asc' },
         },
         _count: { select: { tasks: { where: { deletedAt: null } } } },
@@ -387,21 +384,13 @@ export class ProjectsService {
       userId,
       type: ActivityEventType.PROJECT_STATUS_CHANGED,
       summary: 'Project marked as COMPLETED',
-      metadata: {
-        incompleteTasks: incompleteTasks.length,
-        uninvoicedMilestones: uninvoicedMilestones.length,
-      },
+      metadata: { incompleteTasks: incompleteTasks.length },
     });
-
-    const totalInvoiced = project.milestones.reduce(
-      (s, m) => s + Number(m.billingAmount ?? 0),
-      0,
-    );
 
     await this.notificationsService.createForRole('CEO', {
       type: NotificationType.SYSTEM,
       title: `Project completed — ${project.name}`,
-      body: `${project.projectCode} has been marked complete. Total invoiced: $${totalInvoiced.toFixed(2)}.`,
+      body: `${project.projectCode} has been marked complete.`,
       link: `/projects/${id}`,
     });
 
@@ -414,7 +403,6 @@ export class ProjectsService {
 
     await this.cache.del('projects:summary');
     await this.cache.delByPrefix('projects:portfolio');
-    await this.cache.delByPrefix('projects:budget-actual');
 
     return this.serializeProject(completed);
   }
@@ -529,8 +517,6 @@ export class ProjectsService {
       );
     }
 
-    const profitability = await this.getProfitability(projectId);
-    const timeEntries = await this.timeService.getProjectSummary(projectId);
     const approvals = await this.prisma.deliverableApproval.findMany({
       where: { projectId, status: ApprovalStatus.APPROVED },
       include: { task: { select: { title: true } } },
@@ -555,6 +541,9 @@ export class ProjectsService {
                   (1000 * 60 * 60 * 24),
               )
             : null,
+        totalCost: project.totalCost ? Number(project.totalCost) : null,
+        currency: project.currency,
+        invoiceId: project.invoiceId ?? null,
       },
       client: project.client
         ? {
@@ -567,7 +556,6 @@ export class ProjectsService {
         milestones: project.milestones.map((m) => ({
           name: m.name,
           status: m.status,
-          billingAmount: m.billingAmount ? Number(m.billingAmount) : null,
           taskCount: m.tasks.length,
           tasksCompleted: m.tasks.filter((t) => t.status === TaskStatus.DONE)
             .length,
@@ -588,19 +576,6 @@ export class ProjectsService {
           url: f.url,
           uploadedAt: f.uploadedAt.toISOString(),
         })),
-      },
-      financials: {
-        totalBudget: Number(project.estimatedBudget ?? 0),
-        totalInvoiced: profitability.revenue.invoiced,
-        totalCollected: profitability.revenue.collected,
-        totalCosts: profitability.costs.total,
-        grossMargin: profitability.profitability.grossMargin,
-      },
-      teamSummary: {
-        totalHours: timeEntries.totalHours,
-        billableHours: timeEntries.billableHours,
-        totalLabourCost: timeEntries.totalLabourCost,
-        teamSize: project.members.length,
       },
       notes: project.notes,
     };
@@ -756,171 +731,8 @@ export class ProjectsService {
         status: m.status,
         taskCount: m._count.tasks,
         dueDate: m.dueDate?.toISOString() ?? null,
-        billingAmount: m.billingAmount ? Number(m.billingAmount) : null,
       })),
     };
-  }
-
-  async getProfitability(projectId: string): Promise<ProjectProfitabilityResult> {
-    const cacheKey = `projects:profitability:${projectId}`;
-    const cached = await this.cache.get<ProjectProfitabilityResult>(cacheKey);
-    if (cached) return cached;
-
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, deletedAt: null },
-      include: {
-        milestones: {
-          include: { invoice: { select: { id: true, invoiceNumber: true } } },
-          orderBy: { order: 'asc' },
-        },
-        timeEntries: true,
-      },
-    });
-    if (!project) throw new NotFoundException('Project not found');
-
-    const invoices = await this.prisma.invoice.findMany({
-      where: {
-        milestone: { projectId },
-        status: { not: InvoiceStatus.DRAFT },
-        deletedAt: null,
-      },
-      select: { total: true, status: true },
-    });
-
-    const invoicedRevenue = invoices.reduce(
-      (s, i) => s + Number(i.total),
-      0,
-    );
-    const collectedRevenue = invoices
-      .filter((i) => i.status === InvoiceStatus.PAID)
-      .reduce((s, i) => s + Number(i.total), 0);
-
-    const employeeIds = [
-      ...new Set(project.timeEntries.map((e) => e.employeeId)),
-    ];
-    const rates = await this.hourlyRateService.getTeamRates(employeeIds);
-
-    const labourCost = project.timeEntries
-      .filter((e) => e.isBillable)
-      .reduce(
-        (s, e) => s + Number(e.hours) * (rates[e.employeeId] ?? 0),
-        0,
-      );
-
-    const totalHours = project.timeEntries.reduce(
-      (s, e) => s + Number(e.hours),
-      0,
-    );
-    const billableHours = project.timeEntries
-      .filter((e) => e.isBillable)
-      .reduce((s, e) => s + Number(e.hours), 0);
-
-    const expenseAggregate = await this.prisma.expense.aggregate({
-      where: { projectId, deletedAt: null },
-      _sum: { amount: true },
-    });
-    const directExpenses = Number(expenseAggregate._sum.amount ?? 0);
-
-    const totalCost = labourCost + directExpenses;
-    const grossProfit = invoicedRevenue - totalCost;
-    const grossMargin =
-      invoicedRevenue > 0
-        ? Number(((grossProfit / invoicedRevenue) * 100).toFixed(2))
-        : 0;
-
-    const budgetRecord = await this.prisma.projectBudget.findUnique({
-      where: { projectId },
-    });
-
-    const budgetConsumed = totalCost;
-    const budgetRemaining = budgetRecord
-      ? Number(budgetRecord.approvedBudget) - budgetConsumed
-      : null;
-    const budgetPercent =
-      budgetRecord && Number(budgetRecord.approvedBudget) > 0
-        ? Number(
-            (
-              (budgetConsumed / Number(budgetRecord.approvedBudget)) *
-              100
-            ).toFixed(2),
-          )
-        : null;
-
-    const totalMilestoneBilling = project.milestones.reduce(
-      (s, m) => s + Number(m.billingAmount ?? 0),
-      0,
-    );
-    const invoicedMilestoneAmount = project.milestones
-      .filter((m) =>
-        (
-          [
-            MilestoneStatus.APPROVED,
-            MilestoneStatus.INVOICED,
-          ] as MilestoneStatus[]
-        ).includes(m.status),
-      )
-      .reduce((s, m) => s + Number(m.billingAmount ?? 0), 0);
-
-    const result: ProjectProfitabilityResult = {
-      projectId,
-      projectName: project.name,
-      revenue: {
-        invoiced: Number(invoicedRevenue.toFixed(2)),
-        collected: Number(collectedRevenue.toFixed(2)),
-        outstanding: Number((invoicedRevenue - collectedRevenue).toFixed(2)),
-      },
-      costs: {
-        labour: Number(labourCost.toFixed(2)),
-        directExpenses: Number(directExpenses.toFixed(2)),
-        total: Number(totalCost.toFixed(2)),
-      },
-      time: {
-        totalHours: Number(totalHours.toFixed(2)),
-        billableHours: Number(billableHours.toFixed(2)),
-        utilisation:
-          totalHours > 0
-            ? Number(((billableHours / totalHours) * 100).toFixed(2))
-            : 0,
-      },
-      profitability: {
-        grossProfit: Number(grossProfit.toFixed(2)),
-        grossMargin,
-        isHealthy: grossMargin >= 40,
-      },
-      budget: budgetRecord
-        ? {
-            approved: Number(budgetRecord.approvedBudget),
-            consumed: Number(budgetConsumed.toFixed(2)),
-            remaining: Number(budgetRemaining?.toFixed(2) ?? 0),
-            percentConsumed: budgetPercent,
-            alertThresholdPct: budgetRecord.alertThresholdPct,
-            isBlocked: budgetRecord.isBlocked,
-          }
-        : null,
-      milestones: project.milestones.map((m) => ({
-        id: m.id,
-        name: m.name,
-        billingAmount: m.billingAmount ? Number(m.billingAmount) : 0,
-        status: m.status,
-        invoiceId: m.invoice?.id ?? null,
-        invoiceNumber: m.invoice?.invoiceNumber ?? null,
-      })),
-      milestoneBilling: {
-        total: Number(totalMilestoneBilling.toFixed(2)),
-        invoiced: Number(invoicedMilestoneAmount.toFixed(2)),
-        percentInvoiced:
-          totalMilestoneBilling > 0
-            ? Number(
-                ((invoicedMilestoneAmount / totalMilestoneBilling) * 100).toFixed(
-                  2,
-                ),
-              )
-            : 0,
-      },
-    };
-
-    await this.cache.set(cacheKey, result, 120);
-    return result;
   }
 
   async getTeamWorkload(_filters: WorkloadFiltersDto) {
@@ -1067,7 +879,6 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Project not found');
 
     const progress = await this.getProgress(projectId);
-    const profitability = await this.getProfitability(projectId);
 
     const recentActivity = await this.prisma.projectActivity.findMany({
       where: { projectId },
@@ -1103,6 +914,8 @@ export class ProjectsService {
         status: project.status,
         startDate: project.startDate.toISOString(),
         endDate: project.endDate?.toISOString() ?? null,
+        totalCost: project.totalCost ? Number(project.totalCost) : null,
+        currency: project.currency,
       },
       progress: {
         overall: progress.progressPercent,
@@ -1120,14 +933,10 @@ export class ProjectsService {
         dueDate: m.dueDate?.toISOString() ?? null,
         tasksDone: m.tasks.filter((t) => t.status === TaskStatus.DONE).length,
         tasksTotal: m.tasks.length,
-        billingAmount: m.billingAmount ? Number(m.billingAmount) : null,
       })),
-      financials: {
-        invoicedRevenue: profitability.revenue.invoiced,
-        collectedRevenue: profitability.revenue.collected,
-        totalCosts: profitability.costs.total,
-        grossMargin: profitability.profitability.grossMargin,
-      },
+      invoice: project.invoiceId
+        ? { invoiceId: project.invoiceId, totalCost: project.totalCost ? Number(project.totalCost) : null, currency: project.currency }
+        : null,
       blockedItems: blockedTasks.map((t) => ({
         title: t.title,
         dueDate: t.dueDate?.toISOString() ?? null,
@@ -1187,10 +996,9 @@ export class ProjectsService {
       managerId: project.managerId,
       startDate: project.startDate.toISOString(),
       endDate: project.endDate?.toISOString() ?? null,
-      estimatedBudget: project.estimatedBudget
-        ? Number(project.estimatedBudget)
-        : null,
+      totalCost: project.totalCost ? Number(project.totalCost) : null,
       currency: project.currency,
+      invoiceId: project.invoiceId ?? null,
       completedAt: project.completedAt?.toISOString() ?? null,
       archivedAt: project.archivedAt?.toISOString() ?? null,
       notes: project.notes,

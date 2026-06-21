@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  MilestoneStatus,
-  ProjectStatus,
-  TaskStatus,
-} from '@prisma/client';
+import { ProjectStatus, TaskStatus } from '@prisma/client';
 import { addDays, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../cache/cache.service';
@@ -35,7 +31,6 @@ export class ProjectsSummaryService {
       overdueTasks,
       blockedTasks,
       tasksCompletedThisWeek,
-      milestonesAwaitingApproval,
       byStatus,
       byServiceType,
       upcomingTasks,
@@ -72,9 +67,6 @@ export class ProjectsSummaryService {
           completedAt: { gte: weekStart },
         },
       }),
-      this.prisma.milestone.count({
-        where: { status: MilestoneStatus.COMPLETED },
-      }),
       this.prisma.project.groupBy({
         by: ['status'],
         where: { deletedAt: null },
@@ -91,9 +83,7 @@ export class ProjectsSummaryService {
           dueDate: { gte: startOfDay(now), lte: weekEnd },
           status: { not: TaskStatus.DONE },
         },
-        include: {
-          project: { select: { name: true } },
-        },
+        include: { project: { select: { name: true } } },
         orderBy: { dueDate: 'asc' },
         take: 10,
       }),
@@ -122,8 +112,6 @@ export class ProjectsSummaryService {
       overdueTasks,
       blockedTasks,
       tasksCompletedThisWeek,
-      milestonesAwaitingApproval,
-      milestonesPendingApproval: await this.getAwaitingMilestones(),
       projectsByStatus: Object.fromEntries(
         byStatus.map((s) => [s.status, s._count.id]),
       ) as Record<ProjectStatus, number>,
@@ -150,25 +138,5 @@ export class ProjectsSummaryService {
 
   async invalidateSummaryCache(): Promise<void> {
     await this.cache.del(SUMMARY_CACHE_KEY);
-  }
-
-  private async getAwaitingMilestones() {
-    const milestones = await this.prisma.milestone.findMany({
-      where: { status: MilestoneStatus.COMPLETED },
-      include: {
-        project: { select: { id: true, name: true } },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 10,
-    });
-
-    return milestones.map((m) => ({
-      id: m.id,
-      projectId: m.projectId,
-      projectName: m.project.name,
-      name: m.name,
-      billingAmount: m.billingAmount ? Number(m.billingAmount) : 0,
-      currency: m.currency,
-    }));
   }
 }

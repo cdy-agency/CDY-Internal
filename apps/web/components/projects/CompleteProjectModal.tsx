@@ -1,23 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { TaskStatus } from '@cdy/shared';
-import type { MilestoneRecord, TaskRecord } from '@cdy/shared';
+import type { TaskRecord } from '@cdy/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface CompleteProjectModalProps {
   open: boolean;
   onClose: () => void;
   projectName: string;
   projectCode: string;
-  currency: string;
   incompleteTasks: TaskRecord[];
-  uninvoicedMilestones: MilestoneRecord[];
   onComplete: (payload: {
     acknowledgeIncompleteTasks: boolean;
-    acknowledgeUninvoicedMilestones: boolean;
     completionNotes?: string;
   }) => Promise<void>;
   isPending: boolean;
@@ -28,9 +24,7 @@ export function CompleteProjectModal({
   onClose,
   projectName,
   projectCode,
-  currency,
   incompleteTasks,
-  uninvoicedMilestones,
   onComplete,
   isPending,
 }: CompleteProjectModalProps): JSX.Element | null {
@@ -40,8 +34,7 @@ export function CompleteProjectModal({
 
   if (!open) return null;
 
-  const hasIssues =
-    incompleteTasks.length > 0 || uninvoicedMilestones.length > 0;
+  const hasIssues = incompleteTasks.length > 0;
 
   function handleClose(): void {
     setStep(1);
@@ -52,10 +45,7 @@ export function CompleteProjectModal({
 
   async function handleSubmit(): Promise<void> {
     await onComplete({
-      acknowledgeIncompleteTasks:
-        incompleteTasks.length > 0 ? acknowledge : true,
-      acknowledgeUninvoicedMilestones:
-        uninvoicedMilestones.length > 0 ? acknowledge : true,
+      acknowledgeIncompleteTasks: incompleteTasks.length > 0 ? acknowledge : true,
       completionNotes: notes.trim() || undefined,
     });
     handleClose();
@@ -95,28 +85,9 @@ export function CompleteProjectModal({
                 </div>
               )}
 
-              {uninvoicedMilestones.length > 0 && (
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-4">
-                  <p className="text-sm text-amber-400">
-                    ☐ {uninvoicedMilestones.length} milestone
-                    {uninvoicedMilestones.length > 1 ? 's' : ''} not yet
-                    invoiced
-                  </p>
-                  <ul className="mt-2 space-y-1 text-sm text-cdy-muted">
-                    {uninvoicedMilestones.map((m) => (
-                      <li key={m.id}>
-                        · {m.name}
-                        {m.billingAmount != null &&
-                          ` (${formatCurrency(m.billingAmount, currency)})`}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
               {!hasIssues && (
                 <p className="text-sm text-emerald-400">
-                  ✅ All tasks complete and milestones invoiced.
+                  ✅ All tasks complete. Ready to close.
                 </p>
               )}
 
@@ -133,7 +104,7 @@ export function CompleteProjectModal({
                       className="mt-1"
                     />
                     <span className="text-cdy-muted">
-                      I&apos;ll complete those items first (recommended)
+                      I&apos;ll complete those tasks first (recommended)
                     </span>
                   </label>
                   <label className="flex cursor-pointer items-start gap-2 text-sm">
@@ -144,7 +115,7 @@ export function CompleteProjectModal({
                       className="mt-1"
                     />
                     <span className="text-cdy-white">
-                      Continue — I acknowledge these items are incomplete
+                      Continue — I acknowledge these tasks are incomplete
                     </span>
                   </label>
                 </div>

@@ -1,21 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { format, isPast, isToday, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { TaskPriority, TaskStatus } from '@cdy/shared';
-import type { TaskRecord } from '@cdy/shared';
 import {
   useMyTasks,
   useUpdateTaskStatus,
-  useLogTime,
 } from '@/hooks/useProjects';
-import { useMyEmployeeProfile } from '@/hooks/useHr';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { PermissionGate } from '@/components/PermissionGate';
 
 const STATUS_OPTIONS: TaskStatus[] = [
   TaskStatus.TODO,
@@ -43,15 +35,6 @@ const PRIORITY_DOT: Record<TaskPriority, string> = {
 export default function MyTasksPage(): JSX.Element {
   const { data, isLoading } = useMyTasks();
   const updateStatus = useUpdateTaskStatus();
-  const logTime = useLogTime();
-  const { data: myProfile } = useMyEmployeeProfile();
-
-  const [timeModalTask, setTimeModalTask] = useState<TaskRecord | null>(null);
-  const [timeForm, setTimeForm] = useState({
-    hours: '',
-    description: '',
-    date: new Date().toISOString().slice(0, 10),
-  });
 
   async function handleStatusChange(
     projectId: string,
@@ -65,37 +48,6 @@ export default function MyTasksPage(): JSX.Element {
         payload: { status },
       });
       toast.success('Status updated');
-    } catch {
-      /* interceptor */
-    }
-  }
-
-  async function handleLogTime(): Promise<void> {
-    if (!timeModalTask || !myProfile) return;
-    const hours = Number(timeForm.hours);
-    if (!hours || hours <= 0) {
-      toast.error('Enter valid hours');
-      return;
-    }
-    try {
-      await logTime.mutateAsync({
-        projectId: timeModalTask.projectId,
-        payload: {
-          projectId: timeModalTask.projectId,
-          taskId: timeModalTask.id,
-          employeeId: myProfile.id,
-          date: timeForm.date,
-          hours,
-          description: timeForm.description || undefined,
-        },
-      });
-      toast.success('Time logged');
-      setTimeModalTask(null);
-      setTimeForm({
-        hours: '',
-        description: '',
-        date: new Date().toISOString().slice(0, 10),
-      });
     } catch {
       /* interceptor */
     }
@@ -211,13 +163,6 @@ export default function MyTasksPage(): JSX.Element {
                               </option>
                             ))}
                           </select>
-                          <button
-                            type="button"
-                            onClick={() => setTimeModalTask(task)}
-                            className="text-sm text-cdy-red hover:underline"
-                          >
-                            Log time
-                          </button>
                         </div>
                       );
                     })}
@@ -226,79 +171,6 @@ export default function MyTasksPage(): JSX.Element {
               ))}
             </div>
           )}
-        </>
-      )}
-
-      {timeModalTask && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/60"
-            onClick={() => setTimeModalTask(null)}
-            role="presentation"
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy p-6 shadow-xl">
-              <h3 className="mb-4 font-semibold text-cdy-white">
-                Log Time — {timeModalTask.title}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="timeDate">Date</Label>
-                  <Input
-                    id="timeDate"
-                    type="date"
-                    value={timeForm.date}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({ ...f, date: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="timeHours">Hours *</Label>
-                  <Input
-                    id="timeHours"
-                    type="number"
-                    min="0.01"
-                    max="24"
-                    step="0.25"
-                    value={timeForm.hours}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({ ...f, hours: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="timeDesc">Description</Label>
-                  <Input
-                    id="timeDesc"
-                    value={timeForm.description}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({
-                        ...f,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setTimeModalTask(null)}
-                >
-                  Cancel
-                </Button>
-                <PermissionGate feature="projects.time" action="write">
-                  <Button
-                    onClick={() => void handleLogTime()}
-                    disabled={logTime.isPending}
-                  >
-                    Log Time
-                  </Button>
-                </PermissionGate>
-              </div>
-            </div>
-          </div>
         </>
       )}
     </div>

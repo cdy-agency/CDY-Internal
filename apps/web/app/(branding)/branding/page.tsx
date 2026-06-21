@@ -77,6 +77,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [totalCost, setTotalCost] = useState('');
+  const [currency, setCurrency] = useState('RWF');
   const [scopeItems, setScopeItems] = useState<string[]>(['']);
   const [error, setError] = useState('');
 
@@ -84,6 +86,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
     setSelectedClient(null);
     setName('');
     setDescription('');
+    setTotalCost('');
+    setCurrency('RWF');
     setScopeItems(['']);
     setError('');
   }
@@ -116,6 +120,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
         clientId: selectedClient.id,
         name: name.trim(),
         description: description.trim() || undefined,
+        totalCost: totalCost.trim() || undefined,
+        currency: totalCost.trim() ? currency : undefined,
         scopeItems: validItems.length > 0 ? validItems : undefined,
       });
       reset();
@@ -181,6 +187,34 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
                 rows={2}
                 className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-1 focus:ring-cdy-red"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="br-cost">Total cost (optional)</Label>
+              <div className="mt-1 flex gap-2">
+                <Input
+                  id="br-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={totalCost}
+                  onChange={(e) => setTotalCost(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 border-cdy-navy-border bg-cdy-navy text-cdy-white"
+                />
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-24 rounded-md border border-cdy-navy-border bg-cdy-navy px-2 py-2 text-sm text-cdy-white focus:outline-none focus:ring-1 focus:ring-cdy-red"
+                >
+                  <option value="RWF">RWF</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+              {totalCost && (
+                <p className="mt-1 text-xs text-cdy-muted">A DRAFT invoice will be created automatically.</p>
+              )}
             </div>
 
             <div>

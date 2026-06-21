@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Plus, Users } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, ExternalLink, Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -448,6 +448,14 @@ export default function SalesCampaignDetailPage() {
             <span className={`rounded-full px-2 py-0.5 text-xs ${cfg.className}`}>{cfg.label}</span>
           </div>
           <p className="text-cdy-muted">{campaign.client.companyName}</p>
+          {campaign.invoiceId && (
+            <a
+              href={`/finance/invoices/${campaign.invoiceId}`}
+              className="mt-0.5 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+            >
+              <ExternalLink className="h-3 w-3" /> View Draft Invoice
+            </a>
+          )}
           <div className="mt-1 flex flex-wrap gap-4 text-sm text-cdy-muted">
             {campaign.productService && <span>Product: {campaign.productService}</span>}
             {campaign.territory && <span>Territory: {campaign.territory}</span>}

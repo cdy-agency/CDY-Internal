@@ -52,5 +52,13 @@ export class CreateSalesCampaignDto {
 
   @IsOptional()
   @IsString()
+  totalCost?: string;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }

@@ -38,15 +38,6 @@ CREATE INDEX "Task_assigneeId_dueDate_idx" ON "Task"("assigneeId", "dueDate");
 CREATE INDEX "Task_milestoneId_status_idx" ON "Task"("milestoneId", "status");
 
 -- CreateIndex
-CREATE INDEX "TimeEntry_projectId_date_idx" ON "TimeEntry"("projectId", "date");
-
--- CreateIndex
-CREATE INDEX "TimeEntry_employeeId_date_idx" ON "TimeEntry"("employeeId", "date");
-
--- CreateIndex
-CREATE INDEX "TimeEntry_projectId_isBillable_idx" ON "TimeEntry"("projectId", "isBillable");
-
--- CreateIndex
 CREATE INDEX "Milestone_projectId_status_idx" ON "Milestone"("projectId", "status");
 
 -- CreateIndex
