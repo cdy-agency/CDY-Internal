@@ -23,6 +23,7 @@ import { BudgetModule } from '../budget/budget.module';
 import { PayrollModule } from '../payroll/payroll.module';
 import { SettingsModule } from '../settings/settings.module';
 import { VenturesModule } from '../ventures/ventures.module';
+import { ReserveModule } from './reserve/reserve.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { VenturesModule } from '../ventures/ventures.module';
     PayrollModule,
     SettingsModule,
     VenturesModule,
+    ReserveModule,
   ],
 
   controllers: [FinanceController],

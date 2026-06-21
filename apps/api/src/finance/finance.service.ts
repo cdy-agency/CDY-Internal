@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CashFlowService } from '../reports/cash-flow.service';
 import { VenturesService } from '../ventures/ventures.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
+import { ReserveService } from './reserve/reserve.service';
 import { FinanceSummaryMetrics } from '@cdy/shared';
 
 interface BalanceResult {
@@ -26,6 +27,7 @@ export class FinanceService {
     private readonly prisma: PrismaService,
     private readonly cashFlowService: CashFlowService,
     private readonly venturesService: VenturesService,
+    private readonly reserveService: ReserveService,
   ) {}
 
   private pctChange(current: number, previous: number): number {
@@ -187,6 +189,7 @@ export class FinanceService {
 
     const cashFlowAlert = await this.cashFlowService.hasShortfallIn30Days();
     const { totalActiveEmployees, totalMonthlyPayroll } = hrMetrics;
+    const reserve = await this.reserveService.getMonthlySummary();
 
     this.logger.debug('Finance summary computed');
 
@@ -227,6 +230,7 @@ export class FinanceService {
       recentInvoices,
       topClients,
       pendingLeaveRequests,
+      reserve,
     };
   }
 

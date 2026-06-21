@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Store,
+  Landmark,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
   },
   { label: 'Retainers', href: '/finance/retainers', icon: RefreshCw, feature: 'finance.retainers' },
   { label: 'Project Budget', href: '/finance/budget', icon: PiggyBank, feature: 'finance.budget' },
+  { label: 'Reserve Fund', href: '/finance/reserve', icon: Landmark, feature: 'finance.reserve' },
   { label: 'Reports', href: '/finance/reports', icon: BarChart3, feature: 'finance.reports' },
   {
     label: 'Commissions',

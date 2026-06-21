@@ -6,6 +6,7 @@ import { subMonths, format } from 'date-fns';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { usePermissions } from '@/context/PermissionContext';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 import {
   MetricHero,
   SectionCard,
@@ -338,7 +339,41 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       )}
 
-      {/* Row 6 — Recent invoices + Top clients */}
+      {/* Row 6 — Reserve Fund (Finance Manager + CEO only) */}
+      <PermissionGate feature="finance.reserve" action="read">
+        <SectionCard>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-cdy-dim">
+              Reserve Fund
+            </p>
+            <Link href="/finance/reserve" className="text-xs text-cdy-red hover:underline">
+              Manage →
+            </Link>
+          </div>
+          <MetricHero
+            value={`${data?.reserve?.currency ?? 'RWF'} ${Number(data?.reserve?.balance ?? 0).toLocaleString()}`}
+            label="Current balance"
+            size="md"
+            isLoading={isLoading}
+          />
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-cdy-navy-border pt-3">
+            <div>
+              <p className="text-xs text-cdy-dim">In this month</p>
+              <p className="font-mono text-sm text-green-400">
+                + {Number(data?.reserve?.depositsThisMonth ?? 0).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-cdy-dim">Out this month</p>
+              <p className="font-mono text-sm text-red-400">
+                − {Number(data?.reserve?.withdrawalsThisMonth ?? 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+      </PermissionGate>
+
+      {/* Row 7 — Recent invoices + Top clients */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard
           title="Recent invoices"

@@ -59,4 +59,10 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
     outstanding: number;
   }>;
   pendingLeaveRequests!: number;
+  reserve!: {
+    balance: number;
+    currency: string;
+    depositsThisMonth: number;
+    withdrawalsThisMonth: number;
+  };
 }
