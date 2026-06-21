@@ -37,10 +37,10 @@ export async function seedProjectsData(
   });
 
   const pmUser =
-    (await prisma.user.findUnique({ where: { email: 'pm@cdy.com' } })) ??
+    (await prisma.user.findUnique({ where: { email: 'pm@cdyagency.com' } })) ??
     (await prisma.user.create({
       data: {
-        email: 'pm@cdy.com',
+        email: 'pm@cdyagency.com',
         passwordHash,
         firstName: 'Kofi',
         lastName: 'Asante',

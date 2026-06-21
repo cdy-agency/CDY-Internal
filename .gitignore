@@ -10,3 +10,5 @@ apps/web/.env.local
 coverage
 docker-compose.override.yml
 .env.docker.local
+.env.docker
+
