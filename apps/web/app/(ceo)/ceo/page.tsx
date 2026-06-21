@@ -50,6 +50,10 @@ interface CeoSummary {
     pendingCommissions: number;
     monthlyRevenueTrend: MonthPoint[];
     invoicesByStatus: Record<string, number>;
+    reserve: {
+      balance: number;
+      currency: string;
+    };
   };
   crm: {
     totalLeadsMTD: number;
@@ -265,16 +269,25 @@ export default function CeoDashboardPage() {
             {isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <DonutChart
-                segments={[
-                  { label: 'Paid',    value: summary?.finance.invoicesByStatus['PAID'] ?? 0,    color: '#4ADE80' },
-                  { label: 'Sent',    value: summary?.finance.invoicesByStatus['SENT'] ?? 0,    color: '#60A5FA' },
-                  { label: 'Overdue', value: summary?.finance.invoicesByStatus['OVERDUE'] ?? 0, color: '#F87171' },
-                  { label: 'Draft',   value: summary?.finance.invoicesByStatus['DRAFT'] ?? 0,   color: '#94A3B8' },
-                ]}
-                size={110}
-                thickness={20}
-              />
+              <>
+                <DonutChart
+                  segments={[
+                    { label: 'Paid',    value: summary?.finance.invoicesByStatus['PAID'] ?? 0,    color: '#4ADE80' },
+                    { label: 'Sent',    value: summary?.finance.invoicesByStatus['SENT'] ?? 0,    color: '#60A5FA' },
+                    { label: 'Overdue', value: summary?.finance.invoicesByStatus['OVERDUE'] ?? 0, color: '#F87171' },
+                    { label: 'Draft',   value: summary?.finance.invoicesByStatus['DRAFT'] ?? 0,   color: '#94A3B8' },
+                  ]}
+                  size={110}
+                  thickness={20}
+                />
+                <div className="mt-3 flex justify-between border-t border-cdy-navy-border pt-3 text-sm">
+                  <span className="text-cdy-muted">Reserve balance</span>
+                  <span className="font-mono font-medium text-cdy-white">
+                    {summary?.finance.reserve?.currency ?? 'RWF'}{' '}
+                    {Number(summary?.finance.reserve?.balance ?? 0).toLocaleString()}
+                  </span>
+                </div>
+              </>
             )}
           </SectionCard>
         </div>

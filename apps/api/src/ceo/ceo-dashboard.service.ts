@@ -60,6 +60,8 @@ export class CeoDashboardService {
       venturesSummary,
 
       pendingBudgetRequests,
+
+      reserveAccount,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -230,6 +232,9 @@ export class CeoDashboardService {
 
       // ── CEO pending actions ──────────────────────────────────
       this.prisma.projectBudget.count({ where: { isBlocked: true } }),
+
+      // ── Reserve ──────────────────────────────────────────────
+      this.prisma.reserveAccount.findFirst({ select: { balance: true, currency: true } }),
     ]);
 
     // Venture summary
@@ -278,6 +283,10 @@ export class CeoDashboardService {
         invoicesByStatus: Object.fromEntries(
           invoicesByStatus.map((s) => [s.status, s._count.id]),
         ),
+        reserve: {
+          balance: Number(reserveAccount?.balance ?? 0),
+          currency: reserveAccount?.currency ?? 'RWF',
+        },
       },
 
       crm: {

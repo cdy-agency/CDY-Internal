@@ -7,6 +7,17 @@ const prisma = new PrismaClient();
 async function main(): Promise<void> {
   await seedRbac(prisma);
 
+  await prisma.reserveAccount.upsert({
+    where: { id: 'cdy-reserve' },
+    create: {
+      id: 'cdy-reserve',
+      name: 'CDY Company Reserve',
+      balance: 0,
+      currency: 'RWF',
+    },
+    update: {},
+  });
+
   const forceReseed = process.env.SEED_FORCE === 'true';
 
   if (!forceReseed) {

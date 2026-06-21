@@ -2314,3 +2314,40 @@ model CronLog {
   @@index([startedAt])
   @@index([jobName, startedAt])
 }
+
+// ─── Reserve Fund ──────────────────────────────────────────────
+
+model ReserveAccount {
+  id        String   @id @default(cuid())
+  name      String   @default("CDY Company Reserve")
+  balance   Decimal  @db.Decimal(12, 2) @default(0)
+  currency  String   @default("RWF")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions ReserveTransaction[]
+}
+
+model ReserveTransaction {
+  id               String      @id @default(cuid())
+  reserveAccountId String
+  type             ReserveType
+  amount           Decimal     @db.Decimal(12, 2)
+  balanceAfter     Decimal     @db.Decimal(12, 2)
+  description      String
+  reference        String?
+  createdBy        String
+  createdAt        DateTime    @default(now())
+
+  reserveAccount ReserveAccount @relation(fields: [reserveAccountId], references: [id])
+
+  @@index([reserveAccountId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+enum ReserveType {
+  DEPOSIT
+  WITHDRAWAL
+}

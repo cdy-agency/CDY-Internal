@@ -215,6 +215,12 @@ export interface FinanceSummary {
   recentInvoices: FinanceSummaryRecentInvoice[];
   topClients: FinanceSummaryTopClient[];
   pendingLeaveRequests: number;
+  reserve: {
+    balance: number;
+    currency: string;
+    depositsThisMonth: number;
+    withdrawalsThisMonth: number;
+  };
 }
 
 export enum NotificationType {
