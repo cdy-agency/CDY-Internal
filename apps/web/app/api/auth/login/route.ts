@@ -12,8 +12,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-
     const result = await response.json();
+    console.log('Login response:', result); // Log the response to check if the request was successful
 
     if (!response.ok) {
       return NextResponse.json(
@@ -44,7 +44,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     return nextResponse;
-  } catch {
+  } catch (error) {
+    console.log('Login response:', error); // Log the response to check if the request was successful
     return NextResponse.json({ message: 'Login failed' }, { status: 500 });
+
   }
 }
