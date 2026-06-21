@@ -58,7 +58,6 @@ export class AuthService {
       roleKey: profile.roleKey,
       roleName: profile.roleName,
       homeModule: profile.homeModule,
-      permissions: profile.permissions,
     };
 
     const tokens = await this.generateTokens(payload);
@@ -104,7 +103,6 @@ export class AuthService {
         roleKey: profile.roleKey,
         roleName: profile.roleName,
         homeModule: profile.homeModule,
-        permissions: profile.permissions,
       };
 
       const accessToken = await this.jwtService.signAsync(accessPayload, {

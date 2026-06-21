@@ -9,7 +9,7 @@ export interface JwtPayload {
   roleKey: string;
   roleName: string;
   homeModule: string;
-  permissions: PermissionMap;
+  permissions?: PermissionMap;
 }
 
 export const CurrentUser = createParamDecorator(

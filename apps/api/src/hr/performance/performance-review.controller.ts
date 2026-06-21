@@ -16,6 +16,7 @@ import {
   CurrentUser,
   JwtPayload,
 } from '../../auth/decorators/current-user.decorator';
+import { RbacService } from '../../rbac/rbac.service';
 import { buildAuditContext } from '../../common/audit/build-audit-context';
 import { EmployeesService } from '../employees/employees.service';
 import { PerformanceReviewService } from './performance-review.service';
@@ -32,6 +33,7 @@ export class PerformanceReviewController {
   constructor(
     private readonly performanceReviewService: PerformanceReviewService,
     private readonly employeesService: EmployeesService,
+    private readonly rbacService: RbacService,
   ) {}
 
   @Post()
@@ -89,7 +91,7 @@ export class PerformanceReviewController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const canReadAll = Boolean(user.permissions?.['hr.performance']?.canRead);
+    const canReadAll = await this.rbacService.can(user.sub, 'hr.performance', 'read');
     const data = await this.performanceReviewService.findOneAccessible(
       id,
       user.sub,
