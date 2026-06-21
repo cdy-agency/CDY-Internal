@@ -70,6 +70,7 @@ services:
       NODE_ENV: production
       PORT: 3250
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      COOKIES_SECURE: ${COOKIES_SECURE:-false}
     ports:
       - '3250:3250'
     depends_on:
