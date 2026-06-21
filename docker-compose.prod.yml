@@ -56,6 +56,8 @@
         context: .
         dockerfile: docker/web/Dockerfile
         target: production
+        args:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       container_name: cdy_web_prod
       restart: always
       environment:
