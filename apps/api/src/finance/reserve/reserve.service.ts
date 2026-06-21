@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ReserveType } from '@prisma/client';
+import { ExpenseCategory, ReserveType } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -55,6 +55,18 @@ export class ReserveService {
           balanceAfter: newBalance,
           description: dto.description,
           reference: dto.reference,
+          createdBy: userId,
+        },
+      });
+
+      await tx.expense.create({
+        data: {
+          vendorName: 'Reserve Fund',
+          category: ExpenseCategory.OTHER,
+          amount: dto.amount,
+          currency: account.currency,
+          date: new Date(),
+          notes: `Reserve fund deposit: ${dto.description}`,
           createdBy: userId,
         },
       });
