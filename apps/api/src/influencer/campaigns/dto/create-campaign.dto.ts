@@ -33,6 +33,10 @@ export class CreateCampaignDto {
   @IsString()
   currency?: string;
 
+  @IsOptional()
+  @IsDecimal()
+  totalCost?: string;
+
   @IsDateString()
   startDate!: string;
 

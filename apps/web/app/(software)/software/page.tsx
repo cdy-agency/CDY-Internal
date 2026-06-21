@@ -74,6 +74,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
   const [projectType, setProjectType] = useState('WEBSITE');
   const [startDate, setStartDate] = useState('');
   const [description, setDescription] = useState('');
+  const [totalCost, setTotalCost] = useState('');
+  const [currency, setCurrency] = useState('RWF');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
@@ -83,6 +85,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
     setProjectType('WEBSITE');
     setStartDate('');
     setDescription('');
+    setTotalCost('');
+    setCurrency('RWF');
     setNotes('');
     setError('');
   }
@@ -109,6 +113,8 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
         projectType,
         startDate,
         description: description.trim() || undefined,
+        totalCost: totalCost.trim() || undefined,
+        currency: totalCost.trim() ? currency : undefined,
         notes: notes.trim() || undefined,
       });
       reset();
@@ -205,6 +211,34 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
                 rows={3}
                 className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-1 focus:ring-cdy-red"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="sw-cost">Total cost (optional)</Label>
+              <div className="mt-1 flex gap-2">
+                <Input
+                  id="sw-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={totalCost}
+                  onChange={(e) => setTotalCost(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 border-cdy-navy-border bg-cdy-navy text-cdy-white"
+                />
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-24 rounded-md border border-cdy-navy-border bg-cdy-navy px-2 py-2 text-sm text-cdy-white focus:outline-none focus:ring-1 focus:ring-cdy-red"
+                >
+                  <option value="RWF">RWF</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+              {totalCost && (
+                <p className="mt-1 text-xs text-cdy-muted">A DRAFT invoice will be created automatically.</p>
+              )}
             </div>
 
             <div>

@@ -119,34 +119,70 @@ export default function ProfitAndLossPage(): JSX.Element {
         },
         {
           title: 'Operating Expenses',
-          rows: [
-            ...data.operatingExpenses.byCategory.map((r) => ({
-              label: categoryLabel(r.category),
-              current: r.amount,
-              previous:
-                data.previousPeriod.opexByCategory.find(
-                  (p) => p.category === r.category,
-                )?.amount ?? 0,
-            })),
-            {
-              label: 'TOTAL OPEX',
-              current: data.operatingExpenses.total,
-              previous: data.previousPeriod.totalOpex,
-              isTotal: true,
-            },
-            {
-              label: 'NET PROFIT',
-              current: data.netProfit,
-              previous: data.previousPeriod.netProfit,
-              isHighlight: true,
-            },
-            {
-              label: 'NET MARGIN',
-              current: data.netMargin,
-              previous: data.previousPeriod.netMargin,
-              isPercent: true,
-            },
-          ],
+          rows: (() => {
+            const staffCategories = [ExpenseCategory.STAFF, ExpenseCategory.COMMISSION];
+            const staffRows = data.operatingExpenses.byCategory.filter((r) =>
+              staffCategories.includes(r.category),
+            );
+            const otherRows = data.operatingExpenses.byCategory.filter(
+              (r) => !staffCategories.includes(r.category),
+            );
+            const staffTotal = staffRows.reduce((s, r) => s + r.amount, 0);
+            const prevStaffRows = data.previousPeriod.opexByCategory.filter((r) =>
+              staffCategories.includes(r.category),
+            );
+            const prevStaffTotal = prevStaffRows.reduce((s, r) => s + r.amount, 0);
+
+            const rows = [];
+
+            if (staffRows.length > 0) {
+              rows.push(
+                ...staffRows.map((r) => ({
+                  label: `  ${categoryLabel(r.category)}`,
+                  current: r.amount,
+                  previous:
+                    data.previousPeriod.opexByCategory.find((p) => p.category === r.category)
+                      ?.amount ?? 0,
+                })),
+                {
+                  label: 'STAFF COSTS',
+                  current: staffTotal,
+                  previous: prevStaffTotal,
+                  isTotal: true,
+                },
+              );
+            }
+
+            rows.push(
+              ...otherRows.map((r) => ({
+                label: categoryLabel(r.category),
+                current: r.amount,
+                previous:
+                  data.previousPeriod.opexByCategory.find((p) => p.category === r.category)
+                    ?.amount ?? 0,
+              })),
+              {
+                label: 'TOTAL OPEX',
+                current: data.operatingExpenses.total,
+                previous: data.previousPeriod.totalOpex,
+                isTotal: true,
+              },
+              {
+                label: 'NET PROFIT',
+                current: data.netProfit,
+                previous: data.previousPeriod.netProfit,
+                isHighlight: true,
+              },
+              {
+                label: 'NET MARGIN',
+                current: data.netMargin,
+                previous: data.previousPeriod.netMargin,
+                isPercent: true,
+              },
+            );
+
+            return rows;
+          })(),
         },
       ]
     : [];

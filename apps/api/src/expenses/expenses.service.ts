@@ -257,6 +257,8 @@ export class ExpensesService {
     receiptUrl: string | null;
     uploadPath: string | null;
     notes: string | null;
+    isPayrollExpense: boolean;
+    payrollRunId: string | null;
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
@@ -264,7 +266,7 @@ export class ExpensesService {
     return {
       ...expense,
       amount: Number(expense.amount),
-      canEdit: Date.now() - expense.createdAt.getTime() <= EDIT_WINDOW_MS,
+      canEdit: !expense.isPayrollExpense && Date.now() - expense.createdAt.getTime() <= EDIT_WINDOW_MS,
     };
   }
 }

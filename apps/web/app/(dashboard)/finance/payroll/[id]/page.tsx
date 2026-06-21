@@ -382,6 +382,30 @@ export default function PayrollDetailPage(): JSX.Element {
         </table>
       </div>
 
+      {run.expenses && run.expenses.length > 0 && (
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-cdy-muted">
+            Finance Expense Records
+          </p>
+          <div className="divide-y divide-cdy-navy-border/50">
+            {run.expenses.map((expense) => (
+              <div key={expense.id} className="flex items-center justify-between py-2 text-sm">
+                <span className="text-cdy-muted">{expense.vendorName}</span>
+                <span className="font-mono font-medium text-cdy-white">
+                  {formatCurrency(expense.amount, expense.currency)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-cdy-muted">
+            These expenses appear in the P&L report under Staff Costs.{' '}
+            <a href="/finance/expenses" className="text-cdy-red hover:underline">
+              View in expense list →
+            </a>
+          </p>
+        </div>
+      )}
+
       {adjustItem && (
         <AdjustModal
           item={adjustItem}

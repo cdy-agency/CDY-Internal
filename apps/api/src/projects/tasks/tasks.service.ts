@@ -70,7 +70,7 @@ export class TasksService {
       include: {
         milestone: { select: { name: true } },
         subTasks: { where: { deletedAt: null }, orderBy: { order: 'asc' } },
-        _count: { select: { comments: true, timeEntries: true } },
+        _count: { select: { comments: true } },
       },
     });
 
@@ -264,7 +264,7 @@ export class TasksService {
           where: { deletedAt: null },
           orderBy: { order: 'asc' },
         },
-        _count: { select: { comments: true, timeEntries: true } },
+        _count: { select: { comments: true } },
       },
       orderBy: [
         { priority: 'desc' },
@@ -400,7 +400,7 @@ export class TasksService {
           orderBy: { createdAt: 'asc' },
         },
         statusHistory: { orderBy: { changedAt: 'desc' }, take: 20 },
-        _count: { select: { comments: true, timeEntries: true } },
+        _count: { select: { comments: true } },
       },
     });
     if (!task) throw new NotFoundException('Task not found');
@@ -414,15 +414,9 @@ export class TasksService {
       assigneeName = emp ? `${emp.firstName} ${emp.lastName}` : null;
     }
 
-    const timeLogged = await this.prisma.timeEntry.aggregate({
-      where: { taskId },
-      _sum: { hours: true },
-    });
-
     return {
       ...this.serializeTask(task),
       assigneeName,
-      loggedHours: Number(timeLogged._sum.hours ?? 0),
       comments: task.comments.map((c) => ({
         id: c.id,
         authorId: c.authorId,
@@ -467,7 +461,7 @@ export class TasksService {
       },
       include: {
         subTasks: { where: { deletedAt: null } },
-        _count: { select: { comments: true, timeEntries: true } },
+        _count: { select: { comments: true } },
       },
     });
 
@@ -508,7 +502,7 @@ export class TasksService {
         },
         include: {
           subTasks: { where: { deletedAt: null } },
-          _count: { select: { comments: true, timeEntries: true } },
+          _count: { select: { comments: true } },
         },
       }),
       this.prisma.taskStatusHistory.create({
@@ -607,13 +601,13 @@ export class TasksService {
     task: Prisma.TaskGetPayload<{
       include: {
         subTasks?: true;
-        _count?: { select: { comments: true; timeEntries: true } };
+        _count?: { select: { comments: true } };
         milestone?: { select: { name: true } };
       };
     }> | Prisma.TaskGetPayload<object>,
   ) {
     const withCounts = task as Prisma.TaskGetPayload<{
-      include: { _count: { select: { comments: true; timeEntries: true } } };
+      include: { _count: { select: { comments: true } } };
     }>;
 
     return {
@@ -639,7 +633,6 @@ export class TasksService {
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
       commentCount: withCounts._count?.comments ?? 0,
-      timeEntryCount: withCounts._count?.timeEntries ?? 0,
     };
   }
 }

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { format, isPast, isToday, differenceInDays, parseISO } from 'date-fns';
-import toast from 'react-hot-toast';
 import {
   ProjectStatus,
   TaskPriority,
@@ -12,11 +11,10 @@ import {
   useProjectsSummary,
   useProjects,
   useProjectProgress,
-  useApproveMilestone,
 } from '@/hooks/useProjects';
 import { Button } from '@/components/ui/button';
 import { PermissionGate } from '@/components/PermissionGate';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   MetricHero,
   SectionCard,
@@ -93,19 +91,6 @@ export default function ProjectsOverviewPage(): JSX.Element {
   const { data: projects, isLoading: projectsLoading } = useProjects({
     status: ProjectStatus.ACTIVE,
   });
-  const approveMilestone = useApproveMilestone();
-
-  async function handleApprove(
-    projectId: string,
-    milestoneId: string,
-  ): Promise<void> {
-    try {
-      await approveMilestone.mutateAsync({ projectId, milestoneId });
-      toast.success('Milestone approved — draft invoice created in Finance.');
-    } catch {
-      /* interceptor */
-    }
-  }
 
   const activeProjects = projects ?? [];
   const totalTracked =
@@ -168,7 +153,7 @@ export default function ProjectsOverviewPage(): JSX.Element {
       </div>
 
       {/* Row 1 — Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <SectionCard>
           <MetricHero
             value={String(summary?.activeProjects ?? 0)}
@@ -200,22 +185,6 @@ export default function ProjectsOverviewPage(): JSX.Element {
             }
             badgeVariant={
               (summary?.blockedTasks ?? 0) > 0 ? 'red' : 'green'
-            }
-            isLoading={summaryLoading}
-            size="md"
-          />
-        </SectionCard>
-        <SectionCard>
-          <MetricHero
-            value={String(summary?.milestonesAwaitingApproval ?? 0)}
-            label="Milestones to approve"
-            badge={
-              (summary?.milestonesAwaitingApproval ?? 0) > 0
-                ? 'PENDING'
-                : 'ALL CLEAR'
-            }
-            badgeVariant={
-              (summary?.milestonesAwaitingApproval ?? 0) > 0 ? 'amber' : 'green'
             }
             isLoading={summaryLoading}
             size="md"
@@ -287,90 +256,42 @@ export default function ProjectsOverviewPage(): JSX.Element {
         </SectionCard>
       </div>
 
-      {/* Row 3 — Upcoming deadlines + Milestones awaiting approval */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Upcoming deadlines — 7 days">
-          {summaryLoading ? (
-            <p className="text-sm text-cdy-muted">Loading…</p>
-          ) : (summary?.upcomingDeadlines.length ?? 0) === 0 ? (
-            <p className="text-sm text-cdy-muted">No deadlines in the next 7 days.</p>
-          ) : (
-            <DataTable
-              columns={['Task', 'Project', 'Assignee', 'Due']}
-              rows={(summary?.upcomingDeadlines ?? []).map((d) => {
-                const due = parseISO(d.dueDate);
-                const overdue = isPast(due) && !isToday(due);
-                const dueToday = isToday(due);
-                return [
-                  <span key="task" className={cn(
-                    PRIORITY_COLORS[d.priority],
-                    'font-medium',
-                  )}>
-                    {d.title}
-                  </span>,
-                  d.projectName,
-                  d.assigneeName,
-                  <span key="due" className={cn(
-                    overdue ? 'text-cdy-red font-semibold' :
-                    dueToday ? 'text-amber-400 font-semibold' :
-                    'text-cdy-muted',
-                  )}>
-                    {format(due, 'MMM d')}
-                    {overdue && ' (overdue)'}
-                    {dueToday && ' (today)'}
-                  </span>,
-                ];
-              })}
-            />
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Milestones awaiting approval"
-          action={
-            (summary?.milestonesAwaitingApproval ?? 0) > 0 ? (
-              <span className="rounded-full bg-cdy-red/20 px-2 py-0.5 text-xs text-cdy-red">
-                {summary!.milestonesAwaitingApproval}
-              </span>
-            ) : undefined
-          }
-        >
-          {summaryLoading ? (
-            <p className="text-sm text-cdy-muted">Loading…</p>
-          ) : (summary?.milestonesPendingApproval.length ?? 0) === 0 ? (
-            <p className="text-sm text-cdy-muted">None pending approval.</p>
-          ) : (
-            <div className="space-y-3">
-              {summary?.milestonesPendingApproval.map((milestone) => (
-                <div
-                  key={milestone.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-cdy-navy-border bg-cdy-navy p-3"
-                >
-                  <div>
-                    <p className="font-medium text-cdy-white">
-                      {milestone.projectName} — {milestone.name}
-                    </p>
-                    <p className="text-sm text-cdy-muted">
-                      {formatCurrency(milestone.billingAmount, milestone.currency)}
-                    </p>
-                  </div>
-                  <PermissionGate feature="projects.approvals" action="write">
-                    <Button
-                      size="sm"
-                      disabled={approveMilestone.isPending}
-                      onClick={() =>
-                        void handleApprove(milestone.projectId, milestone.id)
-                      }
-                    >
-                      Approve
-                    </Button>
-                  </PermissionGate>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
+      {/* Row 3 — Upcoming deadlines */}
+      <SectionCard title="Upcoming deadlines — 7 days">
+        {summaryLoading ? (
+          <p className="text-sm text-cdy-muted">Loading…</p>
+        ) : (summary?.upcomingDeadlines.length ?? 0) === 0 ? (
+          <p className="text-sm text-cdy-muted">No deadlines in the next 7 days.</p>
+        ) : (
+          <DataTable
+            columns={['Task', 'Project', 'Assignee', 'Due']}
+            rows={(summary?.upcomingDeadlines ?? []).map((d) => {
+              const due = parseISO(d.dueDate);
+              const overdue = isPast(due) && !isToday(due);
+              const dueToday = isToday(due);
+              return [
+                <span key="task" className={cn(
+                  PRIORITY_COLORS[d.priority],
+                  'font-medium',
+                )}>
+                  {d.title}
+                </span>,
+                d.projectName,
+                d.assigneeName,
+                <span key="due" className={cn(
+                  overdue ? 'text-cdy-red font-semibold' :
+                  dueToday ? 'text-amber-400 font-semibold' :
+                  'text-cdy-muted',
+                )}>
+                  {format(due, 'MMM d')}
+                  {overdue && ' (overdue)'}
+                  {dueToday && ' (today)'}
+                </span>,
+              ];
+            })}
+          />
+        )}
+      </SectionCard>
     </div>
   );
 }

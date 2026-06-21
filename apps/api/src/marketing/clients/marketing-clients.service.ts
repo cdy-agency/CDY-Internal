@@ -1,9 +1,10 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
-import { ContentStatus } from '@prisma/client';
+import { ContentStatus, RetainerStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateMarketingClientDto,
@@ -15,23 +16,35 @@ export class MarketingClientsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateMarketingClientDto, userId: string) {
-    const client = await this.prisma.client.findFirst({
-      where: { id: dto.clientId, deletedAt: null },
+    const retainer = await this.prisma.retainerContract.findUnique({
+      where: { id: dto.retainerId },
+      include: { client: { select: { id: true, companyName: true } } },
     });
-    if (!client) throw new NotFoundException('Client not found in CRM');
+    if (!retainer) throw new NotFoundException('Retainer contract not found');
+    if (retainer.status !== RetainerStatus.ACTIVE) {
+      throw new BadRequestException('Retainer must be ACTIVE to link a marketing client');
+    }
 
     const existing = await this.prisma.marketingClient.findUnique({
-      where: { clientId: dto.clientId },
+      where: { retainerId: dto.retainerId },
     });
-    if (existing)
-      throw new ConflictException(
-        'Marketing service already set up for this client',
-      );
+    if (existing) {
+      throw new ConflictException('Marketing service already set up for this retainer');
+    }
 
     return this.prisma.marketingClient.create({
-      data: { ...dto, createdBy: userId },
+      data: {
+        retainerId: dto.retainerId,
+        clientId: retainer.client.id,
+        projectId: dto.projectId,
+        platforms: dto.platforms,
+        postsPerMonth: dto.postsPerMonth,
+        notes: dto.notes,
+        createdBy: userId,
+      },
       include: {
         client: { select: { companyName: true, contactName: true } },
+        retainer: { select: { serviceName: true, status: true } },
       },
     });
   }
@@ -43,6 +56,7 @@ export class MarketingClientsService {
         client: {
           select: { companyName: true, contactName: true, email: true },
         },
+        retainer: { select: { serviceName: true, status: true } },
         _count: {
           select: {
             contentItems: {
@@ -61,7 +75,10 @@ export class MarketingClientsService {
   async findOne(id: string) {
     const mc = await this.prisma.marketingClient.findUnique({
       where: { id },
-      include: { client: true },
+      include: {
+        client: true,
+        retainer: { select: { serviceName: true, status: true, amount: true, currency: true } },
+      },
     });
     if (!mc) throw new NotFoundException('Marketing client not found');
     return mc;
@@ -74,6 +91,7 @@ export class MarketingClientsService {
       data: dto,
       include: {
         client: { select: { companyName: true, contactName: true } },
+        retainer: { select: { serviceName: true, status: true } },
       },
     });
   }

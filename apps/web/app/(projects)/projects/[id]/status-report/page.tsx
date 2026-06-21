@@ -28,16 +28,7 @@ function buildReportText(
     `Done: ${report.progress.taskBreakdown.done}  ·  In Progress: ${report.progress.taskBreakdown.inProgress}  ·  Blocked: ${report.progress.taskBreakdown.blocked}  ·  To Do: ${report.progress.taskBreakdown.todo}`,
     '',
     'MILESTONES',
-    ...report.milestones.map(
-      (m) =>
-        `${m.name}    ${m.status}    ${m.billingAmount != null ? `$${m.billingAmount}` : '—'}`,
-    ),
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'FINANCIALS',
-    `Revenue invoiced:  $${report.financials.invoicedRevenue}    Collected: $${report.financials.collectedRevenue}`,
-    `Total costs:       $${report.financials.totalCosts}    Gross margin: ${report.financials.grossMargin}%`,
+    ...report.milestones.map((m) => `${m.name}    ${m.status}`),
     '',
     '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     '',

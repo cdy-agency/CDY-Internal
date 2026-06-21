@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -14,21 +15,13 @@ import {
   JwtPayload,
 } from '../../auth/decorators/current-user.decorator';
 import { MilestonesService } from './milestones.service';
-import { ProjectsSummaryService } from '../summary/projects-summary.service';
-import {
-  ApproveMilestoneDto,
-  CreateMilestoneDto,
-  UpdateMilestoneDto,
-} from './dto/milestone.dto';
+import { CreateMilestoneDto, UpdateMilestoneDto } from './dto/milestone.dto';
 
 @ApiTags('project-milestones')
 @ApiBearerAuth()
 @Controller('projects/:projectId/milestones')
 export class MilestonesController {
-  constructor(
-    private readonly milestonesService: MilestonesService,
-    private readonly projectsSummaryService: ProjectsSummaryService,
-  ) {}
+  constructor(private readonly milestonesService: MilestonesService) {}
 
   @Get()
   @RequirePermission('projects.all', 'read')
@@ -58,11 +51,7 @@ export class MilestonesController {
     @Param('milestoneId') milestoneId: string,
     @Body() dto: UpdateMilestoneDto,
   ) {
-    const data = await this.milestonesService.update(
-      projectId,
-      milestoneId,
-      dto,
-    );
+    const data = await this.milestonesService.update(projectId, milestoneId, dto);
     return { data, message: 'Milestone updated', statusCode: HttpStatus.OK };
   }
 
@@ -74,30 +63,19 @@ export class MilestonesController {
     @Param('milestoneId') milestoneId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.milestonesService.complete(
-      projectId,
-      milestoneId,
-      user.sub,
-    );
+    const data = await this.milestonesService.complete(projectId, milestoneId, user.sub);
     return { data, message: 'Milestone completed', statusCode: HttpStatus.OK };
   }
 
-  @Patch(':milestoneId/approve')
-  @RequirePermission('projects.approvals', 'write')
-  @ApiOperation({ summary: 'Approve milestone and trigger invoice' })
-  async approve(
+  @Delete(':milestoneId')
+  @RequirePermission('projects.all', 'write')
+  @ApiOperation({ summary: 'Delete milestone' })
+  async remove(
     @Param('projectId') projectId: string,
     @Param('milestoneId') milestoneId: string,
-    @Body() dto: ApproveMilestoneDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.milestonesService.approve(
-      projectId,
-      milestoneId,
-      dto,
-      user.sub,
-    );
-    await this.projectsSummaryService.invalidateSummaryCache();
-    return { data, message: 'Milestone approved', statusCode: HttpStatus.OK };
+    await this.milestonesService.remove(projectId, milestoneId, user.sub);
+    return { message: 'Milestone deleted', statusCode: HttpStatus.OK };
   }
 }

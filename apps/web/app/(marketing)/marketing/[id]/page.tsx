@@ -66,7 +66,7 @@ export default function ClientCalendarPage(): JSX.Element {
           Marketing
         </Link>
         <span className="mx-2">/</span>
-        <span className="text-cdy-white">{mc?.client.companyName ?? '…'}</span>
+        <span className="text-cdy-white">{mc?.client?.companyName ?? '…'}</span>
       </nav>
 
       {/* Header */}
@@ -75,7 +75,7 @@ export default function ClientCalendarPage(): JSX.Element {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-cdy-white">
-                {mc.client.companyName}
+                {mc.client?.companyName ?? '…'}
               </h1>
               <p className="mt-1 text-sm text-cdy-muted">
                 Platforms:{' '}

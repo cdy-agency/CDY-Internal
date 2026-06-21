@@ -4,6 +4,7 @@ import {
   Delete,
   Param,
   Body,
+  Req,
 } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
 import { AssignInfluencerDto } from './dto/assign-influencer.dto';
@@ -36,8 +37,9 @@ export class AssignmentsController {
   async logPayment(
     @Param('assignmentId') assignmentId: string,
     @Body() dto: LogPaymentDto,
+    @Req() req: Express.Request & { user: { sub: string } },
   ) {
-    const data = await this.assignmentsService.logPayment(assignmentId, dto);
+    const data = await this.assignmentsService.logPayment(assignmentId, dto, req.user.sub);
     return { data, message: 'Payment logged', statusCode: 200 };
   }
 }

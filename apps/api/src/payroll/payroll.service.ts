@@ -8,10 +8,12 @@
 import {
   CommissionStatus,
   EmployeeStatus,
+  ExpenseCategory,
   PayrollRun,
   PayrollStatus,
   Prisma,
 } from '@prisma/client';
+import { format, parse } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { SettingsService } from '../settings/settings.service';
@@ -142,7 +144,7 @@ export class PayrollService {
   async findRun(id: string) {
     const run = await this.prisma.payrollRun.findUnique({
       where: { id },
-      include: { lineItems: true },
+      include: { lineItems: true, expenses: true },
     });
     if (!run) throw new NotFoundException('Payroll run not found');
     return this.serializeRun(run);
@@ -277,8 +279,57 @@ export class PayrollService {
         processedAt: new Date(),
         processedBy: userId,
       },
-      include: { lineItems: true },
+      include: { lineItems: true, expenses: true },
     });
+
+    // Create Finance Expense records so payroll costs appear in the P&L
+    const periodLabel = format(parse(run.month, 'yyyy-MM', new Date()), 'MMMM yyyy');
+
+    const totalSalaries = run.lineItems.reduce(
+      (sum, item) => sum + Number(item.baseSalary) + Number(item.bonus),
+      0,
+    );
+    const totalCommissions = run.lineItems.reduce(
+      (sum, item) => sum + Number(item.commission),
+      0,
+    );
+
+    if (totalSalaries > 0) {
+      await this.prisma.expense.create({
+        data: {
+          vendorName: `Staff salaries — ${periodLabel}`,
+          amount: totalSalaries,
+          currency: run.currency ?? 'RWF',
+          category: ExpenseCategory.STAFF,
+          date: new Date(),
+          notes: `Auto-created from payroll run for ${periodLabel}. ${run.lineItems.length} employee${run.lineItems.length !== 1 ? 's' : ''}.`,
+          isPayrollExpense: true,
+          payrollRunId: runId,
+          createdBy: userId,
+        },
+      });
+    }
+
+    if (totalCommissions > 0) {
+      const commissionCount = run.lineItems.filter((i) => Number(i.commission) > 0).length;
+      await this.prisma.expense.create({
+        data: {
+          vendorName: `Sales commissions — ${periodLabel}`,
+          amount: totalCommissions,
+          currency: run.currency ?? 'RWF',
+          category: ExpenseCategory.COMMISSION,
+          date: new Date(),
+          notes: `Auto-created from payroll run for ${periodLabel}. ${commissionCount} commission${commissionCount !== 1 ? 's' : ''} paid.`,
+          isPayrollExpense: true,
+          payrollRunId: runId,
+          createdBy: userId,
+        },
+      });
+    }
+
+    this.logger.log(
+      `Payroll run processed for ${periodLabel}. Salaries: ${totalSalaries.toFixed(2)}, Commissions: ${totalCommissions.toFixed(2)}`,
+    );
 
     this.auditService.log({
       userId,
@@ -513,6 +564,7 @@ export class PayrollService {
   private serializeRun(
     run: PayrollRun & {
       lineItems: Prisma.PayrollLineItemGetPayload<object>[];
+      expenses?: Prisma.ExpenseGetPayload<object>[];
     },
   ) {
     return {
@@ -532,6 +584,13 @@ export class PayrollService {
       createdAt: run.createdAt.toISOString(),
       updatedAt: run.updatedAt.toISOString(),
       lineItems: run.lineItems.map((i) => this.serializeLineItem(i)),
+      expenses: (run.expenses ?? []).map((e) => ({
+        id: e.id,
+        vendorName: e.vendorName,
+        amount: Number(e.amount),
+        currency: e.currency,
+        category: e.category,
+      })),
     };
   }
 

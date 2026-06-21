@@ -105,11 +105,10 @@ export function useCreateMarketingClient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (dto: {
-      clientId: string;
+      retainerId: string;
       platforms: string[];
       postsPerMonth?: number;
       projectId?: string;
-      retainerId?: string;
       notes?: string;
     }) => {
       const res = await api.post<ApiResponse<MarketingClientRecord>>(

@@ -107,7 +107,7 @@ export class MarketingSummaryService {
     return Promise.all(
       clients.map(async (mc) => {
         const summary = await this.getMonthlySummary(mc.id, month);
-        return { clientName: mc.client.companyName, ...summary };
+        return { clientName: mc.client?.companyName ?? 'Unknown', ...summary };
       }),
     );
   }

@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   FolderOpen,
   CheckSquare,
-  Clock,
   BarChart2,
   BarChart3,
   LogOut,
@@ -52,12 +51,6 @@ const navItems = [
     icon: BarChart3,
     feature: 'projects.reports',
   },
-  {
-    label: 'Time Log',
-    href: '/projects/time',
-    icon: Clock,
-    feature: 'projects.time',
-  },
 ];
 
 interface ProjectsSidebarProps {
@@ -77,7 +70,6 @@ export function ProjectsSidebar({
 
   function isActive(href: string, exact?: boolean): boolean {
     if (href === '/projects/my') return pathname === href;
-    if (href === '/projects/time') return pathname === href;
     if (href === '/projects/workload') return pathname === href;
     if (href === '/projects/reports') {
       return (
@@ -90,7 +82,6 @@ export function ProjectsSidebar({
         pathname === '/projects' ||
         (pathname.startsWith('/projects/') &&
           pathname !== '/projects/my' &&
-          pathname !== '/projects/time' &&
           pathname !== '/projects/workload' &&
           pathname !== '/projects/reports' &&
           pathname !== '/projects/new')

@@ -1,19 +1,24 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { BrandingStatus, ScopeStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { InvoiceNumberService } from '../../invoices/invoice-number.service';
 import { CreateBrandingProjectDto } from './dto/create-branding-project.dto';
 import { CreateScopeItemDto } from './dto/create-scope-item.dto';
 
 @Injectable()
 export class BrandingProjectsService {
+  private readonly logger = new Logger(BrandingProjectsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly invoiceNumberService: InvoiceNumberService,
   ) {}
 
   async create(dto: CreateBrandingProjectDto, userId: string) {
@@ -22,7 +27,10 @@ export class BrandingProjectsService {
     });
     if (!client) throw new NotFoundException('Client not found in CRM');
 
-    return this.prisma.brandingProject.create({
+    const totalCost = dto.totalCost ? parseFloat(dto.totalCost) : null;
+    const currency = dto.currency ?? 'RWF';
+
+    const project = await this.prisma.brandingProject.create({
       data: {
         clientId: dto.clientId,
         projectId: dto.projectId,
@@ -30,6 +38,8 @@ export class BrandingProjectsService {
         description: dto.description,
         notes: dto.notes,
         status: BrandingStatus.IN_PROGRESS,
+        totalCost: totalCost ?? undefined,
+        currency,
         createdBy: userId,
         ...(dto.scopeItems?.length && {
           scopeItems: {
@@ -47,6 +57,59 @@ export class BrandingProjectsService {
         client: { select: { companyName: true } },
         scopeItems: { orderBy: { order: 'asc' } },
       },
+    });
+
+    if (totalCost && totalCost > 0) {
+      setImmediate(() => {
+        this.createDraftInvoice(project.id, dto.clientId, project.name, totalCost, currency, userId)
+          .catch((err: unknown) => this.logger.error('Auto-invoice failed for branding project', err));
+      });
+    }
+
+    return project;
+  }
+
+  private async createDraftInvoice(
+    projectId: string,
+    clientId: string,
+    projectName: string,
+    totalCost: number,
+    currency: string,
+    userId: string,
+  ): Promise<void> {
+    const invoiceNumber = await this.invoiceNumberService.generate();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        clientId,
+        projectId,
+        status: 'DRAFT',
+        lineItems: [{ description: projectName, quantity: 1, unitPrice: totalCost, amount: totalCost }],
+        subtotal: totalCost,
+        taxRate: 0,
+        taxAmount: 0,
+        total: totalCost,
+        currency,
+        dueDate,
+        creditTermsDays: 30,
+        serviceType: 'branding',
+        createdBy: userId,
+      },
+    });
+
+    await this.prisma.brandingProject.update({
+      where: { id: projectId },
+      data: { invoiceId: invoice.id },
+    });
+
+    await this.notificationsService.createForRole('FINANCE_MANAGER', {
+      type: 'SYSTEM',
+      title: `Draft invoice created — ${projectName}`,
+      body: `A DRAFT invoice for ${projectName} has been created. Please review.`,
+      link: `/finance/invoices/${invoice.id}`,
     });
   }
 

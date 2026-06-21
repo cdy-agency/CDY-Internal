@@ -37,6 +37,7 @@ export enum ExpenseCategory {
   OFFICE = 'OFFICE',
   TRAVEL = 'TRAVEL',
   SUPPLIER = 'SUPPLIER',
+  COMMISSION = 'COMMISSION',
   OTHER = 'OTHER',
 }
 
@@ -383,6 +384,13 @@ export interface PayrollRun {
   createdAt: string;
   updatedAt: string;
   lineItems: PayrollLineItem[];
+  expenses: Array<{
+    id: string;
+    vendorName: string;
+    amount: number;
+    currency: string;
+    category: ExpenseCategory;
+  }>;
 }
 
 export interface EmployeeSalary {
@@ -532,6 +540,8 @@ export interface ExpenseRecord {
   projectId: string | null;
   receiptUrl: string | null;
   notes: string | null;
+  isPayrollExpense: boolean;
+  payrollRunId: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -1915,8 +1925,6 @@ export enum MilestoneStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  APPROVED = 'APPROVED',
-  INVOICED = 'INVOICED',
 }
 
 export enum MemberRole {
@@ -1967,8 +1975,9 @@ export interface ProjectRecord {
   managerId: string;
   startDate: string;
   endDate: string | null;
-  estimatedBudget: number | null;
+  totalCost: number | null;
   currency: string;
+  invoiceId: string | null;
   completedAt: string | null;
   archivedAt: string | null;
   notes: string | null;
@@ -2008,15 +2017,6 @@ export interface UpcomingDeadline {
   priority: TaskPriority;
 }
 
-export interface MilestoneAwaitingApproval {
-  id: string;
-  name: string;
-  projectId: string;
-  projectName: string;
-  billingAmount: number;
-  currency: string;
-}
-
 export interface ProjectSummary {
   totalProjects: number;
   activeProjects: number;
@@ -2026,11 +2026,9 @@ export interface ProjectSummary {
   overdueTasks: number;
   blockedTasks: number;
   tasksCompletedThisWeek: number;
-  milestonesAwaitingApproval: number;
   projectsByStatus: Record<ProjectStatus, number>;
   projectsByServiceType: Record<string, number>;
   upcomingDeadlines: UpcomingDeadline[];
-  milestonesPendingApproval: MilestoneAwaitingApproval[];
 }
 
 export interface MilestoneRecord {
@@ -2039,17 +2037,12 @@ export interface MilestoneRecord {
   name: string;
   description: string | null;
   dueDate: string | null;
-  billingAmount: number | null;
-  currency: string;
   status: MilestoneStatus;
-  invoiceId: string | null;
-  approvedAt: string | null;
-  approvedBy: string | null;
   order: number;
   createdAt: string;
   updatedAt: string;
-  _count?: { tasks: number };
-  completedTaskCount?: number;
+  taskCount?: number;
+  doneTaskCount?: number;
 }
 
 export interface TaskCommentRecord {
@@ -2087,8 +2080,7 @@ export interface TaskRecord {
   milestone?: { id: string; name: string } | null;
   subTasks?: TaskRecord[];
   comments?: TaskCommentRecord[];
-  _count?: { comments: number; timeEntries: number };
-  loggedHours?: number;
+  _count?: { comments: number };
 }
 
 export interface TaskStatusHistoryRecord {
@@ -2101,28 +2093,6 @@ export interface TaskStatusHistoryRecord {
   changedAt: string;
 }
 
-export interface TimeEntryRecord {
-  id: string;
-  projectId: string;
-  taskId: string | null;
-  employeeId: string;
-  date: string;
-  hours: number;
-  description: string | null;
-  isBillable: boolean;
-  createdAt: string;
-  updatedAt: string;
-  task?: { id: string; title: string } | null;
-  employee?: ProjectEmployeeSummary;
-  project?: { id: string; name: string; projectCode: string };
-}
-
-export interface ProjectTimeSummary {
-  totalHours: number;
-  billableHours: number;
-  byEmployee: Record<string, number>;
-  entries: TimeEntryRecord[];
-}
 
 export interface MyTasksOverview {
   overdue: number;
@@ -2152,10 +2122,11 @@ export interface CreateProjectPayload {
   managerId: string;
   startDate: string;
   endDate?: string;
-  estimatedBudget?: number;
+  totalCost?: number;
   currency?: string;
   notes?: string;
   memberIds?: string[];
+  milestones?: Array<{ name: string; dueDate?: string; order?: number }>;
 }
 
 export interface UpdateProjectPayload {
@@ -2168,7 +2139,7 @@ export interface UpdateProjectPayload {
   managerId?: string;
   startDate?: string;
   endDate?: string | null;
-  estimatedBudget?: number | null;
+  totalCost?: number | null;
   currency?: string;
   notes?: string | null;
 }
@@ -2177,8 +2148,6 @@ export interface CreateMilestonePayload {
   name: string;
   description?: string;
   dueDate?: string;
-  billingAmount?: number;
-  currency?: string;
   order?: number;
 }
 
@@ -2186,10 +2155,7 @@ export interface UpdateMilestonePayload {
   name?: string;
   description?: string;
   dueDate?: string | null;
-  billingAmount?: number | null;
-  currency?: string;
   order?: number;
-  status?: MilestoneStatus;
 }
 
 export interface CreateTaskPayload {
@@ -2227,15 +2193,6 @@ export interface CreateTaskCommentPayload {
   content: string;
 }
 
-export interface CreateTimeEntryPayload {
-  projectId: string;
-  taskId?: string;
-  employeeId: string;
-  date: string;
-  hours: number;
-  description?: string;
-  isBillable?: boolean;
-}
 
 export enum ActivityEventType {
   PROJECT_CREATED = 'PROJECT_CREATED',
@@ -2244,12 +2201,10 @@ export enum ActivityEventType {
   MEMBER_REMOVED = 'MEMBER_REMOVED',
   MILESTONE_CREATED = 'MILESTONE_CREATED',
   MILESTONE_COMPLETED = 'MILESTONE_COMPLETED',
-  MILESTONE_APPROVED = 'MILESTONE_APPROVED',
   TASK_CREATED = 'TASK_CREATED',
   TASK_STATUS_CHANGED = 'TASK_STATUS_CHANGED',
   TASK_ASSIGNED = 'TASK_ASSIGNED',
   TASK_COMMENTED = 'TASK_COMMENTED',
-  TIME_LOGGED = 'TIME_LOGGED',
   FILE_UPLOADED = 'FILE_UPLOADED',
   APPROVAL_REQUESTED = 'APPROVAL_REQUESTED',
   APPROVAL_GIVEN = 'APPROVAL_GIVEN',
@@ -2291,51 +2246,6 @@ export interface ProjectActivityRecord {
   createdAt: string;
 }
 
-export interface ProjectProfitability {
-  projectId: string;
-  projectName: string;
-  revenue: {
-    invoiced: number;
-    collected: number;
-    outstanding: number;
-  };
-  costs: {
-    labour: number;
-    directExpenses: number;
-    total: number;
-  };
-  time: {
-    totalHours: number;
-    billableHours: number;
-    utilisation: number;
-  };
-  profitability: {
-    grossProfit: number;
-    grossMargin: number;
-    isHealthy: boolean;
-  };
-  budget: {
-    approved: number;
-    consumed: number;
-    remaining: number;
-    percentConsumed: number | null;
-    alertThresholdPct: number;
-    isBlocked: boolean;
-  } | null;
-  milestones: Array<{
-    id: string;
-    name: string;
-    billingAmount: number;
-    status: MilestoneStatus;
-    invoiceId: string | null;
-    invoiceNumber: string | null;
-  }>;
-  milestoneBilling: {
-    total: number;
-    invoiced: number;
-    percentInvoiced: number;
-  };
-}
 
 export interface WorkloadTaskItem {
   id: string;
@@ -2378,6 +2288,8 @@ export interface ProjectStatusReport {
     status: ProjectStatus;
     startDate: string;
     endDate: string | null;
+    totalCost: number | null;
+    currency: string;
   };
   progress: {
     overall: number;
@@ -2395,14 +2307,8 @@ export interface ProjectStatusReport {
     dueDate: string | null;
     tasksDone: number;
     tasksTotal: number;
-    billingAmount: number | null;
   }>;
-  financials: {
-    invoicedRevenue: number;
-    collectedRevenue: number;
-    totalCosts: number;
-    grossMargin: number;
-  };
+  invoice: { invoiceId: string; totalCost: number | null; currency: string } | null;
   blockedItems: Array<{ title: string; dueDate: string | null }>;
   upcomingDeadlines: Array<{
     title: string;
@@ -2423,16 +2329,6 @@ export interface RecordApprovalPayload {
   note?: string;
 }
 
-export interface HourlyRateRecord {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  ratePerHour: number;
-  currency: string;
-  effectiveFrom: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 // ─── Sprint 17: Reports & Completion ───────────────────────────
 
@@ -2471,9 +2367,8 @@ export interface PortfolioReport {
       cancelled: number;
     };
     byServiceType: Record<string, number>;
-    serviceRevenue: Record<string, number>;
+    serviceCost: Record<string, number>;
     totalRevenuePotential: number;
-    totalRevenueInvoiced: number;
   };
   activeProjects: {
     onTrack: number;
@@ -2513,7 +2408,6 @@ export interface BudgetVsActualReport {
 
 export interface CompleteProjectPayload {
   acknowledgeIncompleteTasks?: boolean;
-  acknowledgeUninvoicedMilestones?: boolean;
   completionNotes?: string;
 }
 
@@ -2534,17 +2428,19 @@ export interface HandoverReport {
     startDate: string;
     completedAt: string | null;
     totalDuration: number | null;
+    totalCost: number | null;
+    currency: string;
+    invoiceId: string | null;
   };
   client: {
     company: string;
-    contact: string | null;
+    contact: string;
     email: string;
   } | null;
   deliverables: {
     milestones: Array<{
       name: string;
       status: MilestoneStatus;
-      billingAmount: number | null;
       taskCount: number;
       tasksCompleted: number;
       tasks: Array<{
@@ -2564,19 +2460,6 @@ export interface HandoverReport {
       url: string;
       uploadedAt: string;
     }>;
-  };
-  financials: {
-    totalBudget: number;
-    totalInvoiced: number;
-    totalCollected: number;
-    totalCosts: number;
-    grossMargin: number;
-  };
-  teamSummary: {
-    totalHours: number;
-    billableHours: number;
-    totalLabourCost: number;
-    teamSize: number;
   };
   notes: string | null;
 }
@@ -2605,9 +2488,9 @@ export enum ContentStatus {
 
 export interface MarketingClientRecord {
   id: string;
-  clientId: string;
+  clientId: string | null;
   projectId: string | null;
-  retainerId: string | null;
+  retainerId: string;
   platforms: string[];
   postsPerMonth: number;
   isActive: boolean;
@@ -2619,6 +2502,10 @@ export interface MarketingClientRecord {
     companyName: string;
     contactName: string;
     email?: string;
+  } | null;
+  retainer?: {
+    serviceName: string;
+    status: string;
   };
   _count?: {
     contentItems: number;
@@ -2883,6 +2770,9 @@ export interface SoftwareProjectRecord {
   deployedAt: string | null;
   maintenanceEndsAt: string | null;
   isActive: boolean;
+  totalCost: string | null;
+  currency: string;
+  invoiceId: string | null;
   notes: string | null;
   createdBy: string;
   createdAt: string;
@@ -2988,6 +2878,9 @@ export interface BrandingProjectRecord {
   description: string | null;
   status: BrandingStatus;
   deliveredAt: string | null;
+  totalCost: string | null;
+  currency: string;
+  invoiceId: string | null;
   notes: string | null;
   createdBy: string;
   createdAt: string;
@@ -3078,6 +2971,7 @@ export interface CampaignInfluencerRecord {
   paidAt: string | null;
   paidAmount: string | null;
   paymentNotes: string | null;
+  expenseId: string | null;
   notes: string | null;
   addedAt: string;
 }
@@ -3096,6 +2990,8 @@ export interface InfluencerCampaignRecord {
   platforms: string[];
   budget: string | null;
   currency: string;
+  totalCost: string | null;
+  invoiceId: string | null;
   startDate: string;
   endDate: string | null;
   status: CampaignStatus;
@@ -3172,6 +3068,9 @@ export interface SalesCampaignRecord {
   visitTarget: number | null;
   leadTarget: number | null;
   salesTarget: number | null;
+  totalCost: string | null;
+  currency: string;
+  invoiceId: string | null;
   notes: string | null;
   createdBy: string;
   createdAt: string;

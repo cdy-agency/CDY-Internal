@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ClientSearch } from '@/components/crm/ClientSearch';
+import { RetainerSearch } from '@/components/finance/RetainerSearch';
 import { useCreateMarketingClient } from '@/hooks/useMarketing';
-import type { ClientSearchResult } from '@cdy/shared';
+import type { RetainerSearchResult } from '@/components/finance/RetainerSearch';
 import type { AxiosError } from 'axios';
 
 const PLATFORMS = [
@@ -28,25 +28,22 @@ export function AddMarketingClientDrawer({
   open,
   onClose,
 }: AddMarketingClientDrawerProps): JSX.Element | null {
-  const [selectedClient, setSelectedClient] =
-    useState<ClientSearchResult | null>(null);
+  const [selectedRetainer, setSelectedRetainer] = useState<RetainerSearchResult | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
     'instagram',
     'facebook',
     'linkedin',
   ]);
   const [postsPerMonth, setPostsPerMonth] = useState('12');
-  const [retainerId, setRetainerId] = useState('');
   const [notes, setNotes] = useState('');
 
   const { mutateAsync, isPending } = useCreateMarketingClient();
 
   useEffect(() => {
     if (open) {
-      setSelectedClient(null);
+      setSelectedRetainer(null);
       setSelectedPlatforms(['instagram', 'facebook', 'linkedin']);
       setPostsPerMonth('12');
-      setRetainerId('');
       setNotes('');
     }
   }, [open]);
@@ -61,13 +58,12 @@ export function AddMarketingClientDrawer({
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (!selectedClient || selectedPlatforms.length === 0) return;
+    if (!selectedRetainer || selectedPlatforms.length === 0) return;
     try {
       await mutateAsync({
-        clientId: selectedClient.id,
+        retainerId: selectedRetainer.id,
         platforms: selectedPlatforms,
         postsPerMonth: parseInt(postsPerMonth, 10) || 12,
-        retainerId: retainerId.trim() || undefined,
         notes: notes.trim() || undefined,
       });
       toast.success('Marketing client set up');
@@ -101,19 +97,24 @@ export function AddMarketingClientDrawer({
           </button>
         </div>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => void handleSubmit(e)}
           className="flex flex-1 flex-col overflow-y-auto p-6"
         >
           <div className="space-y-5">
             <div>
-              <Label>CRM Client</Label>
+              <Label>Retainer contract</Label>
               <div className="mt-1">
-                <ClientSearch
-                  value={selectedClient}
-                  onChange={setSelectedClient}
-                  placeholder="Search client..."
+                <RetainerSearch
+                  value={selectedRetainer}
+                  onChange={setSelectedRetainer}
+                  placeholder="Search active retainers…"
                 />
               </div>
+              {selectedRetainer && (
+                <p className="mt-1.5 text-xs text-green-400">
+                  Client: {selectedRetainer.clientName ?? selectedRetainer.clientId}
+                </p>
+              )}
             </div>
 
             <div>
@@ -151,18 +152,6 @@ export function AddMarketingClientDrawer({
             </div>
 
             <div>
-              <Label htmlFor="retainer-id">
-                Retainer ID (optional)
-              </Label>
-              <Input
-                id="retainer-id"
-                value={retainerId}
-                onChange={(e) => setRetainerId(e.target.value)}
-                placeholder="Link to Finance retainer"
-              />
-            </div>
-
-            <div>
               <Label htmlFor="mc-notes">Notes (optional)</Label>
               <textarea
                 id="mc-notes"
@@ -184,7 +173,7 @@ export function AddMarketingClientDrawer({
             </Button>
             <Button
               type="submit"
-              disabled={isPending || !selectedClient || selectedPlatforms.length === 0}
+              disabled={isPending || !selectedRetainer || selectedPlatforms.length === 0}
               className="flex-1"
             >
               {isPending ? (

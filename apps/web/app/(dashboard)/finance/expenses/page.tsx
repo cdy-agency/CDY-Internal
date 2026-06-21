@@ -197,7 +197,24 @@ export default function ExpensesPage(): JSX.Element {
                       {format(new Date(expense.date), 'MMM d, yyyy')}
                     </td>
                     <td className="px-4 py-3 text-cdy-white">
-                      {expense.vendorName}
+                      <div className="flex flex-col gap-1">
+                        <span>{expense.vendorName}</span>
+                        {expense.isPayrollExpense && (
+                          <div className="flex items-center gap-2">
+                            <span className="rounded border border-green-800 bg-green-900/20 px-2 py-0.5 text-xs text-green-400">
+                              Auto — Payroll
+                            </span>
+                            {expense.payrollRunId && (
+                              <a
+                                href={`/finance/payroll/${expense.payrollRunId}`}
+                                className="text-xs text-cdy-red hover:underline"
+                              >
+                                View payroll run →
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <ExpenseCategoryBadge category={expense.category} />
@@ -223,27 +240,31 @@ export default function ExpensesPage(): JSX.Element {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <PermissionGate feature="finance.expenses" action="write">
-                        <div className="flex justify-end gap-1">
-                          {expense.canEdit && (
+                      {expense.isPayrollExpense ? (
+                        <span className="text-xs text-cdy-muted">Auto</span>
+                      ) : (
+                        <PermissionGate feature="finance.expenses" action="write">
+                          <div className="flex justify-end gap-1">
+                            {expense.canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEdit(expense)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => openEdit(expense)}
+                              className="text-[var(--cdy-danger)]"
+                              onClick={() => handleDelete(expense)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[var(--cdy-danger)]"
-                            onClick={() => handleDelete(expense)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </PermissionGate>
+                          </div>
+                        </PermissionGate>
+                      )}
                     </td>
                   </tr>
                 ))}

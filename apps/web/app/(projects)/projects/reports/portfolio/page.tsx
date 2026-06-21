@@ -52,8 +52,8 @@ export default function PortfolioReportPage(): JSX.Element {
     );
   }, [data]);
 
-  const maxServiceRevenue = Math.max(
-    ...Object.values(data?.summary.serviceRevenue ?? { x: 1 }),
+  const maxServiceCost = Math.max(
+    ...Object.values(data?.summary.serviceCost ?? { x: 1 }),
     1,
   );
 
@@ -160,12 +160,6 @@ export default function PortfolioReportPage(): JSX.Element {
               </p>
             </div>
             <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
-              <p className="text-sm text-cdy-muted">Revenue Invoiced</p>
-              <p className="text-xl font-semibold text-cdy-white">
-                {formatCurrency(data.summary.totalRevenueInvoiced)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
               <p className="text-sm text-cdy-muted">Projects At Risk</p>
               <p className="text-xl font-semibold text-cdy-red">
                 {data.activeProjects.atRisk}
@@ -227,8 +221,8 @@ export default function PortfolioReportPage(): JSX.Element {
             </h2>
             <div className="space-y-3">
               {serviceTypes.map(([service, count]) => {
-                const revenue = data.summary.serviceRevenue[service] ?? 0;
-                const barWidth = (revenue / maxServiceRevenue) * 100;
+                const revenue = data.summary.serviceCost[service] ?? 0;
+                const barWidth = (revenue / maxServiceCost) * 100;
                 return (
                   <div key={service}>
                     <div className="mb-1 flex justify-between text-sm">

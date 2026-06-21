@@ -71,7 +71,6 @@ interface CeoSummary {
     activeProjects: number;
     overdueTasks: number;
     blockedTasks: number;
-    milestonesAwaitingApproval: number;
     recentProjects: Array<{
       id: string;
       name: string;
@@ -100,7 +99,6 @@ interface CeoSummary {
     pendingLeaveRequests: number;
     pendingBudgetRequests: number;
     overdueInvoices: number;
-    milestonesAwaitingApproval: number;
     blockedTasks: number;
   };
 }
@@ -185,12 +183,6 @@ export default function CeoDashboardPage() {
                 <Link href="/finance/ar"
                   className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-900/50 transition-colors">
                   🔴 {alerts.overdueInvoices} overdue invoice{alerts.overdueInvoices > 1 ? 's' : ''} →
-                </Link>
-              )}
-              {(alerts.milestonesAwaitingApproval ?? 0) > 0 && (
-                <Link href="/projects"
-                  className="flex items-center gap-2 rounded-lg border border-green-800 bg-green-900/30 px-4 py-2 text-sm font-medium text-green-400 hover:bg-green-900/50 transition-colors">
-                  ✅ {alerts.milestonesAwaitingApproval} milestone{alerts.milestonesAwaitingApproval > 1 ? 's' : ''} to approve →
                 </Link>
               )}
               {(alerts.blockedTasks ?? 0) > 0 && (
@@ -430,7 +422,6 @@ export default function CeoDashboardPage() {
                   { label: 'Active projects',    value: summary?.projects.activeProjects ?? 0, alert: false },
                   { label: 'Overdue tasks',      value: summary?.projects.overdueTasks ?? 0,   alert: (summary?.projects.overdueTasks ?? 0) > 0 },
                   { label: 'Blocked tasks',      value: summary?.projects.blockedTasks ?? 0,   alert: (summary?.projects.blockedTasks ?? 0) > 0 },
-                  { label: 'Milestones to bill', value: summary?.projects.milestonesAwaitingApproval ?? 0, alert: (summary?.projects.milestonesAwaitingApproval ?? 0) > 0 },
                 ].map((m) => (
                   <div key={m.label}
                     className={`rounded-lg p-3 ${m.alert ? 'border border-red-800/50 bg-red-900/20' : 'bg-cdy-navy'}`}>
@@ -463,11 +454,6 @@ export default function CeoDashboardPage() {
                     </div>
                   );
                 })}
-                {(summary?.projects.milestonesAwaitingApproval ?? 0) > 0 && (
-                  <Link href="/projects" className="mt-1 block text-xs text-cdy-red hover:underline">
-                    Approve {summary?.projects.milestonesAwaitingApproval} milestone{(summary?.projects.milestonesAwaitingApproval ?? 0) > 1 ? 's' : ''} →
-                  </Link>
-                )}
               </div>
             </div>
           )}

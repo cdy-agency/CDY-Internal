@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type {
   ApiResponse,
-  BudgetVsActualReport,
   CompleteProjectPayload,
   HandoverReport,
   PortfolioReport,
@@ -15,26 +14,21 @@ import type {
   CreateProjectPayload,
   CreateTaskCommentPayload,
   CreateTaskPayload,
-  CreateTimeEntryPayload,
   DeliverableApprovalRecord,
-  HourlyRateRecord,
   MilestoneRecord,
   MyTasksResponse,
   ProjectActivityRecord,
   ProjectProgress,
-  ProjectProfitability,
   ProjectRecord,
   ProjectStatus,
   ProjectStatusReport,
   ProjectSummary,
-  ProjectTimeSummary,
   RecordApprovalPayload,
   RequestApprovalPayload,
   TaskCommentRecord,
   TaskRecord,
   TaskStatus,
   TeamWorkloadResponse,
-  TimeEntryRecord,
   UpdateMilestonePayload,
   UpdateProjectPayload,
   UpdateTaskPayload,
@@ -566,79 +560,6 @@ export function useAddTaskComment() {
   });
 }
 
-// ─── Time ──────────────────────────────────────────────────────
-
-export function useProjectTimeEntries(projectId: string) {
-  return useQuery({
-    queryKey: ['projects', projectId, 'time'],
-    queryFn: async (): Promise<TimeEntryRecord[]> => {
-      const res = await api.get<ApiResponse<TimeEntryRecord[]>>(
-        `/projects/${projectId}/time`,
-      );
-      return res.data.data;
-    },
-    enabled: Boolean(projectId),
-  });
-}
-
-export function useProjectTimeSummary(projectId: string) {
-  return useQuery({
-    queryKey: ['projects', projectId, 'time', 'summary'],
-    queryFn: async (): Promise<ProjectTimeSummary> => {
-      const res = await api.get<ApiResponse<ProjectTimeSummary>>(
-        `/projects/${projectId}/time/summary`,
-      );
-      return res.data.data;
-    },
-    enabled: Boolean(projectId),
-  });
-}
-
-export function useMyTimeEntries() {
-  return useQuery({
-    queryKey: ['projects', 'time', 'my'],
-    queryFn: async (): Promise<TimeEntryRecord[]> => {
-      const res = await api.get<ApiResponse<TimeEntryRecord[]>>(
-        '/projects/time/my',
-      );
-      return res.data.data;
-    },
-  });
-}
-
-export function useLogTime() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      payload,
-    }: {
-      projectId: string;
-      payload: CreateTimeEntryPayload;
-    }) => {
-      const res = await api.post<ApiResponse<TimeEntryRecord>>(
-        `/projects/${projectId}/time`,
-        payload,
-      );
-      return res.data.data;
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'time'],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'time', 'summary'],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'tasks'],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ['projects', 'time', 'my'],
-      });
-    },
-  });
-}
-
 export function useProjectApprovals(projectId: string) {
   return useQuery({
     queryKey: ['projects', projectId, 'approvals'],
@@ -732,19 +653,6 @@ export function useProjectActivity(projectId: string) {
   });
 }
 
-export function useProjectProfitability(projectId: string) {
-  return useQuery({
-    queryKey: ['projects', projectId, 'profitability'],
-    queryFn: async (): Promise<ProjectProfitability> => {
-      const res = await api.get<ApiResponse<ProjectProfitability>>(
-        `/projects/${projectId}/profitability`,
-      );
-      return res.data.data;
-    },
-    enabled: Boolean(projectId),
-  });
-}
-
 export function useTeamWorkload() {
   return useQuery({
     queryKey: ['projects', 'workload'],
@@ -788,21 +696,6 @@ export function usePortfolioReport(filters: PortfolioReportFilters = {}) {
   });
 }
 
-export function useBudgetVsActualReport(filters: PortfolioReportFilters = {}) {
-  return useQuery({
-    queryKey: ['projects', 'reports', 'budget', filters],
-    queryFn: async (): Promise<BudgetVsActualReport> => {
-      const params = new URLSearchParams();
-      if (filters.from) params.set('from', filters.from);
-      if (filters.to) params.set('to', filters.to);
-      const qs = params.toString();
-      const res = await api.get<ApiResponse<BudgetVsActualReport>>(
-        `/projects/reports/budget${qs ? `?${qs}` : ''}`,
-      );
-      return res.data.data;
-    },
-  });
-}
 
 export function useHandoverReport(projectId: string) {
   return useQuery({

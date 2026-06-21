@@ -9,7 +9,7 @@
   TaskPriority,
   TaskStatus,
 } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { getRoleIdByKey } from './rbac.seed';
 
 export async function seedProjectsData(
@@ -234,33 +234,12 @@ export async function seedProjectsData(
       serviceType: 'software_dev',
       status: ProjectStatus.ACTIVE,
       priority: ProjectPriority.HIGH,
-      estimatedBudget: 24000,
       endDate: aug15,
       milestones: [
-        {
-          name: 'Requirements & Design',
-          billingAmount: 4800,
-          order: 1,
-          status: MilestoneStatus.INVOICED,
-        },
-        {
-          name: 'Frontend Development',
-          billingAmount: 9600,
-          order: 2,
-          status: MilestoneStatus.IN_PROGRESS,
-        },
-        {
-          name: 'Backend & Integration',
-          billingAmount: 7200,
-          order: 3,
-          status: MilestoneStatus.PENDING,
-        },
-        {
-          name: 'Testing & Deployment',
-          billingAmount: 2400,
-          order: 4,
-          status: MilestoneStatus.PENDING,
-        },
+        { name: 'Requirements & Design', order: 1, status: MilestoneStatus.COMPLETED },
+        { name: 'Frontend Development', order: 2, status: MilestoneStatus.IN_PROGRESS },
+        { name: 'Backend & Integration', order: 3, status: MilestoneStatus.PENDING },
+        { name: 'Testing & Deployment', order: 4, status: MilestoneStatus.PENDING },
       ],
     },
     {
@@ -270,27 +249,11 @@ export async function seedProjectsData(
       serviceType: 'marketing',
       status: ProjectStatus.ACTIVE,
       priority: ProjectPriority.MEDIUM,
-      estimatedBudget: 8400,
       endDate: null,
       milestones: [
-        {
-          name: 'Content Calendar Jun',
-          billingAmount: 2800,
-          order: 1,
-          status: MilestoneStatus.COMPLETED,
-        },
-        {
-          name: 'Content Calendar Jul',
-          billingAmount: 2800,
-          order: 2,
-          status: MilestoneStatus.PENDING,
-        },
-        {
-          name: 'Content Calendar Aug',
-          billingAmount: 2800,
-          order: 3,
-          status: MilestoneStatus.PENDING,
-        },
+        { name: 'Content Calendar Jun', order: 1, status: MilestoneStatus.COMPLETED },
+        { name: 'Content Calendar Jul', order: 2, status: MilestoneStatus.PENDING },
+        { name: 'Content Calendar Aug', order: 3, status: MilestoneStatus.PENDING },
       ],
     },
     {
@@ -300,27 +263,11 @@ export async function seedProjectsData(
       serviceType: 'branding',
       status: ProjectStatus.ACTIVE,
       priority: ProjectPriority.HIGH,
-      estimatedBudget: 6000,
       endDate: jul30,
       milestones: [
-        {
-          name: 'Brand Strategy',
-          billingAmount: 1500,
-          order: 1,
-          status: MilestoneStatus.COMPLETED,
-        },
-        {
-          name: 'Logo & Visual Identity',
-          billingAmount: 3000,
-          order: 2,
-          status: MilestoneStatus.IN_PROGRESS,
-        },
-        {
-          name: 'Brand Guidelines',
-          billingAmount: 1500,
-          order: 3,
-          status: MilestoneStatus.PENDING,
-        },
+        { name: 'Brand Strategy', order: 1, status: MilestoneStatus.COMPLETED },
+        { name: 'Logo & Visual Identity', order: 2, status: MilestoneStatus.IN_PROGRESS },
+        { name: 'Brand Guidelines', order: 3, status: MilestoneStatus.PENDING },
       ],
     },
     {
@@ -330,7 +277,6 @@ export async function seedProjectsData(
       serviceType: 'branding',
       status: ProjectStatus.ON_HOLD,
       priority: ProjectPriority.MEDIUM,
-      estimatedBudget: 5000,
       endDate: jul15,
       milestones: [],
     },
@@ -480,42 +426,6 @@ export async function seedProjectsData(
     }
   }
 
-  await prisma.timeEntry.createMany({
-    data: [
-      {
-        projectId: techStartProjectId,
-        employeeId: jamesEmployee.id,
-        date: new Date(now.getFullYear(), now.getMonth(), 13),
-        hours: 6,
-        description: 'Create wireframes',
-        isBillable: true,
-      },
-      {
-        projectId: techStartProjectId,
-        employeeId: nadiaEmployee.id,
-        date: new Date(now.getFullYear(), now.getMonth(), 15),
-        hours: 4.5,
-        description: 'Build homepage',
-        isBillable: true,
-      },
-      {
-        projectId: techStartProjectId,
-        employeeId: jamesEmployee.id,
-        date: new Date(now.getFullYear(), now.getMonth(), 15),
-        hours: 3,
-        description: 'Build homepage backend support',
-        isBillable: true,
-      },
-      {
-        projectId: techStartProjectId,
-        employeeId: pmEmployee.id,
-        date: new Date(now.getFullYear(), now.getMonth(), 14),
-        hours: 1,
-        description: 'Client approval wireframes',
-        isBillable: false,
-      },
-    ],
-  });
 }
 
 async function createProjectWithMilestones(
@@ -527,11 +437,9 @@ async function createProjectWithMilestones(
     serviceType: string;
     status: ProjectStatus;
     priority: ProjectPriority;
-    estimatedBudget: number;
     endDate: Date | null;
     milestones: Array<{
       name: string;
-      billingAmount: number;
       order: number;
       status: MilestoneStatus;
     }>;
@@ -552,7 +460,6 @@ async function createProjectWithMilestones(
       managerId,
       startDate,
       endDate: def.endDate,
-      estimatedBudget: def.estimatedBudget,
       currency: 'RWF',
       createdBy,
     },
@@ -582,14 +489,8 @@ async function createProjectWithMilestones(
       data: {
         projectId: project.id,
         name: m.name,
-        billingAmount: m.billingAmount,
-        currency: 'RWF',
         status: m.status,
         order: m.order,
-        ...(m.status === MilestoneStatus.COMPLETED && {
-          approvedAt: startDate,
-          approvedBy: createdBy,
-        }),
       },
     });
   }

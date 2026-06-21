@@ -85,6 +85,7 @@ export function useCreateCampaign() {
       platforms: string[];
       budget?: string;
       currency?: string;
+      totalCost?: string;
       startDate: string;
       endDate?: string;
       notes?: string;

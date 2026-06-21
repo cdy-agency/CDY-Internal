@@ -6,10 +6,6 @@ export class CompleteProjectDto {
   acknowledgeIncompleteTasks?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  acknowledgeUninvoicedMilestones?: boolean;
-
-  @IsOptional()
   @IsString()
   @MaxLength(1000)
   completionNotes?: string;

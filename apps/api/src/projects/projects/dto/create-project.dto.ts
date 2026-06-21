@@ -38,7 +38,7 @@ export class CreateProjectDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  estimatedBudget?: number;
+  totalCost?: number;
 
   @IsOptional()
   @IsString()
@@ -52,4 +52,12 @@ export class CreateProjectDto {
   @IsArray()
   @IsString({ each: true })
   memberIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  milestones?: Array<{
+    name: string;
+    dueDate?: string;
+    order?: number;
+  }>;
 }

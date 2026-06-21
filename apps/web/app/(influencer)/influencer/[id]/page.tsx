@@ -725,13 +725,23 @@ function InfluencerCard({
           </div>
           <div className="flex items-center gap-2 text-sm">
             {assignment.isPaid ? (
-              <span className="text-green-400">
-                ✅ Paid{' '}
-                {assignment.paidAmount
-                  ? `${assignment.currency} ${assignment.paidAmount}`
-                  : ''}
-                {assignment.paidAt ? ` · ${format(new Date(assignment.paidAt), 'MMM d')}` : ''}
-              </span>
+              <>
+                <span className="text-green-400">
+                  ✅ Paid{' '}
+                  {assignment.paidAmount
+                    ? `${assignment.currency} ${assignment.paidAmount}`
+                    : ''}
+                  {assignment.paidAt ? ` · ${format(new Date(assignment.paidAt), 'MMM d')}` : ''}
+                </span>
+                {assignment.expenseId && (
+                  <a
+                    href={`/finance/expenses/${assignment.expenseId}`}
+                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    <ExternalLink className="h-3 w-3" /> Expense
+                  </a>
+                )}
+              </>
             ) : (
               <span className="text-amber-400">⏳ Unpaid</span>
             )}

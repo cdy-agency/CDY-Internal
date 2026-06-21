@@ -25,13 +25,10 @@ import {
   useProjectTasks,
   useTask,
   useMilestones,
-  useProjectTimeSummary,
   useCreateTask,
   useUpdateTaskStatus,
   useAddTaskComment,
-  useLogTime,
   useCompleteMilestone,
-  useApproveMilestone,
   useRequestApproval,
   useCompleteProject,
   useGenerateHandoverReport,
@@ -48,12 +45,11 @@ import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
 import { cn, formatCurrency } from '@/lib/utils';
 
-type DetailTab = 'tasks' | 'milestones' | 'time' | 'approvals' | 'activity';
+type DetailTab = 'tasks' | 'milestones' | 'approvals' | 'activity';
 
 const TAB_LABELS: Record<DetailTab, string> = {
   tasks: 'Tasks',
   milestones: 'Milestones',
-  time: 'Time',
   approvals: 'Approvals',
   activity: 'Activity',
 };
@@ -93,8 +89,6 @@ const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
   [MilestoneStatus.PENDING]: 'Pending',
   [MilestoneStatus.IN_PROGRESS]: 'In Progress',
   [MilestoneStatus.COMPLETED]: 'Completed',
-  [MilestoneStatus.APPROVED]: 'Approved',
-  [MilestoneStatus.INVOICED]: 'Invoiced',
 };
 
 function TaskKanbanCard({
@@ -138,7 +132,7 @@ function TaskKanbanCard({
       )}
       {task.estimatedHours != null && (
         <p className="mt-1 text-xs text-cdy-muted">
-          {task.loggedHours ?? 0} / {task.estimatedHours}h estimated
+          Est. {task.estimatedHours}h
         </p>
       )}
       {task.requiresApproval && task.approvalStatus && (
@@ -171,13 +165,7 @@ export default function ProjectDetailPage(): JSX.Element {
   const projectId = String(params.id);
 
   const tabParam = searchParams.get('tab');
-  const validTabs: DetailTab[] = [
-    'tasks',
-    'milestones',
-    'time',
-    'approvals',
-    'activity',
-  ];
+  const validTabs: DetailTab[] = ['tasks', 'milestones', 'approvals', 'activity'];
   const initialTab =
     tabParam && validTabs.includes(tabParam as DetailTab)
       ? (tabParam as DetailTab)
@@ -185,27 +173,20 @@ export default function ProjectDetailPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<DetailTab>(initialTab);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
-  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: progress } = useProjectProgress(projectId);
   const { data: tasks } = useProjectTasks(projectId);
-  const { data: selectedTask } = useTask(
-    projectId,
-    selectedTaskId ?? '',
-  );
+  const { data: selectedTask } = useTask(projectId, selectedTaskId ?? '');
   const { data: milestones } = useMilestones(projectId);
-  const { data: timeSummary } = useProjectTimeSummary(projectId);
   const { data: employees } = useEmployees();
 
   const createTask = useCreateTask();
   const updateStatus = useUpdateTaskStatus();
   const addComment = useAddTaskComment();
-  const logTime = useLogTime();
   const completeMilestone = useCompleteMilestone();
-  const approveMilestone = useApproveMilestone();
   const requestApproval = useRequestApproval();
   const completeProject = useCompleteProject();
   const generateHandover = useGenerateHandoverReport();
@@ -233,15 +214,6 @@ export default function ProjectDetailPage(): JSX.Element {
     parentTaskId: '',
   });
 
-  const [timeForm, setTimeForm] = useState({
-    employeeId: '',
-    taskId: '',
-    date: new Date().toISOString().slice(0, 10),
-    hours: '',
-    description: '',
-    isBillable: true,
-  });
-
   const tasksByStatus = KANBAN_COLUMNS.reduce(
     (acc, status) => {
       acc[status] = (tasks ?? []).filter((t) => t.status === status);
@@ -253,23 +225,13 @@ export default function ProjectDetailPage(): JSX.Element {
   const incompleteTasks = (tasks ?? []).filter(
     (t) => t.status !== TaskStatus.DONE,
   );
-  const uninvoicedMilestones = (milestones ?? []).filter(
-    (m) =>
-      m.billingAmount != null &&
-      m.billingAmount > 0 &&
-      m.status !== MilestoneStatus.INVOICED,
-  );
 
   async function handleCompleteProject(payload: {
     acknowledgeIncompleteTasks: boolean;
-    acknowledgeUninvoicedMilestones: boolean;
     completionNotes?: string;
   }): Promise<void> {
     try {
-      const updated = await completeProject.mutateAsync({
-        projectId,
-        payload,
-      });
+      const updated = await completeProject.mutateAsync({ projectId, payload });
       toast.success(
         `Project ${updated.projectCode} completed. Handover report ready to generate.`,
       );
@@ -363,47 +325,10 @@ export default function ProjectDetailPage(): JSX.Element {
     }
   }
 
-  async function handleLogTime(): Promise<void> {
-    const hours = Number(timeForm.hours);
-    if (!timeForm.employeeId || !hours) {
-      toast.error('Employee and hours are required');
-      return;
-    }
-    try {
-      await logTime.mutateAsync({
-        projectId,
-        payload: {
-          projectId,
-          employeeId: timeForm.employeeId,
-          taskId: timeForm.taskId || undefined,
-          date: timeForm.date,
-          hours,
-          description: timeForm.description || undefined,
-          isBillable: timeForm.isBillable,
-        },
-      });
-      toast.success('Time logged');
-      setLogTimeOpen(false);
-    } catch {
-      /* interceptor */
-    }
-  }
-
   async function handleCompleteMilestone(milestoneId: string): Promise<void> {
     try {
       await completeMilestone.mutateAsync({ projectId, milestoneId });
       toast.success('Milestone marked complete');
-    } catch {
-      /* interceptor */
-    }
-  }
-
-  async function handleApproveMilestone(milestoneId: string): Promise<void> {
-    try {
-      await approveMilestone.mutateAsync({ projectId, milestoneId });
-      toast.success(
-        'Milestone approved — draft invoice created in Finance.',
-      );
     } catch {
       /* interceptor */
     }
@@ -431,14 +356,6 @@ export default function ProjectDetailPage(): JSX.Element {
       /* interceptor */
     }
   }
-
-  const invoicedTotal =
-    milestones
-      ?.filter((m) =>
-        [MilestoneStatus.APPROVED, MilestoneStatus.INVOICED].includes(m.status),
-      )
-      .reduce((s, m) => s + (m.billingAmount ?? 0), 0) ?? 0;
-  const budgetTotal = project?.estimatedBudget ?? 0;
 
   if (projectLoading) {
     return <p className="text-sm text-cdy-muted">Loading project…</p>;
@@ -497,6 +414,22 @@ export default function ProjectDetailPage(): JSX.Element {
                 PM: {project.manager.firstName} {project.manager.lastName}
               </p>
             )}
+            {project.totalCost != null && (
+              <p className="mt-1 text-sm text-cdy-muted">
+                Contract:{' '}
+                <span className="text-cdy-white">
+                  {formatCurrency(project.totalCost, project.currency)}
+                </span>
+                {project.invoiceId && (
+                  <Link
+                    href={`/finance/invoices/${project.invoiceId}`}
+                    className="ml-2 text-xs text-cdy-red hover:underline"
+                  >
+                    View Invoice →
+                  </Link>
+                )}
+              </p>
+            )}
           </div>
           <div className="min-w-[200px]">
             <div className="mb-1 flex justify-between text-sm">
@@ -537,28 +470,23 @@ export default function ProjectDetailPage(): JSX.Element {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-1 border-b border-cdy-navy-border">
-          {(['tasks', 'milestones', 'time', 'approvals', 'activity'] as DetailTab[]).map(
+          {(['tasks', 'milestones', 'approvals', 'activity'] as DetailTab[]).map(
             (tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'px-4 py-2 text-sm font-medium transition-colors',
-                activeTab === tab
-                  ? 'border-b-2 border-cdy-red text-cdy-red'
-                  : 'text-cdy-muted hover:text-cdy-white',
-              )}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
-          <Link
-            href={`/projects/${projectId}/profitability`}
-            className="px-4 py-2 text-sm font-medium text-cdy-muted hover:text-cdy-white"
-          >
-            Profitability
-          </Link>
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium transition-colors',
+                  activeTab === tab
+                    ? 'border-b-2 border-cdy-red text-cdy-red'
+                    : 'text-cdy-muted hover:text-cdy-white',
+                )}
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            ),
+          )}
           <Link
             href={`/projects/${projectId}/status-report`}
             className="px-4 py-2 text-sm font-medium text-cdy-muted hover:text-cdy-white"
@@ -607,22 +535,12 @@ export default function ProjectDetailPage(): JSX.Element {
 
       {activeTab === 'milestones' && (
         <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
-          {budgetTotal > 0 && (
-            <p className="mb-4 text-sm text-cdy-muted">
-              Progress toward invoicing:{' '}
-              <span className="text-cdy-white">
-                {formatCurrency(invoicedTotal, project.currency)}
-              </span>{' '}
-              / {formatCurrency(budgetTotal, project.currency)} (
-              {Math.round((invoicedTotal / budgetTotal) * 100)}%)
-            </p>
-          )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-cdy-muted">
                   <th className="pb-3 pr-4 font-medium">Milestone</th>
-                  <th className="pb-3 pr-4 font-medium">Amount</th>
+                  <th className="pb-3 pr-4 font-medium">Due</th>
                   <th className="pb-3 pr-4 font-medium">Tasks</th>
                   <th className="pb-3 pr-4 font-medium">Status</th>
                   <th className="pb-3 font-medium">Action</th>
@@ -630,10 +548,9 @@ export default function ProjectDetailPage(): JSX.Element {
               </thead>
               <tbody>
                 {milestones?.map((milestone) => {
-                  const taskCount = milestone._count?.tasks ?? 0;
-                  const completed = milestone.completedTaskCount ?? 0;
-                  const allDone =
-                    taskCount > 0 && completed === taskCount;
+                  const taskCount = milestone.taskCount ?? 0;
+                  const completed = milestone.doneTaskCount ?? 0;
+                  const allDone = taskCount > 0 && completed === taskCount;
                   return (
                     <tr
                       key={milestone.id}
@@ -643,11 +560,8 @@ export default function ProjectDetailPage(): JSX.Element {
                         {milestone.name}
                       </td>
                       <td className="py-3 pr-4 text-cdy-muted">
-                        {milestone.billingAmount
-                          ? formatCurrency(
-                              milestone.billingAmount,
-                              milestone.currency,
-                            )
+                        {milestone.dueDate
+                          ? format(parseISO(milestone.dueDate), 'MMM d, yyyy')
                           : '—'}
                       </td>
                       <td className="py-3 pr-4 text-cdy-muted">
@@ -674,83 +588,10 @@ export default function ProjectDetailPage(): JSX.Element {
                               </Button>
                             </PermissionGate>
                           )}
-                        {milestone.status === MilestoneStatus.COMPLETED && (
-                          <PermissionGate
-                            feature="projects.approvals"
-                            action="write"
-                          >
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                void handleApproveMilestone(milestone.id)
-                              }
-                            >
-                              Approve & Invoice
-                            </Button>
-                          </PermissionGate>
-                        )}
                       </td>
                     </tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'time' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-cdy-muted">
-              Total: {timeSummary?.totalHours ?? 0}h · Billable:{' '}
-              {timeSummary?.billableHours ?? 0}h · Non-billable:{' '}
-              {(
-                (timeSummary?.totalHours ?? 0) -
-                (timeSummary?.billableHours ?? 0)
-              ).toFixed(1)}
-              h
-            </p>
-            <PermissionGate feature="projects.time" action="write">
-              <Button onClick={() => setLogTimeOpen(true)}>+ Log Time</Button>
-            </PermissionGate>
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-cdy-navy-border text-cdy-muted">
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">Task</th>
-                  <th className="px-4 py-3 font-medium">Hours</th>
-                  <th className="px-4 py-3 font-medium">Billable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {timeSummary?.entries.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="border-b border-cdy-navy-border/50 last:border-0"
-                  >
-                    <td className="px-4 py-3 text-cdy-muted">
-                      {format(parseISO(entry.date), 'MMM d')}
-                    </td>
-                    <td className="px-4 py-3 text-cdy-white">
-                      {entry.employee
-                        ? `${entry.employee.firstName} ${entry.employee.lastName}`
-                        : entry.employeeId}
-                    </td>
-                    <td className="px-4 py-3 text-cdy-muted">
-                      {entry.task?.title ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-cdy-white">
-                      {entry.hours}h
-                    </td>
-                    <td className="px-4 py-3">
-                      {entry.isBillable ? '✅' : '—'}
-                    </td>
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
@@ -809,8 +650,7 @@ export default function ProjectDetailPage(): JSX.Element {
               )}
               {selectedTask.estimatedHours != null && (
                 <p className="text-sm text-cdy-muted">
-                  Estimated: {selectedTask.estimatedHours}h · Logged:{' '}
-                  {selectedTask.loggedHours ?? 0}h
+                  Estimated: {selectedTask.estimatedHours}h
                 </p>
               )}
               {selectedTask.milestone && (
@@ -835,9 +675,7 @@ export default function ProjectDetailPage(): JSX.Element {
                 </p>
                 <select
                   value={newStatus || selectedTask.status}
-                  onChange={(e) =>
-                    setNewStatus(e.target.value as TaskStatus)
-                  }
+                  onChange={(e) => setNewStatus(e.target.value as TaskStatus)}
                   className="mb-2 w-full rounded-md border border-cdy-navy-border bg-cdy-navy-light px-3 py-2 text-sm text-cdy-white"
                 >
                   {KANBAN_COLUMNS.map((s) => (
@@ -881,7 +719,7 @@ export default function ProjectDetailPage(): JSX.Element {
                       <p className="mt-1 text-xs text-cdy-muted">
                         {format(
                           parseISO(comment.createdAt),
-                          'MMM d \'at\' h:mm a',
+                          "MMM d 'at' h:mm a",
                         )}
                       </p>
                     </div>
@@ -980,23 +818,6 @@ export default function ProjectDetailPage(): JSX.Element {
                     )}
                   </PermissionGate>
                 )}
-
-              <PermissionGate feature="projects.time" action="write">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setTimeForm((f) => ({
-                      ...f,
-                      taskId: selectedTask.id,
-                      employeeId: selectedTask.assigneeId ?? '',
-                    }));
-                    setLogTimeOpen(true);
-                  }}
-                >
-                  Log time
-                </Button>
-              </PermissionGate>
             </div>
           </div>
         </>
@@ -1190,135 +1011,12 @@ export default function ProjectDetailPage(): JSX.Element {
         </>
       )}
 
-      {logTimeOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[60] bg-black/60"
-            onClick={() => setLogTimeOpen(false)}
-            role="presentation"
-          />
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy p-6 shadow-xl">
-              <h3 className="mb-4 font-semibold text-cdy-white">Log Time</h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="logDate">Date *</Label>
-                  <Input
-                    id="logDate"
-                    type="date"
-                    value={timeForm.date}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({ ...f, date: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="logEmployee">Employee *</Label>
-                  <select
-                    id="logEmployee"
-                    value={timeForm.employeeId}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({
-                        ...f,
-                        employeeId: e.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy-light px-3 py-2 text-sm text-cdy-white"
-                  >
-                    <option value="">Select…</option>
-                    {employees?.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.firstName} {emp.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="logTask">Task</Label>
-                  <select
-                    id="logTask"
-                    value={timeForm.taskId}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({ ...f, taskId: e.target.value }))
-                    }
-                    className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy-light px-3 py-2 text-sm text-cdy-white"
-                  >
-                    <option value="">None</option>
-                    {tasks?.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="logHours">Hours *</Label>
-                  <Input
-                    id="logHours"
-                    type="number"
-                    min="0.01"
-                    max="24"
-                    step="0.25"
-                    value={timeForm.hours}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({ ...f, hours: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="logDesc">Description</Label>
-                  <Input
-                    id="logDesc"
-                    value={timeForm.description}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({
-                        ...f,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-cdy-muted">
-                  <input
-                    type="checkbox"
-                    checked={timeForm.isBillable}
-                    onChange={(e) =>
-                      setTimeForm((f) => ({
-                        ...f,
-                        isBillable: e.target.checked,
-                      }))
-                    }
-                  />
-                  Billable
-                </label>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setLogTimeOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => void handleLogTime()}
-                  disabled={logTime.isPending}
-                >
-                  Log Time
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
       <CompleteProjectModal
         open={completeModalOpen}
         onClose={() => setCompleteModalOpen(false)}
         projectName={project.name}
         projectCode={project.projectCode}
-        currency={project.currency}
         incompleteTasks={incompleteTasks}
-        uninvoicedMilestones={uninvoicedMilestones}
         onComplete={handleCompleteProject}
         isPending={completeProject.isPending}
       />

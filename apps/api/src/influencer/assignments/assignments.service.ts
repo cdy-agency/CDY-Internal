@@ -1,16 +1,19 @@
-﻿import {
+import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CampaignStatus, DeliverableStatus } from '@prisma/client';
+import { CampaignStatus, DeliverableStatus, ExpenseCategory } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AssignInfluencerDto } from './dto/assign-influencer.dto';
 import { LogPaymentDto } from './dto/log-payment.dto';
 
 @Injectable()
 export class AssignmentsService {
+  private readonly logger = new Logger(AssignmentsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async assign(campaignId: string, dto: AssignInfluencerDto) {
@@ -90,16 +93,39 @@ export class AssignmentsService {
     });
   }
 
-  async logPayment(assignmentId: string, dto: LogPaymentDto) {
+  async logPayment(assignmentId: string, dto: LogPaymentDto, userId: string) {
     const assignment = await this.prisma.campaignInfluencer.findUnique({
       where: { id: assignmentId },
+      include: {
+        influencer: { select: { name: true } },
+        campaign: { select: { name: true, currency: true } },
+      },
     });
     if (!assignment) throw new NotFoundException();
 
     if (assignment.isPaid) {
-      throw new BadRequestException(
-        'This influencer has already been paid',
-      );
+      throw new BadRequestException('This influencer has already been paid');
+    }
+
+    const amount = parseFloat(dto.amount);
+    const currency = assignment.campaign.currency ?? 'RWF';
+
+    let expenseId: string | undefined;
+    try {
+      const expense = await this.prisma.expense.create({
+        data: {
+          category: ExpenseCategory.INFLUENCER_PAYMENT,
+          vendorName: assignment.influencer.name,
+          amount,
+          currency,
+          date: new Date(),
+          notes: `Payment for campaign: ${assignment.campaign.name}${dto.notes ? ` — ${dto.notes}` : ''}`,
+          createdBy: userId,
+        },
+      });
+      expenseId = expense.id;
+    } catch (err: unknown) {
+      this.logger.error('Failed to create expense for influencer payment', err);
     }
 
     return this.prisma.campaignInfluencer.update({
@@ -109,6 +135,7 @@ export class AssignmentsService {
         paidAt: new Date(),
         paidAmount: dto.amount,
         paymentNotes: dto.notes,
+        ...(expenseId ? { expenseId } : {}),
       },
     });
   }

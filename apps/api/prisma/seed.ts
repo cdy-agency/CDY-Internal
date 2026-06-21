@@ -8,7 +8,7 @@ import {
   LeadSource,
   PipelineStage,
 } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { seedRbac, getRoleIdByKey } from './seeds/rbac.seed';
 import { seedHrData } from './seeds/hr.seed';
 import { seedProjectsData } from './seeds/projects.seed';
@@ -20,9 +20,7 @@ async function clearAllData(): Promise<void> {
   await prisma.projectReport.deleteMany();
   await prisma.deliverableApproval.deleteMany();
   await prisma.projectActivity.deleteMany();
-  await prisma.hourlyRate.deleteMany();
   await prisma.taskStatusHistory.deleteMany();
-  await prisma.timeEntry.deleteMany();
   await prisma.projectFile.deleteMany();
   await prisma.task.deleteMany();
   await prisma.milestone.deleteMany();

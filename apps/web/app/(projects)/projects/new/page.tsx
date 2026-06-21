@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,7 @@ import { ClientSearch } from '@/components/crm/ClientSearch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { PermissionGate } from '@/components/PermissionGate';
 
 type Tab = 'info' | 'timeline' | 'team' | 'milestones';
@@ -42,9 +42,10 @@ const PRIORITIES: Array<{ value: ProjectPriority; label: string }> = [
   { value: ProjectPriority.URGENT, label: 'Urgent' },
 ];
 
+const CURRENCIES = ['RWF', 'USD', 'EUR', 'GBP'];
+
 interface DraftMilestone {
   name: string;
-  billingAmount: string;
   dueDate: string;
 }
 
@@ -63,7 +64,7 @@ export default function NewProjectPage(): JSX.Element {
     priority: ProjectPriority.MEDIUM,
     startDate: new Date().toISOString().slice(0, 10),
     endDate: '',
-    estimatedBudget: '',
+    totalCost: '',
     currency: 'RWF',
     managerId: '',
     memberIds: [] as string[],
@@ -71,12 +72,7 @@ export default function NewProjectPage(): JSX.Element {
   });
   const [milestones, setMilestones] = useState<DraftMilestone[]>([]);
 
-  const milestoneTotal = milestones.reduce(
-    (sum, m) => sum + (Number(m.billingAmount) || 0),
-    0,
-  );
-  const estimatedBudget = Number(form.estimatedBudget) || 0;
-  const remaining = estimatedBudget - milestoneTotal;
+  const totalCost = Number(form.totalCost) || 0;
 
   function toggleMember(employeeId: string): void {
     setForm((f) => ({
@@ -88,10 +84,7 @@ export default function NewProjectPage(): JSX.Element {
   }
 
   function addMilestone(): void {
-    setMilestones((m) => [
-      ...m,
-      { name: '', billingAmount: '', dueDate: '' },
-    ]);
+    setMilestones((m) => [...m, { name: '', dueDate: '' }]);
   }
 
   function updateMilestone(
@@ -123,7 +116,7 @@ export default function NewProjectPage(): JSX.Element {
         managerId: form.managerId,
         startDate: form.startDate,
         endDate: form.endDate || undefined,
-        estimatedBudget: estimatedBudget || undefined,
+        totalCost: totalCost || undefined,
         currency: form.currency,
         notes: form.notes || undefined,
         memberIds: form.memberIds.length ? form.memberIds : undefined,
@@ -136,9 +129,7 @@ export default function NewProjectPage(): JSX.Element {
           projectId: project.id,
           payload: {
             name: m.name,
-            billingAmount: Number(m.billingAmount) || undefined,
             dueDate: m.dueDate || undefined,
-            currency: form.currency,
             order: i + 1,
           },
         });
@@ -280,18 +271,16 @@ export default function NewProjectPage(): JSX.Element {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="estimatedBudget">Estimated budget</Label>
+                <Label htmlFor="totalCost">Total agreed cost</Label>
                 <Input
-                  id="estimatedBudget"
+                  id="totalCost"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.estimatedBudget}
+                  placeholder="0.00"
+                  value={form.totalCost}
                   onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      estimatedBudget: e.target.value,
-                    }))
+                    setForm((f) => ({ ...f, totalCost: e.target.value }))
                   }
                 />
               </div>
@@ -305,9 +294,32 @@ export default function NewProjectPage(): JSX.Element {
                   }
                   className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
                 >
-                  <option value="RWF">RWF</option>
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
+            </div>
+            {totalCost > 0 && client && (
+              <p className="rounded-md border border-cdy-red/20 bg-cdy-red/5 px-3 py-2 text-xs text-cdy-muted">
+                A draft invoice for{' '}
+                <span className="font-medium text-cdy-white">
+                  {form.currency} {totalCost.toLocaleString()}
+                </span>{' '}
+                will be created automatically in Finance for the Finance Manager to review.
+              </p>
+            )}
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <textarea
+                id="notes"
+                rows={3}
+                value={form.notes}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, notes: e.target.value }))
+                }
+                className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              />
             </div>
           </div>
         )}
@@ -366,24 +378,19 @@ export default function NewProjectPage(): JSX.Element {
 
         {tab === 'milestones' && (
           <div className="space-y-4">
+            <p className="text-xs text-cdy-muted">
+              Milestones mark progress checkpoints. Billing is managed through the project invoice.
+            </p>
             {milestones.map((milestone, index) => (
               <div
                 key={index}
-                className="grid gap-3 rounded-md border border-cdy-navy-border p-3 sm:grid-cols-[1fr_120px_140px_32px]"
+                className="grid gap-3 rounded-md border border-cdy-navy-border p-3 sm:grid-cols-[1fr_140px_32px]"
               >
                 <Input
                   placeholder="Milestone name"
                   value={milestone.name}
                   onChange={(e) =>
                     updateMilestone(index, 'name', e.target.value)
-                  }
-                />
-                <Input
-                  type="number"
-                  placeholder="Amount"
-                  value={milestone.billingAmount}
-                  onChange={(e) =>
-                    updateMilestone(index, 'billingAmount', e.target.value)
                   }
                 />
                 <Input
@@ -406,31 +413,6 @@ export default function NewProjectPage(): JSX.Element {
             <Button type="button" variant="outline" onClick={addMilestone}>
               + Add milestone
             </Button>
-            {estimatedBudget > 0 && (
-              <div className="rounded-md bg-cdy-navy p-4 text-sm">
-                <div className="flex justify-between text-cdy-muted">
-                  <span>Total milestone value</span>
-                  <span className="text-cdy-white">
-                    {formatCurrency(milestoneTotal, form.currency)}
-                  </span>
-                </div>
-                <div className="mt-1 flex justify-between text-cdy-muted">
-                  <span>Estimated budget</span>
-                  <span className="text-cdy-white">
-                    {formatCurrency(estimatedBudget, form.currency)}
-                  </span>
-                </div>
-                <div
-                  className={cn(
-                    'mt-1 flex justify-between font-medium',
-                    remaining < 0 ? 'text-cdy-red' : 'text-emerald-400',
-                  )}
-                >
-                  <span>Remaining unallocated</span>
-                  <span>{formatCurrency(remaining, form.currency)}</span>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

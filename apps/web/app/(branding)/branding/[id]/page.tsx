@@ -688,6 +688,14 @@ export default function BrandingProjectPage(): JSX.Element {
           <p className="text-xs text-cdy-muted">
             Created: {format(new Date(project.createdAt), 'MMM d, yyyy')}
           </p>
+          {project.invoiceId && (
+            <a
+              href={`/finance/invoices/${project.invoiceId}`}
+              className="mt-1 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+            >
+              <ExternalLink className="h-3 w-3" /> View Draft Invoice
+            </a>
+          )}
         </div>
         <PermissionGate feature="branding.projects" action="write">
           <div className="flex gap-2">

@@ -43,6 +43,7 @@ function NewCampaignDrawer({
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [budget, setBudget] = useState('');
   const [currency, setCurrency] = useState('RWF');
+  const [totalCost, setTotalCost] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
@@ -54,6 +55,7 @@ function NewCampaignDrawer({
     setPlatforms([]);
     setBudget('');
     setCurrency('RWF');
+    setTotalCost('');
     setStartDate('');
     setEndDate('');
     setError('');
@@ -80,6 +82,7 @@ function NewCampaignDrawer({
         platforms,
         budget: budget.trim() || undefined,
         currency,
+        totalCost: totalCost.trim() || undefined,
         startDate,
         endDate: endDate || undefined,
       });
@@ -192,6 +195,23 @@ function NewCampaignDrawer({
                   <option value="RWF">RWF</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="camp-totalcost">Total contract cost (optional)</Label>
+              <Input
+                id="camp-totalcost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={totalCost}
+                onChange={(e) => setTotalCost(e.target.value)}
+                placeholder="0.00"
+                className="mt-1 border-cdy-navy-border bg-cdy-navy text-cdy-white"
+              />
+              {totalCost && (
+                <p className="mt-1 text-xs text-cdy-muted">A DRAFT invoice will be created automatically.</p>
+              )}
             </div>
 
             <div className="flex gap-2">

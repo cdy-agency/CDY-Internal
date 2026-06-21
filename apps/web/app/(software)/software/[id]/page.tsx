@@ -1706,6 +1706,14 @@ export default function SoftwareProjectPage(): JSX.Element {
             {TYPE_LABELS[project.projectType] ?? project.projectType} · Started{' '}
             {format(new Date(project.startDate), 'MMM d, yyyy')}
           </p>
+          {project.invoiceId && (
+            <a
+              href={`/finance/invoices/${project.invoiceId}`}
+              className="mt-1 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+            >
+              <ExternalLink className="h-3 w-3" /> View Draft Invoice
+            </a>
+          )}
         </div>
         <PermissionGate feature="software.projects" action="write">
           {canAdvance && (

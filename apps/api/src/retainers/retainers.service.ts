@@ -86,14 +86,27 @@ export class RetainersService {
     if (filters.clientId) {
       where.clientId = { contains: filters.clientId, mode: 'insensitive' };
     }
+    if (filters.search) {
+      const term = filters.search;
+      where.OR = [
+        { serviceName: { contains: term, mode: 'insensitive' } },
+        { client: { companyName: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
 
     const retainers = await this.prisma.retainerContract.findMany({
       where,
-      include: { taxRate: true },
+      include: {
+        taxRate: true,
+        client: { select: { id: true, companyName: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    return retainers.map((r) => this.serializeRetainer(r));
+    return retainers.map((r) => ({
+      ...this.serializeRetainer(r),
+      clientName: r.client?.companyName ?? null,
+    }));
   }
 
   async findOne(id: string) {

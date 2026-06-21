@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BarChart3, DollarSign } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 const REPORT_CARDS = [
   {
@@ -11,13 +11,6 @@ const REPORT_CARDS = [
     href: '/projects/reports/portfolio',
     icon: BarChart3,
     emoji: '📊',
-  },
-  {
-    title: 'Budget vs Actual',
-    description: 'Approved budget vs actual spend across all active projects',
-    href: '/projects/reports/budget',
-    icon: DollarSign,
-    emoji: '💰',
   },
 ] as const;
 
