@@ -12,6 +12,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+    "prisma:migrate-old-data": "ts-node --project tsconfig.seed.json prisma/migrations/migrate_old_data.ts",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
