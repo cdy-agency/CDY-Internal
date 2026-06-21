@@ -13,12 +13,7 @@ else
   echo "SEED_ON_STARTUP=false — skipping seed"
 fi
 
-if [ "${MIGRATE_OLD_DATA:-true}" = "true" ]; then
-  echo "Running old data migration..."
-  pnpm run prisma:migrate-old-data
-else
-  echo "MIGRATE_OLD_DATA=false — skipping old data migration"
-fi
+
 
 echo "Starting API server..."
 exec node dist/src/main.js
