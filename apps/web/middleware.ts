@@ -156,6 +156,11 @@ export function middleware(request: NextRequest): NextResponse {
     return redirectToLogin(request);
   }
 
+  // Permission checks require permissions in JWT; if absent (slim token), let API guards handle it
+  if (!payload.permissions) {
+    return NextResponse.next();
+  }
+
   // CEO bypasses all permission checks
   if (payload.roleKey === 'CEO') {
     return NextResponse.next();
@@ -166,7 +171,7 @@ export function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
-  const permission = payload.permissions?.[routeRule.feature];
+  const permission = payload.permissions[routeRule.feature];
   const allowed =
     routeRule.action === 'read' ? permission?.canRead : permission?.canWrite;
 
