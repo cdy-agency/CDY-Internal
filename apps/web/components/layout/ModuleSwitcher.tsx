@@ -88,7 +88,7 @@ export function ModuleSwitcher(): JSX.Element | null {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-1">
+    <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-1 overflow-x-auto max-w-[220px] md:max-w-none">
       {visible.map((module) => {
         const active = pathname.startsWith(module.href);
         const Icon = module.icon;

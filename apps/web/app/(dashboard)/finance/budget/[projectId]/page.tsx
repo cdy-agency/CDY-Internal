@@ -95,7 +95,7 @@ export default function BudgetDetailPage(): JSX.Element {
 
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-cdy-muted">
-          <span>$0</span>
+          <span>RWF0</span>
           <span>{fmt(budget.totalCosts)} spent</span>
           <span>{fmt(budget.approvedBudget)}</span>
         </div>

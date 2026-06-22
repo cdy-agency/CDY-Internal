@@ -206,7 +206,7 @@ export default function ReportsLandingPage(): JSX.Element {
             taxReport
               ? taxReport.netOwed > 0
                 ? `Net owed: ${formatCurrency(taxReport.netOwed)}`
-                : 'Net owed: $0.00 ✓'
+                : 'Net owed: RWF0.00 ✓'
               : 'Loading...'
           }
           statClass={

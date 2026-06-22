@@ -29,7 +29,7 @@ export function MetricCard({
   return (
     <div className="rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-5">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-3xl font-bold font-mono tracking-tight text-cdy-white">
+        <span className="text-2xl sm:text-3xl md:text-4xl font-bold font-mono tracking-tight text-cdy-white break-words min-w-0">
           {value}
         </span>
         {trend !== undefined && <TrendBadge value={trend} />}

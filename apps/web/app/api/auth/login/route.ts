@@ -5,7 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://api:3251/api/v1';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    console.log('API_URL:', API_URL); // Log the API_URL to verify its value
+    console.log('API_URL:', process.env.NEXT_PUBLIC_API_URL); // Log the API_URL to verify its value
     const body = await request.json();
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',

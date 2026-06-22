@@ -201,7 +201,7 @@ export default function MyActivityPage() {
                   { label: 'Visits', value: todayLog.visitsCount },
                   { label: 'Leads', value: todayLog.leadsCount },
                   { label: 'Sales', value: todayLog.salesCount },
-                  { label: 'Amount', value: todayLog.salesAmount ? `$${Number(todayLog.salesAmount).toLocaleString()}` : '—' },
+                  { label: 'Sales', value: todayLog.salesAmount ? `RWF${Number(todayLog.salesAmount).toLocaleString()}` : '—' },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <p className="text-xl font-bold text-cdy-white">{stat.value}</p>
@@ -250,7 +250,7 @@ export default function MyActivityPage() {
                         <td className="px-4 py-3 text-right text-cdy-white">{log.leadsCount}</td>
                         <td className="px-4 py-3 text-right text-cdy-white">{log.salesCount}</td>
                         <td className="px-4 py-3 text-right text-cdy-muted">
-                          {log.salesAmount ? `$${Number(log.salesAmount).toLocaleString()}` : '—'}
+                          {log.salesAmount ? `RWF${Number(log.salesAmount).toLocaleString()}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-cdy-muted max-w-xs truncate">{log.notes ?? ''}</td>
                       </tr>
