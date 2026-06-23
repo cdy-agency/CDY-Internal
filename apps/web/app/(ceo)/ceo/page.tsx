@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import api from '@/lib/api';
 import type { ApiResponse } from '@cdy/shared';
+import { Button } from '@/components/ui/button';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -131,8 +132,8 @@ export default function CeoDashboardPage() {
   return (
     <div className="min-h-screen bg-cdy-navy">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-cdy-navy-border bg-cdy-navy px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between">
+      <div className="sticky top-0 z-10 border-b border-cdy-navy-border bg-cdy-navy px-4 py-4 shadow-sm sm:px-6">
+      <div className="mx-auto flex flex-wrap max-w-[1400px] items-start justify-between gap-3 px-2 sm:px-0">
           <div>
             <h1 className="text-xl font-bold text-cdy-white">CDY Global Dashboard</h1>
             <p className="mt-0.5 text-xs text-cdy-muted">
@@ -156,11 +157,23 @@ export default function CeoDashboardPage() {
                 {p}
               </button>
             ))}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => document.getElementById('service-lines')?.scrollIntoView({ behavior: 'smooth' })}
+                className="ml-2 rounded-md bg-cdy-red px-3 py-1.5 text-sm font-medium text-white hover:bg-cdy-red/90"
+              >
+                Service Lines
+              </button>
+              <Link href="/finance" className="ml-1 hidden rounded px-2 py-1 text-sm text-cdy-muted hover:text-cdy-white md:inline-block">
+                Go to Finance →
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1400px] space-y-5 px-6 py-6">
+      <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-6 sm:px-6">
         {/* Row 1 — Alerts */}
         {hasAlerts && (
           <SectionCard title="⚡ Actions needed">
@@ -200,7 +213,7 @@ export default function CeoDashboardPage() {
         )}
 
         {/* Row 2 — Finance hero metrics */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:grid-cols-4">
           {isLoading ? (
             [...Array(4)].map((_, i) => (
               <div key={i} className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
@@ -211,8 +224,8 @@ export default function CeoDashboardPage() {
           ) : (
             <>
               <SectionCard>
-                <MetricHero
-                  value={`$${(summary?.finance.revenueMTD ?? 0).toLocaleString()}`}
+                  <MetricHero
+                    value={`RWF${(summary?.finance.revenueMTD ?? 0).toLocaleString()}`}
                   label="Revenue this month"
                   trend={summary?.finance.revenueTrend}
                   trendLabel="vs last month"
@@ -221,21 +234,21 @@ export default function CeoDashboardPage() {
               </SectionCard>
               <SectionCard>
                 <MetricHero
-                  value={`$${(summary?.finance.collectedMTD ?? 0).toLocaleString()}`}
+                  value={`RWF${(summary?.finance.collectedMTD ?? 0).toLocaleString()}`}
                   label="Cash collected MTD"
                   size="md"
                 />
               </SectionCard>
               <SectionCard>
                 <MetricHero
-                  value={`$${(summary?.finance.outstandingAR ?? 0).toLocaleString()}`}
+                  value={`RWF${(summary?.finance.outstandingAR ?? 0).toLocaleString()}`}
                   label="Outstanding AR"
                   size="md"
                 />
               </SectionCard>
               <SectionCard>
                 <MetricHero
-                  value={`$${(summary?.finance.totalMRR ?? 0).toLocaleString()}`}
+                  value={`RWF${(summary?.finance.totalMRR ?? 0).toLocaleString()}`}
                   label="Monthly recurring"
                   badge={`${summary?.finance.activeRetainers ?? 0} retainers`}
                   badgeVariant="blue"
@@ -305,7 +318,7 @@ export default function CeoDashboardPage() {
               {/* Metrics */}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Pipeline value',  value: `$${(Number(summary?.crm.pipelineValue ?? 0) / 1000).toFixed(0)}K` },
+                  { label: 'Pipeline value',  value: `RWF${(Number(summary?.crm.pipelineValue ?? 0) / 1000).toFixed(0)}K` },
                   { label: 'Leads MTD',       value: summary?.crm.totalLeadsMTD ?? 0 },
                   { label: 'Closed Won MTD',  value: summary?.crm.closedWonMTD ?? 0 },
                   { label: 'Conversion rate', value: `${summary?.crm.conversionRate ?? 0}%` },
@@ -363,7 +376,7 @@ export default function CeoDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <div className="mb-0.5 flex justify-between text-xs">
                             <span className="truncate text-cdy-muted">{agent.assignedTo ?? '—'}</span>
-                            <span className="font-mono text-cdy-white">${val.toLocaleString()}</span>
+                            <span className="font-mono text-cdy-white">RWF{val.toLocaleString()}</span>
                           </div>
                           <div className="h-1 rounded-full bg-cdy-navy">
                             <div className="h-full rounded-full bg-green-400"
@@ -474,6 +487,7 @@ export default function CeoDashboardPage() {
         </ErrorBoundary>
 
         {/* Row 7 — Service lines */}
+        <div id="service-lines">
         <SectionCard title="Service Lines">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -501,6 +515,7 @@ export default function CeoDashboardPage() {
             </div>
           )}
         </SectionCard>
+        </div>
 
         {/* Row 8 — Ventures */}
         {(summary?.ventures.total ?? 0) > 0 && (
@@ -510,10 +525,10 @@ export default function CeoDashboardPage() {
             action={<Link href="/finance/ventures" className="text-xs text-cdy-red hover:underline">View ventures →</Link>}
           >
             <div className="mb-4 grid grid-cols-3 gap-4">
-              {[
-                { label: 'Total income',   value: `$${(summary?.ventures.totalIncome ?? 0).toLocaleString()}`,   color: 'text-green-400' },
-                { label: 'Total expenses', value: `$${(summary?.ventures.totalExpenses ?? 0).toLocaleString()}`, color: 'text-red-400' },
-                { label: 'Net profit',     value: `$${(summary?.ventures.totalNet ?? 0).toLocaleString()}`,
+                {[
+                { label: 'Total income',   value: `RWF${(summary?.ventures.totalIncome ?? 0).toLocaleString()}`,   color: 'text-green-400' },
+                { label: 'Total expenses', value: `RWF${(summary?.ventures.totalExpenses ?? 0).toLocaleString()}`, color: 'text-red-400' },
+                { label: 'Net profit',     value: `RWF${(summary?.ventures.totalNet ?? 0).toLocaleString()}`,
                   color: (summary?.ventures.totalNet ?? 0) >= 0 ? 'text-cdy-white' : 'text-red-400' },
               ].map((m) => (
                 <div key={m.label} className="rounded-lg bg-cdy-navy p-3">
@@ -527,10 +542,10 @@ export default function CeoDashboardPage() {
                 <div key={v.id} className="flex items-center gap-3 text-sm">
                   <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: `#${v.color}` }} />
                   <span className="flex-1 text-cdy-muted">{v.name}</span>
-                  <span className="font-mono text-xs text-green-400">+${v.income.toLocaleString()}</span>
-                  <span className="font-mono text-xs text-red-400">−${v.expenses.toLocaleString()}</span>
+                  <span className="font-mono text-xs text-green-400">+RWF{v.income.toLocaleString()}</span>
+                  <span className="font-mono text-xs text-red-400">−RWF{v.expenses.toLocaleString()}</span>
                   <span className={`w-20 text-right font-mono text-xs font-bold ${v.net >= 0 ? 'text-cdy-white' : 'text-red-400'}`}>
-                    ${v.net.toLocaleString()}
+                    RWF{v.net.toLocaleString()}
                   </span>
                 </div>
               ))}

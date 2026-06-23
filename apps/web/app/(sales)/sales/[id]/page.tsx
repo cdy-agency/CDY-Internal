@@ -304,7 +304,7 @@ function WeeklyReportView({ report, campaignName, clientName, onClose }: {
       `Visits:  ${report.totalVisits}`,
       `Leads:   ${report.totalLeads}`,
       `Sales:   ${report.totalSales}`,
-      report.totalSalesAmount ? `Revenue: $${Number(report.totalSalesAmount).toLocaleString()}` : '',
+      report.totalSalesAmount ? `Revenue: RWF${Number(report.totalSalesAmount).toLocaleString()}` : '',
       `Active agents: ${report.activeAgents}`,
       '',
       highlights ? `HIGHLIGHTS\n${highlights}` : '',
@@ -349,7 +349,7 @@ function WeeklyReportView({ report, campaignName, clientName, onClose }: {
             </div>
             {report.totalSalesAmount && (
               <p className="text-center text-sm text-cdy-muted">
-                Revenue: <span className="font-semibold text-cdy-white">${Number(report.totalSalesAmount).toLocaleString()}</span>
+                Revenue: <span className="font-semibold text-cdy-white">RWF{Number(report.totalSalesAmount).toLocaleString()}</span>
               </p>
             )}
           </div>
@@ -563,7 +563,7 @@ export default function SalesCampaignDetailPage() {
                     <td className="px-4 py-3 text-right text-cdy-white">{log.leadsCount}</td>
                     <td className="px-4 py-3 text-right text-cdy-white">{log.salesCount}</td>
                     <td className="px-4 py-3 text-right text-cdy-muted">
-                      {log.salesAmount ? `$${Number(log.salesAmount).toLocaleString()}` : '—'}
+                      {log.salesAmount ? `RWF${Number(log.salesAmount).toLocaleString()}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-cdy-muted max-w-xs truncate">{log.notes ?? ''}</td>
                   </tr>

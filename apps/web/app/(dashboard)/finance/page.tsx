@@ -108,7 +108,7 @@ export default function FinanceDashboard(): JSX.Element {
       </div>
 
       {/* Row 1 — Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SectionCard>
           <MetricHero
             value={formatCurrency(data?.totalInvoiced ?? 0)}

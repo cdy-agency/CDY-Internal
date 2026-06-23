@@ -19,9 +19,9 @@ interface MetricHeroProps {
 }
 
 const SIZES = {
-  lg: 'text-5xl',
-  md: 'text-4xl',
-  sm: 'text-3xl',
+  lg: 'text-xl sm:text-2xl md:text-3xl lg:text-4xl',
+  md: 'text-base sm:text-xl md:text-2xl lg:text-3xl',
+  sm: 'text-sm sm:text-lg md:text-xl lg:text-2xl',
 } as const;
 
 export function MetricHero({
@@ -44,11 +44,9 @@ export function MetricHero({
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span
-          className={`${SIZES[size]} font-bold tracking-tight text-cdy-white font-mono`}
-        >
+    <div className="flex flex-col gap-1 min-w-0">
+      <div className="flex flex-wrap items-baseline gap-2 min-w-0">
+        <span className={`${SIZES[size]} font-bold tracking-tight text-cdy-white font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0`}>
           {value}
         </span>
         {trend !== undefined && <TrendBadge value={trend} />}
