@@ -42,10 +42,13 @@ api.interceptors.response.use(
       if (!isAuthEndpoint && !config._retry && !alreadyOnLogin && !isRedirectingToLogin) {
         config._retry = true;
         try {
-          await fetch('/api/auth/refresh', { method: 'POST' });
-          return api(config);
+          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST' });
+          if (refreshRes.ok) {
+            return api(config);
+          }
+          // Refresh returned non-2xx — fall through to logout
         } catch {
-          // Refresh failed — fall through to logout
+          // Network error during refresh — fall through to logout
         }
       }
 

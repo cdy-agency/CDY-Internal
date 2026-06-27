@@ -30,7 +30,7 @@
         DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
         JWT_SECRET: ${JWT_SECRET}
         JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-        JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+        JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-50m}
         JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
         RESEND_API_KEY: ${RESEND_API_KEY}
         RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
@@ -39,7 +39,7 @@
         PORT: 3251
         UPLOAD_DIR: /app/uploads
         SENTRY_DSN: ${SENTRY_DSN}
-        SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+        SEED_ON_STARTUP: ${SEED_ON_STARTUP:-false}
         SEED_FORCE: ${SEED_FORCE:-false}
       volumes:
         - cdy_uploads_prod:/app/uploads

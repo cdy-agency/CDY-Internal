@@ -153,6 +153,12 @@ export function middleware(request: NextRequest): NextResponse {
   }
 
   if (!payload) {
+    // Access token expired — if a refresh token exists let the page load;
+    // the client-side axios interceptor will call /api/auth/refresh and retry.
+    const hasRefreshToken = Boolean(request.cookies.get(REFRESH_COOKIE_NAME)?.value);
+    if (hasRefreshToken) {
+      return NextResponse.next();
+    }
     return redirectToLogin(request);
   }
 
