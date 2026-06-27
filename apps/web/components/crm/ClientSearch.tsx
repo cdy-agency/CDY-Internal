@@ -22,7 +22,7 @@ export function ClientSearch({
   allowManualId = true,
   onCreateClient,
 }: ClientSearchProps): JSX.Element {
-  const [query, setQuery] = useState(value?.companyName ?? '');
+  const [query, setQuery] = useState(value?.companyName ?? value?.contactName ?? '');
   const [open, setOpen] = useState(false);
   const [debounced, setDebounced] = useState(query);
 
@@ -35,7 +35,7 @@ export function ClientSearch({
 
   function selectClient(client: ClientSearchResult): void {
     onChange(client);
-    setQuery(client.companyName);
+    setQuery(client.companyName ?? client.contactName);
     setOpen(false);
   }
 
@@ -100,7 +100,7 @@ export function ClientSearch({
                 )}
                 onMouseDown={() => selectClient(client)}
               >
-                <span className="font-medium text-cdy-white">{client.companyName}</span>
+                <span className="font-medium text-cdy-white">{client.companyName ?? client.contactName}</span>
                 <span className="block text-xs text-cdy-muted">
                   {client.contactName} · {client.email}
                 </span>

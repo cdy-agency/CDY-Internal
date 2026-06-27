@@ -223,7 +223,7 @@ export function useClientSearch(query: string) {
       );
       return res.data.data;
     },
-    enabled: query.trim().length >= 2,
+    enabled: Boolean(query) && query.trim().length >= 2,
   });
 }
 
