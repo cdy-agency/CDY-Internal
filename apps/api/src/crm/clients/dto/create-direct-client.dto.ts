@@ -2,15 +2,22 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
+  Min,
 } from 'class-validator';
-import { ClientSource } from '@prisma/client';
+import { ClientService, ClientSource, ClientType } from '@prisma/client';
 
 export class CreateDirectClientDto {
+  @IsEnum(ClientType)
+  clientType!: ClientType;
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  companyName!: string;
+  @MaxLength(200)
+  companyName?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -54,4 +61,20 @@ export class CreateDirectClientDto {
   @IsOptional()
   @IsEnum(ClientSource)
   source?: ClientSource;
+
+  @IsEnum(ClientService)
+  primaryService!: ClientService;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  serviceValue?: number;
+
+  @IsOptional()
+  @IsString()
+  serviceCurrency?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 }

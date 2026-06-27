@@ -5,6 +5,7 @@ import {
   IsOptional,
 } from 'class-validator';
 
+
 export class CreateClientDto {
   @IsString()
   @IsNotEmpty()
@@ -48,4 +49,8 @@ export class CreateClientDto {
   @IsOptional()
   @IsString()
   assignedTo?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 }

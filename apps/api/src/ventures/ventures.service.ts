@@ -44,7 +44,23 @@ export class VenturesService {
   }
 
   async findOne(id: string) {
-    const venture = await this.prisma.venture.findUnique({ where: { id } });
+    const venture = await this.prisma.venture.findUnique({
+      where: { id },
+      include: {
+        clients: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            companyName: true,
+            contactName: true,
+            clientType: true,
+            email: true,
+            primaryService: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
     if (!venture) {
       throw new NotFoundException('Venture not found');
     }

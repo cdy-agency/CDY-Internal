@@ -191,6 +191,122 @@ export class FinanceService {
     const { totalActiveEmployees, totalMonthlyPayroll } = hrMetrics;
     const reserve = await this.reserveService.getMonthlySummary();
 
+    // ── Chart data for Finance dashboard ──────────────────────────────────────
+    const [
+      rawIncomeByService,
+      rawExpenseByCategory,
+      rawPaymentByMethod,
+      rawExpenseByMethod,
+    ] = await Promise.all([
+      this.prisma.invoice.groupBy({
+        by: ['serviceType'],
+        where: {
+          status: InvoiceStatus.PAID,
+          paidAt: { gte: currentMonthStart, lte: currentMonthEnd },
+          deletedAt: null,
+        },
+        _sum: { total: true },
+        _count: { id: true },
+        orderBy: { _sum: { total: 'desc' } },
+      }),
+      this.prisma.expense.groupBy({
+        by: ['category'],
+        where: {
+          date: { gte: currentMonthStart, lte: currentMonthEnd },
+          deletedAt: null,
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+        orderBy: { _sum: { amount: 'desc' } },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['method'],
+        where: {
+          paidAt: { gte: currentMonthStart, lte: currentMonthEnd },
+          deletedAt: null,
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+        orderBy: { _sum: { amount: 'desc' } },
+      }),
+      this.prisma.expense.groupBy({
+        by: ['expensePaymentMethod'],
+        where: {
+          date: { gte: currentMonthStart, lte: currentMonthEnd },
+          deletedAt: null,
+          expensePaymentMethod: { not: null },
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    const totalChartIncome = rawIncomeByService.reduce(
+      (s, r) => s + this.toNumber(r._sum.total),
+      0,
+    );
+    const totalChartExpenses = rawExpenseByCategory.reduce(
+      (s, r) => s + this.toNumber(r._sum.amount),
+      0,
+    );
+    const totalChartPayments = rawPaymentByMethod.reduce(
+      (s, r) => s + this.toNumber(r._sum.amount),
+      0,
+    );
+
+    const charts = {
+      incomeByService: rawIncomeByService.map((r) => ({
+        service: r.serviceType ?? 'unknown',
+        label: serviceTypeLabel(r.serviceType ?? ''),
+        amount: this.toNumber(r._sum.total),
+        count: r._count.id,
+        percentage:
+          totalChartIncome > 0
+            ? Number(((this.toNumber(r._sum.total) / totalChartIncome) * 100).toFixed(1))
+            : 0,
+      })),
+      expenseByCategory: rawExpenseByCategory.map((r) => ({
+        category: r.category as string,
+        amount: this.toNumber(r._sum.amount),
+        count: r._count.id,
+        percentage:
+          totalChartExpenses > 0
+            ? Number(((this.toNumber(r._sum.amount) / totalChartExpenses) * 100).toFixed(1))
+            : 0,
+      })),
+      paymentByMethod: rawPaymentByMethod.map((r) => ({
+        method: r.method as string,
+        label: paymentMethodLabel(r.method as string),
+        amount: this.toNumber(r._sum.amount),
+        count: r._count.id,
+        percentage:
+          totalChartPayments > 0
+            ? Number(((this.toNumber(r._sum.amount) / totalChartPayments) * 100).toFixed(1))
+            : 0,
+      })),
+      paymentMethodSummary: ALL_PAYMENT_METHODS.map((method) => {
+        const inc = rawPaymentByMethod.find((r) => r.method === method);
+        const exp = rawExpenseByMethod.find(
+          (r) => r.expensePaymentMethod === method,
+        );
+        const incAmt = this.toNumber(inc?._sum.amount ?? null);
+        const expAmt = this.toNumber(exp?._sum.amount ?? null);
+        return {
+          method,
+          label: paymentMethodLabel(method),
+          color: PAYMENT_METHOD_COLORS[method] ?? '#94A3B8',
+          income:   { amount: incAmt, count: inc?._count.id ?? 0 },
+          expenses: { amount: expAmt, count: exp?._count.id ?? 0 },
+          net: incAmt - expAmt,
+        };
+      }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
+      totals: {
+        income: totalChartIncome,
+        expenses: totalChartExpenses,
+        payments: totalChartPayments,
+      },
+    };
+
     this.logger.debug('Finance summary computed');
 
     return {
@@ -231,6 +347,7 @@ export class FinanceService {
       topClients,
       pendingLeaveRequests,
       reserve,
+      charts,
     };
   }
 
@@ -617,3 +734,49 @@ export class FinanceService {
     return Number(result[0]?.count ?? 0);
   }
 }
+
+function serviceTypeLabel(key: string): string {
+  const labels: Record<string, string> = {
+    software_dev: 'Software / Website',
+    branding: 'Branding',
+    social_media: 'Social Media',
+    influencer_marketing: 'Influencer Marketing',
+    sales_services: 'Sales Services',
+    general: 'General',
+    historical_import: 'Historical (Import)',
+    owner_capital: 'Owner Capital',
+    retainer: 'Retainer',
+  };
+  return labels[key] ?? key;
+}
+
+function paymentMethodLabel(key: string): string {
+  const labels: Record<string, string> = {
+    BANK_TRANSFER: 'Bank Transfer',
+    MOBILE_MONEY: 'Mobile Money',
+    MTN_MOMO: 'MTN MoMo',
+    AIRTEL_MONEY: 'Airtel Money',
+    CARD: 'Card',
+    CASH: 'Cash',
+    OTHER: 'Other',
+  };
+  return labels[key] ?? key;
+}
+
+const ALL_PAYMENT_METHODS = [
+  'BANK_TRANSFER',
+  'MTN_MOMO',
+  'AIRTEL_MONEY',
+  'CARD',
+  'CASH',
+  'OTHER',
+];
+
+const PAYMENT_METHOD_COLORS: Record<string, string> = {
+  BANK_TRANSFER: '#60A5FA',
+  MTN_MOMO:      '#FBBF24',
+  AIRTEL_MONEY:  '#F87171',
+  CARD:          '#A78BFA',
+  CASH:          '#4ADE80',
+  OTHER:         '#94A3B8',
+};

@@ -209,8 +209,11 @@ model Payment {
 enum PaymentMethod {
   BANK_TRANSFER
   MOBILE_MONEY
+  MTN_MOMO
+  AIRTEL_MONEY
   CASH
   CARD
+  OTHER
 }
 
 model Expense {
@@ -229,6 +232,8 @@ model Expense {
   notes               String?
   isPayrollExpense    Boolean   @default(false)
   payrollRunId        String?
+  expensePaymentMethod  ExpensePaymentMethod?
+  paymentReference      String?
   createdBy           String
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
@@ -254,6 +259,15 @@ enum ExpenseCategory {
   SUPPLIER
   COMMISSION
   INFLUENCER_PAYMENT
+  OTHER
+}
+
+enum ExpensePaymentMethod {
+  BANK_TRANSFER
+  MTN_MOMO
+  AIRTEL_MONEY
+  CARD
+  CASH
   OTHER
 }
 
@@ -573,6 +587,7 @@ model TaxPayment {
 }
 
 enum RetainerStatus {
+  DRAFT
   ACTIVE
   PAUSED
   ENDED
@@ -778,6 +793,7 @@ model Venture {
   expenseEntries VentureExpense[]
   invoices       Invoice[]
   expenses       Expense[]
+  clients        Client[]
 
   @@index([isActive])
 }
@@ -835,7 +851,8 @@ model VentureExpense {
 
 model Client {
   id          String       @id @default(cuid())
-  companyName String
+  clientType  ClientType   @default(COMPANY)
+  companyName String?
   contactName String
   email       String
   phone       String?
@@ -853,6 +870,21 @@ model Client {
   updatedAt   DateTime     @updatedAt
   deletedAt   DateTime?
 
+  // Primary service this client is using
+  primaryService       ClientService?
+  serviceValue         Decimal?       @db.Decimal(12, 2)
+  serviceCurrency      String?        @default("RWF")
+
+  // Links to auto-created service records in the respective modules
+  softwareProjectId    String?
+  brandingProjectId    String?
+  projectId            String?
+  influencerCampaignId String?
+  salesCampaignId      String?
+
+  ventureId           String?
+  venture             Venture?             @relation(fields: [ventureId], references: [id])
+
   leads               Lead[]
   invoices            Invoice[]           @relation("ClientInvoices")
   projects            Project[]
@@ -863,9 +895,26 @@ model Client {
   influencerCampaigns InfluencerCampaign[]
   salesCampaigns      SalesCampaign[]
 
+  @@index([clientType])
   @@index([assignedTo])
   @@index([createdAt])
   @@index([source])
+  @@index([primaryService])
+  @@index([ventureId])
+}
+
+enum ClientType {
+  COMPANY
+  INDIVIDUAL
+}
+
+enum ClientService {
+  SOFTWARE_DEV
+  BRANDING
+  SOCIAL_MEDIA
+  INFLUENCER_MARKETING
+  SALES_SERVICES
+  GENERAL
 }
 
 enum ClientSource {

@@ -16,6 +16,15 @@ const SOURCE_CONFIG: Record<ClientSource, { label: string; color: string; bg: st
   RETURNING: { label: 'Returning client', color: 'text-purple-400', bg: 'bg-purple-900/20', border: 'border-purple-800' },
 };
 
+const SERVICE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  SOFTWARE_DEV:         { label: '💻 Software / Website',   color: 'text-blue-400',   bg: 'bg-blue-900/20',   border: 'border-blue-800' },
+  BRANDING:             { label: '🎨 Branding',             color: 'text-purple-400', bg: 'bg-purple-900/20', border: 'border-purple-800' },
+  SOCIAL_MEDIA:         { label: '📱 Social Media',         color: 'text-pink-400',   bg: 'bg-pink-900/20',   border: 'border-pink-800' },
+  INFLUENCER_MARKETING: { label: '⭐ Influencer Marketing', color: 'text-amber-400',  bg: 'bg-amber-900/20',  border: 'border-amber-800' },
+  SALES_SERVICES:       { label: '🤝 Sales Services',       color: 'text-green-400',  bg: 'bg-green-900/20',  border: 'border-green-800' },
+  GENERAL:              { label: '📋 General',              color: 'text-gray-400',   bg: 'bg-gray-900/20',   border: 'border-gray-700' },
+};
+
 type ClientTab = 'overview' | 'leads' | 'activities' | 'invoices';
 
 export default function ClientDetailPage(): JSX.Element {
@@ -53,6 +62,19 @@ export default function ClientDetailPage(): JSX.Element {
             </span>
           );
         })()}
+        {client.primaryService && (() => {
+          const svc = SERVICE_CONFIG[client.primaryService] ?? SERVICE_CONFIG.GENERAL;
+          return (
+            <span className={`rounded border px-2 py-0.5 text-xs font-medium ${svc.color} ${svc.bg} ${svc.border}`}>
+              {svc.label}
+            </span>
+          );
+        })()}
+        {client.primaryService && client.serviceValue && (
+          <span className="text-xs text-cdy-muted">
+            {client.serviceCurrency ?? 'RWF'} {Number(client.serviceValue).toLocaleString()}
+          </span>
+        )}
       </div>
       {client.source === 'PIPELINE' && client.leadId && (
         <Link href={`/crm/leads/${client.leadId}`} className="text-xs text-cdy-red hover:underline">
@@ -64,6 +86,34 @@ export default function ClientDetailPage(): JSX.Element {
           Registered directly on {format(new Date(client.createdAt), 'MMM d, yyyy')}
         </p>
       )}
+      {/* Links to auto-created service records */}
+      <div className="flex flex-wrap gap-3">
+        {client.softwareProjectId && (
+          <Link href={`/software/${client.softwareProjectId}`} className="text-xs text-cdy-red hover:underline">
+            View software project →
+          </Link>
+        )}
+        {client.brandingProjectId && (
+          <Link href={`/branding/${client.brandingProjectId}`} className="text-xs text-cdy-red hover:underline">
+            View branding project →
+          </Link>
+        )}
+        {client.influencerCampaignId && (
+          <Link href={`/influencer/${client.influencerCampaignId}`} className="text-xs text-cdy-red hover:underline">
+            View influencer campaign →
+          </Link>
+        )}
+        {client.salesCampaignId && (
+          <Link href={`/sales/${client.salesCampaignId}`} className="text-xs text-cdy-red hover:underline">
+            View sales campaign →
+          </Link>
+        )}
+        {client.projectId && (
+          <Link href={`/projects/${client.projectId}`} className="text-xs text-cdy-red hover:underline">
+            View project →
+          </Link>
+        )}
+      </div>
 
       <div className="flex gap-2 border-b border-cdy-navy-border">
         {tabs.map((t) => (

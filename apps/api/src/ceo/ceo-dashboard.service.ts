@@ -62,6 +62,10 @@ export class CeoDashboardService {
       pendingBudgetRequests,
 
       reserveAccount,
+
+      rawIncomeByService,
+      rawPaymentByMethod,
+      rawExpenseByMethodCeo,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -235,6 +239,39 @@ export class CeoDashboardService {
 
       // ── Reserve ──────────────────────────────────────────────
       this.prisma.reserveAccount.findFirst({ select: { balance: true, currency: true } }),
+
+      // ── Finance charts ───────────────────────────────────────
+      this.prisma.invoice.groupBy({
+        by: ['serviceType'],
+        where: {
+          status: 'PAID',
+          paidAt: { gte: monthStart, lte: monthEnd },
+          deletedAt: null,
+        },
+        _sum: { total: true },
+        _count: { id: true },
+        orderBy: { _sum: { total: 'desc' } },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['method'],
+        where: {
+          paidAt: { gte: monthStart, lte: monthEnd },
+          deletedAt: null,
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+        orderBy: { _sum: { amount: 'desc' } },
+      }),
+      this.prisma.expense.groupBy({
+        by: ['expensePaymentMethod'],
+        where: {
+          date: { gte: monthStart, lte: monthEnd },
+          deletedAt: null,
+          expensePaymentMethod: { not: null },
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
     ]);
 
     // Venture summary
@@ -264,6 +301,15 @@ export class CeoDashboardService {
         ? Number((((revMTD - revLastMo) / revLastMo) * 100).toFixed(1))
         : 0;
 
+    const totalChartIncome = rawIncomeByService.reduce(
+      (s, r) => s + Number(r._sum.total ?? 0),
+      0,
+    );
+    const totalChartPayments = rawPaymentByMethod.reduce(
+      (s, r) => s + Number(r._sum.amount ?? 0),
+      0,
+    );
+
     return {
       generatedAt: now,
 
@@ -286,6 +332,44 @@ export class CeoDashboardService {
         reserve: {
           balance: Number(reserveAccount?.balance ?? 0),
           currency: reserveAccount?.currency ?? 'RWF',
+        },
+        charts: {
+          incomeByService: rawIncomeByService.map((r) => ({
+            service: r.serviceType ?? 'unknown',
+            label: ceoServiceLabel(r.serviceType ?? ''),
+            amount: Number(r._sum.total ?? 0),
+            count: r._count.id,
+            percentage:
+              totalChartIncome > 0
+                ? Number(((Number(r._sum.total ?? 0) / totalChartIncome) * 100).toFixed(1))
+                : 0,
+          })),
+          paymentByMethod: rawPaymentByMethod.map((r) => ({
+            method: r.method as string,
+            label: ceoPaymentLabel(r.method as string),
+            amount: Number(r._sum.amount ?? 0),
+            count: r._count.id,
+            percentage:
+              totalChartPayments > 0
+                ? Number(((Number(r._sum.amount ?? 0) / totalChartPayments) * 100).toFixed(1))
+                : 0,
+          })),
+          paymentMethodSummary: CEO_ALL_METHODS.map((method) => {
+            const inc = rawPaymentByMethod.find((r) => r.method === method);
+            const exp = rawExpenseByMethodCeo.find(
+              (r) => r.expensePaymentMethod === method,
+            );
+            const incAmt = Number(inc?._sum.amount ?? 0);
+            const expAmt = Number(exp?._sum.amount ?? 0);
+            return {
+              method,
+              label: ceoPaymentLabel(method),
+              color: CEO_METHOD_COLORS[method] ?? '#94A3B8',
+              income:   { amount: incAmt, count: inc?._count.id ?? 0 },
+              expenses: { amount: expAmt, count: exp?._count.id ?? 0 },
+              net: incAmt - expAmt,
+            };
+          }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
         },
       },
 
@@ -345,3 +429,48 @@ export class CeoDashboardService {
     };
   }
 }
+
+function ceoServiceLabel(key: string): string {
+  const labels: Record<string, string> = {
+    software_dev: 'Software / Website',
+    branding: 'Branding',
+    social_media: 'Social Media',
+    influencer_marketing: 'Influencer Marketing',
+    sales_services: 'Sales Services',
+    general: 'General',
+    retainer: 'Retainer',
+    historical_import: 'Historical (Import)',
+  };
+  return labels[key] ?? key;
+}
+
+function ceoPaymentLabel(key: string): string {
+  const labels: Record<string, string> = {
+    BANK_TRANSFER: 'Bank Transfer',
+    MOBILE_MONEY: 'Mobile Money',
+    MTN_MOMO: 'MTN MoMo',
+    AIRTEL_MONEY: 'Airtel Money',
+    CARD: 'Card',
+    CASH: 'Cash',
+    OTHER: 'Other',
+  };
+  return labels[key] ?? key;
+}
+
+const CEO_ALL_METHODS = [
+  'BANK_TRANSFER',
+  'MTN_MOMO',
+  'AIRTEL_MONEY',
+  'CARD',
+  'CASH',
+  'OTHER',
+];
+
+const CEO_METHOD_COLORS: Record<string, string> = {
+  BANK_TRANSFER: '#60A5FA',
+  MTN_MOMO:      '#FBBF24',
+  AIRTEL_MONEY:  '#F87171',
+  CARD:          '#A78BFA',
+  CASH:          '#4ADE80',
+  OTHER:         '#94A3B8',
+};

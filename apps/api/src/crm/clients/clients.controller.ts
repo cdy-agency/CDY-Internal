@@ -49,8 +49,9 @@ export class ClientsController {
   async findAll(
     @Query('search') search?: string,
     @Query('source') source?: ClientSource,
+    @Query('ventureId') ventureId?: string,
   ) {
-    const data = await this.clientsService.findAll(search, source);
+    const data = await this.clientsService.findAll(search, source, ventureId);
     return { data, message: 'Clients retrieved', statusCode: HttpStatus.OK };
   }
 

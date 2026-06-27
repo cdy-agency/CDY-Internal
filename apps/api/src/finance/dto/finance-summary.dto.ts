@@ -65,4 +65,39 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
     depositsThisMonth: number;
     withdrawalsThisMonth: number;
   };
+  charts!: {
+    incomeByService: Array<{
+      service: string;
+      label: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    expenseByCategory: Array<{
+      category: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    paymentByMethod: Array<{
+      method: string;
+      label: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    paymentMethodSummary: Array<{
+      method: string;
+      label: string;
+      color: string;
+      income: { amount: number; count: number };
+      expenses: { amount: number; count: number };
+      net: number;
+    }>;
+    totals: {
+      income: number;
+      expenses: number;
+      payments: number;
+    };
+  };
 }

@@ -5,8 +5,9 @@
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ClientService as ClientServiceEnum,
   ClientSource,
-  InvoiceStatus,
+  ClientType,
   Lead,
   NotificationType,
   PipelineStage,
@@ -20,11 +21,12 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { MoveStageDto } from './dto/move-stage.dto';
 import { LeadFiltersDto } from './dto/lead-filters.dto';
 import { CommissionsService } from '../../commissions/commissions.service';
-import { InvoiceNumberService } from '../../invoices/invoice-number.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { CacheService } from '../../cache/cache.service';
 import { CrmAuditService } from '../audit/crm-audit.service';
 import { CrmSettingsService } from '../settings/crm-settings.service';
+import { ClientServiceService } from '../clients/client-service.service';
+import { getClientDisplayName } from '../clients/client.utils';
 import { CrmActor } from '../common/crm-actor.interface';
 import { buildCsvRow } from '../common/csv.util';
 import { format } from 'date-fns';
@@ -49,15 +51,27 @@ const ACTIVE_PIPELINE_STAGES: PipelineStage[] = [
 export class LeadsService {
   private readonly logger = new Logger(LeadsService.name);
 
+  private static readonly SERVICE_MAP: Record<string, ClientServiceEnum> = {
+    software_dev: ClientServiceEnum.SOFTWARE_DEV,
+    website: ClientServiceEnum.SOFTWARE_DEV,
+    branding: ClientServiceEnum.BRANDING,
+    social_media: ClientServiceEnum.SOCIAL_MEDIA,
+    influencer_marketing: ClientServiceEnum.INFLUENCER_MARKETING,
+    sales_services: ClientServiceEnum.SALES_SERVICES,
+    general: ClientServiceEnum.GENERAL,
+    marketing: ClientServiceEnum.SOCIAL_MEDIA,
+    consulting: ClientServiceEnum.GENERAL,
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly leadScoringService: LeadScoringService,
     private readonly commissionsService: CommissionsService,
-    private readonly invoiceNumberService: InvoiceNumberService,
     private readonly notificationsService: NotificationsService,
     private readonly cache: CacheService,
     private readonly crmAuditService: CrmAuditService,
     private readonly crmSettingsService: CrmSettingsService,
+    private readonly clientServiceService: ClientServiceService,
   ) {}
 
   async invalidateSummaryCache(): Promise<void> {
@@ -527,6 +541,7 @@ export class LeadsService {
     if (!client) {
       client = await this.prisma.client.create({
         data: {
+          clientType: ClientType.COMPANY,
           companyName: lead.companyName,
           contactName: lead.contactName,
           email: lead.email,
@@ -557,46 +572,31 @@ export class LeadsService {
       this.logger.log(`Commission triggered for agent ${lead.assignedTo}`);
     }
 
-    if (lead.estimatedValue && Number(lead.estimatedValue) > 0) {
-      const invoiceNumber = await this.invoiceNumberService.generate();
-      const value = Number(lead.estimatedValue);
+    // Map lead serviceInterest to ClientService enum
+    const clientService =
+      LeadsService.SERVICE_MAP[lead.serviceInterest?.toLowerCase()] ??
+      ClientServiceEnum.GENERAL;
 
-      await this.prisma.invoice.create({
-        data: {
-          invoiceNumber,
-          clientId: client.id,
-          serviceType: lead.serviceInterest,
-          lineItems: [
-            {
-              description: `${lead.serviceInterest.replace('_', ' ')} services — ${lead.companyName}`,
-              quantity: 1,
-              unitPrice: value,
-              amount: value,
-            },
-          ],
-          subtotal: value,
-          taxRate: 0,
-          taxAmount: 0,
-          total: value,
-          currency: lead.currency,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          status: InvoiceStatus.DRAFT,
-          createdBy: userId,
-        },
-      });
-      this.logger.log(`Draft invoice ${invoiceNumber} created for lead ${lead.id}`);
-    }
-
-    const estimatedLabel = lead.estimatedValue
-      ? `$${Number(lead.estimatedValue).toFixed(2)}`
-      : '$0.00';
-
-    await this.notificationsService.createForRole('FINANCE_MANAGER', {
-      type: NotificationType.SYSTEM,
-      title: `New client — ${client.companyName}`,
-      body: `Deal closed by ${lead.assignedTo ? 'sales agent' : 'team'}. Draft invoice created for ${estimatedLabel}. Review and send when ready.`,
-      link: '/finance/invoices',
+    // Update client with service info from the lead
+    await this.prisma.client.update({
+      where: { id: client.id },
+      data: {
+        primaryService: clientService,
+        serviceValue: lead.estimatedValue,
+        serviceCurrency: lead.currency ?? 'USD',
+      },
     });
+
+    // Auto-create service project/campaign in the right module
+    // (also creates the draft invoice — no duplicate invoice creation here)
+    await this.clientServiceService.setupClientService(
+      client.id,
+      clientService,
+      lead.estimatedValue ? Number(lead.estimatedValue) : null,
+      lead.currency ?? 'USD',
+      userId,
+      { clientName: getClientDisplayName(client), leadId: lead.id },
+    );
 
     if (lead.assignedTo) {
       await this.notificationsService.createNotification({

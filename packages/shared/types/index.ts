@@ -9,6 +9,11 @@
   IT_ADMINISTRATOR = 'IT_ADMINISTRATOR',
 }
 
+export enum ClientType {
+  COMPANY = 'COMPANY',
+  INDIVIDUAL = 'INDIVIDUAL',
+}
+
 export type PermissionMap = Record<
   string,
   { canRead: boolean; canWrite: boolean }
@@ -26,8 +31,20 @@ export enum InvoiceStatus {
 export enum PaymentMethod {
   BANK_TRANSFER = 'BANK_TRANSFER',
   MOBILE_MONEY = 'MOBILE_MONEY',
+  MTN_MOMO = 'MTN_MOMO',
+  AIRTEL_MONEY = 'AIRTEL_MONEY',
   CASH = 'CASH',
   CARD = 'CARD',
+  OTHER = 'OTHER',
+}
+
+export enum ClientService {
+  SOFTWARE_DEV = 'SOFTWARE_DEV',
+  BRANDING = 'BRANDING',
+  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
+  INFLUENCER_MARKETING = 'INFLUENCER_MARKETING',
+  SALES_SERVICES = 'SALES_SERVICES',
+  GENERAL = 'GENERAL',
 }
 
 export enum ExpenseCategory {
@@ -220,6 +237,41 @@ export interface FinanceSummary {
     currency: string;
     depositsThisMonth: number;
     withdrawalsThisMonth: number;
+  };
+  charts: {
+    incomeByService: Array<{
+      service: string;
+      label: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    expenseByCategory: Array<{
+      category: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    paymentByMethod: Array<{
+      method: string;
+      label: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    paymentMethodSummary: Array<{
+      method: string;
+      label: string;
+      color: string;
+      income: { amount: number; count: number };
+      expenses: { amount: number; count: number };
+      net: number;
+    }>;
+    totals: {
+      income: number;
+      expenses: number;
+      payments: number;
+    };
   };
 }
 
@@ -1159,7 +1211,8 @@ export type ClientSource = 'PIPELINE' | 'DIRECT' | 'REFERRAL' | 'RETURNING';
 
 export interface ClientRecord {
   id: string;
-  companyName: string;
+  clientType: string;
+  companyName: string | null;
   contactName: string;
   email: string;
   phone: string | null;
@@ -1175,6 +1228,17 @@ export interface ClientRecord {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // Service tracking
+  primaryService: string | null;
+  serviceValue: number | null;
+  serviceCurrency: string | null;
+  softwareProjectId: string | null;
+  brandingProjectId: string | null;
+  projectId: string | null;
+  influencerCampaignId: string | null;
+  salesCampaignId: string | null;
+  ventureId: string | null;
+  venture: { id: string; name: string; color: string } | null;
   financeSummary?: {
     totalInvoiced: number;
     invoiceCount: number;

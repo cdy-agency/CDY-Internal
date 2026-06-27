@@ -55,6 +55,30 @@ interface CeoSummary {
       balance: number;
       currency: string;
     };
+    charts: {
+      incomeByService: Array<{
+        service: string;
+        label: string;
+        amount: number;
+        count: number;
+        percentage: number;
+      }>;
+      paymentByMethod: Array<{
+        method: string;
+        label: string;
+        amount: number;
+        count: number;
+        percentage: number;
+      }>;
+      paymentMethodSummary: Array<{
+        method: string;
+        label: string;
+        color: string;
+        income: { amount: number; count: number };
+        expenses: { amount: number; count: number };
+        net: number;
+      }>;
+    };
   };
   crm: {
     totalLeadsMTD: number;
@@ -106,6 +130,32 @@ interface CeoSummary {
     overdueInvoices: number;
     blockedTasks: number;
   };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function ceoServiceColor(service: string): string {
+  const map: Record<string, string> = {
+    SOFTWARE_DEV:         '#60a5fa',
+    BRANDING:             '#c084fc',
+    SOCIAL_MEDIA:         '#f472b6',
+    INFLUENCER_MARKETING: '#fbbf24',
+    SALES_SERVICES:       '#34d399',
+    GENERAL:              '#9ca3af',
+  };
+  return map[service] ?? '#9ca3af';
+}
+
+function ceoPaymentColor(method: string): string {
+  const map: Record<string, string> = {
+    BANK_TRANSFER: '#60a5fa',
+    MTN_MOMO:      '#fbbf24',
+    AIRTEL_MONEY:  '#f97316',
+    CARD:          '#c084fc',
+    CASH:          '#34d399',
+    OTHER:         '#9ca3af',
+  };
+  return map[method] ?? '#9ca3af';
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -304,6 +354,88 @@ export default function CeoDashboardPage() {
             )}
           </SectionCard>
         </div>
+
+        {/* Row 3b — Compact Finance charts */}
+        {!isLoading && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Income by service */}
+            <SectionCard
+              title="Income by service — this month"
+              action={
+                <Link href="/finance" className="text-xs text-cdy-red hover:underline">
+                  Finance →
+                </Link>
+              }
+            >
+              <div className="space-y-2">
+                {(summary?.finance.charts?.incomeByService ?? []).slice(0, 5).map((item) => (
+                  <div key={item.service} className="flex items-center gap-2">
+                    <div
+                      className="h-2 w-2 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: ceoServiceColor(item.service) }}
+                    />
+                    <span className="flex-1 truncate text-xs text-cdy-muted">{item.label}</span>
+                    <span className="font-mono text-xs text-cdy-white">
+                      RWF {Number(item.amount).toLocaleString()}
+                    </span>
+                    <span className="w-10 text-right text-xs text-cdy-dim">
+                      {item.percentage}%
+                    </span>
+                  </div>
+                ))}
+                {(summary?.finance.charts?.incomeByService ?? []).length === 0 && (
+                  <p className="text-xs text-cdy-muted">No income this month</p>
+                )}
+              </div>
+            </SectionCard>
+
+            {/* Payment method — income vs expenses vs net */}
+            <SectionCard title="Payment methods — income vs expenses">
+              {/* Column headers */}
+              <div className="mb-1 grid grid-cols-4 gap-1 border-b border-cdy-navy-border pb-1.5">
+                {(['Method', 'In', 'Out', 'Net'] as const).map((h, i) => (
+                  <span key={h} className={`text-xs text-cdy-dim ${i > 0 ? 'text-right' : ''}`}>
+                    {h}
+                  </span>
+                ))}
+              </div>
+              {(summary?.finance.charts?.paymentMethodSummary ?? []).map((item) => (
+                <div
+                  key={item.method}
+                  className="grid grid-cols-4 gap-1 border-b border-cdy-navy-border/50 py-1.5 last:border-0"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className="h-2 w-2 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="truncate text-xs text-cdy-muted">{item.label}</span>
+                  </div>
+                  <span className="text-right font-mono text-xs text-green-400">
+                    {item.income.amount > 0
+                      ? `+${Number(item.income.amount).toLocaleString()}`
+                      : '—'}
+                  </span>
+                  <span className="text-right font-mono text-xs text-red-400">
+                    {item.expenses.amount > 0
+                      ? `−${Number(item.expenses.amount).toLocaleString()}`
+                      : '—'}
+                  </span>
+                  <span
+                    className={`text-right font-mono text-xs font-semibold ${
+                      item.net >= 0 ? 'text-cdy-white' : 'text-red-400'
+                    }`}
+                  >
+                    {item.net >= 0 ? '+' : ''}{Number(item.net).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              {(summary?.finance.charts?.paymentMethodSummary ?? []).length === 0 && (
+                <p className="py-4 text-center text-xs text-cdy-muted">No payment activity this month</p>
+              )}
+            </SectionCard>
+          </div>
+        )}
 
         {/* Row 4 — CRM */}
         <ErrorBoundary section="CRM & Sales Pipeline">

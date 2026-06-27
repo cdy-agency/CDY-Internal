@@ -21,10 +21,12 @@ interface RecordPaymentModalProps {
 }
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: PaymentMethod.BANK_TRANSFER, label: 'Bank Transfer' },
-  { value: PaymentMethod.MOBILE_MONEY, label: 'Mobile Money' },
-  { value: PaymentMethod.CASH, label: 'Cash' },
-  { value: PaymentMethod.CARD, label: 'Card' },
+  { value: PaymentMethod.BANK_TRANSFER, label: '🏦 Bank Transfer' },
+  { value: PaymentMethod.MTN_MOMO,      label: '📱 MTN MoMo' },
+  { value: PaymentMethod.AIRTEL_MONEY,  label: '📱 Airtel Money' },
+  { value: PaymentMethod.CARD,          label: '💳 Card' },
+  { value: PaymentMethod.CASH,          label: '💵 Cash' },
+  { value: PaymentMethod.OTHER,         label: '⋯ Other' },
 ];
 
 function todayString(): string {
@@ -210,19 +212,23 @@ export function RecordPaymentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="method">Payment Method</Label>
-              <select
-                id="method"
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white focus:outline-none focus:ring-2 focus:ring-cdy-red"
-              >
+              <Label>Payment Method *</Label>
+              <div className="grid grid-cols-3 gap-2">
                 {PAYMENT_METHODS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setMethod(opt.value)}
+                    className={`rounded-lg border p-2.5 text-center text-sm transition-colors ${
+                      method === opt.value
+                        ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                        : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
+                    }`}
+                  >
                     {opt.label}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="space-y-2">

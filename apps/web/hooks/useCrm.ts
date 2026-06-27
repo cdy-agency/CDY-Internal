@@ -154,7 +154,8 @@ export function useCreateClient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
-      companyName: string;
+      clientType?: string;
+      companyName?: string;
       contactName: string;
       email: string;
       phone?: string;
@@ -166,6 +167,9 @@ export function useCreateClient() {
       notes?: string;
       assignedTo?: string;
       source?: string;
+      primaryService?: string;
+      serviceValue?: number;
+      serviceCurrency?: string;
     }) => {
       const res = await api.post<ApiResponse<ClientRecord>>('/crm/clients', data);
       return res.data.data;

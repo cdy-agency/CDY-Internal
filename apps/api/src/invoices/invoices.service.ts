@@ -29,7 +29,7 @@ export interface SerializedInvoice {
   invoiceNumber: string;
   clientId: string;
   client: {
-    companyName: string;
+    companyName: string | null;
     contactName: string;
     email: string;
     phone: string | null;
@@ -111,12 +111,21 @@ export class InvoicesService {
     const { subtotal, taxAmount, total, lineItemsWithAmounts } =
       this.calculateTotals(dto.lineItems, taxRatePercent);
 
+    let resolvedVentureId = dto.ventureId ?? null;
+    if (!resolvedVentureId && dto.clientId) {
+      const clientRecord = await this.prisma.client.findUnique({
+        where: { id: dto.clientId },
+        select: { ventureId: true },
+      });
+      resolvedVentureId = clientRecord?.ventureId ?? null;
+    }
+
     const invoice = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
         clientId: dto.clientId,
         projectId: dto.projectId,
-        ventureId: dto.ventureId,
+        ventureId: resolvedVentureId,
         status: InvoiceStatus.DRAFT,
         lineItems: lineItemsWithAmounts as unknown as Prisma.InputJsonValue,
         subtotal,
@@ -549,7 +558,7 @@ export class InvoicesService {
   private serializeInvoice(
     invoice: Invoice & {
       client?: {
-        companyName: string;
+        companyName: string | null;
         contactName: string;
         email: string;
         phone: string | null;

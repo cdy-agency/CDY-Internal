@@ -1,5 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ClientSource, InvoiceStatus } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ClientSource, ClientType, InvoiceStatus } from '@prisma/client';
 import { format } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -7,6 +12,8 @@ import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { CrmAuditService } from '../audit/crm-audit.service';
 import { CrmActor } from '../common/crm-actor.interface';
 import { buildCsvRow } from '../common/csv.util';
+import { ClientServiceService } from './client-service.service';
+import { getClientDisplayName } from './client.utils';
 
 const OUTSTANDING_STATUSES: InvoiceStatus[] = [
   InvoiceStatus.SENT,
@@ -19,22 +26,31 @@ export class ClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly crmAuditService: CrmAuditService,
+    private readonly clientServiceService: ClientServiceService,
   ) {}
 
   async createDirect(dto: CreateDirectClientDto, userId: string) {
+    if (dto.clientType === ClientType.COMPANY && !dto.companyName?.trim()) {
+      throw new BadRequestException(
+        'Company name is required for company clients',
+      );
+    }
+
     const existing = await this.prisma.client.findFirst({
       where: { email: dto.email, deletedAt: null },
     });
 
     if (existing) {
       throw new ConflictException(
-        `A client with email ${dto.email} already exists (${existing.companyName})`,
+        `A client with email ${dto.email} already exists (${getClientDisplayName(existing)})`,
       );
     }
 
-    return this.prisma.client.create({
+    const client = await this.prisma.client.create({
       data: {
-        companyName: dto.companyName,
+        clientType: dto.clientType,
+        companyName:
+          dto.clientType === ClientType.COMPANY ? dto.companyName : null,
         contactName: dto.contactName,
         email: dto.email,
         phone: dto.phone,
@@ -47,16 +63,34 @@ export class ClientsService {
         assignedTo: dto.assignedTo,
         source: dto.source ?? ClientSource.DIRECT,
         leadId: null,
+        primaryService: dto.primaryService,
+        serviceValue: dto.serviceValue,
+        serviceCurrency: dto.serviceCurrency ?? 'RWF',
+        ventureId: dto.ventureId ?? null,
         createdBy: userId,
       },
     });
+
+    await this.clientServiceService.setupClientService(
+      client.id,
+      dto.primaryService,
+      dto.serviceValue ?? null,
+      dto.serviceCurrency ?? 'RWF',
+      userId,
+      { clientName: getClientDisplayName(client) },
+    );
+
+    return client;
   }
 
-  async findAll(search?: string, source?: ClientSource) {
+  async findAll(search?: string, source?: ClientSource, ventureId?: string) {
     const clients = await this.prisma.client.findMany({
       where: {
         deletedAt: null,
         ...(source && { source }),
+        ...(ventureId !== undefined && {
+          ventureId: ventureId === 'none' ? null : ventureId,
+        }),
         ...(search && {
           OR: [
             { companyName: { contains: search, mode: 'insensitive' } },
@@ -64,6 +98,9 @@ export class ClientsService {
             { email: { contains: search, mode: 'insensitive' } },
           ],
         }),
+      },
+      include: {
+        venture: { select: { id: true, name: true, color: true } },
       },
       orderBy: { companyName: 'asc' },
     });
@@ -148,6 +185,7 @@ export class ClientsService {
     const client = await this.prisma.client.findFirst({
       where: { id, deletedAt: null },
       include: {
+        venture: { select: { id: true, name: true, color: true } },
         leads: {
           orderBy: { createdAt: 'desc' },
           select: {

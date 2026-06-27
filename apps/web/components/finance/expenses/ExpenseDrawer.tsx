@@ -54,6 +54,8 @@ export function ExpenseDrawer({
   const [date, setDate] = useState(todayString());
   const [projectId, setProjectId] = useState('');
   const [notes, setNotes] = useState('');
+  const [expensePaymentMethod, setExpensePaymentMethod] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -76,6 +78,8 @@ export function ExpenseDrawer({
       setDate(todayString());
       setProjectId('');
       setNotes('');
+      setExpensePaymentMethod('');
+      setPaymentReference('');
       setReceiptFile(null);
       setPreviewUrl(null);
     }
@@ -130,6 +134,9 @@ export function ExpenseDrawer({
       if (notes) formData.append('notes', notes);
       if (receiptFile) formData.append('receipt', receiptFile);
 
+      if (expensePaymentMethod) formData.append('expensePaymentMethod', expensePaymentMethod);
+      if (paymentReference) formData.append('paymentReference', paymentReference);
+
       if (isEdit && expense) {
         await api.patch<ApiResponse<ExpenseRecord>>(
           `/expenses/${expense.id}`,
@@ -141,6 +148,8 @@ export function ExpenseDrawer({
             date,
             projectId: projectId || undefined,
             notes: notes || undefined,
+            expensePaymentMethod: expensePaymentMethod || undefined,
+            paymentReference: paymentReference || undefined,
           },
         );
         toast.success('Expense updated');
@@ -280,6 +289,51 @@ export function ExpenseDrawer({
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>How was this paid? <span className="font-normal text-cdy-muted">(optional)</span></Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'BANK_TRANSFER', label: '🏦 Bank Transfer' },
+                  { value: 'MTN_MOMO',      label: '📱 MTN MoMo' },
+                  { value: 'AIRTEL_MONEY',  label: '📱 Airtel Money' },
+                  { value: 'CARD',          label: '💳 Card' },
+                  { value: 'CASH',          label: '💵 Cash' },
+                  { value: 'OTHER',         label: '⋯ Other' },
+                ].map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() =>
+                      setExpensePaymentMethod(
+                        expensePaymentMethod === m.value ? '' : m.value,
+                      )
+                    }
+                    className={`rounded-lg border p-2.5 text-center text-sm transition-colors ${
+                      expensePaymentMethod === m.value
+                        ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                        : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {expensePaymentMethod && (
+              <div className="space-y-2">
+                <Label htmlFor="paymentReference">Payment reference <span className="font-normal text-cdy-muted">(optional)</span></Label>
+                <Input
+                  id="paymentReference"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="Receipt no., MoMo ID, bank ref..."
+                  disabled={isReadOnly}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="projectId">Project ID (optional)</Label>

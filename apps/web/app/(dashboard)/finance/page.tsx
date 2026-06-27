@@ -31,6 +31,33 @@ function collectionQuality(rate: number): { label: string; variant: 'green' | 'b
   return { label: 'POOR', variant: 'red' };
 }
 
+function serviceColor(service: string): string {
+  const colors: Record<string, string> = {
+    software_dev:         '#60A5FA',
+    branding:             '#A78BFA',
+    social_media:         '#F472B6',
+    influencer_marketing: '#FBBF24',
+    sales_services:       '#4ADE80',
+    general:              '#94A3B8',
+    retainer:             '#C41E3A',
+    historical_import:    '#64748B',
+  };
+  return colors[service] ?? '#94A3B8';
+}
+
+function paymentMethodColor(method: string): string {
+  const colors: Record<string, string> = {
+    BANK_TRANSFER: '#60A5FA',
+    MOBILE_MONEY:  '#FBBF24',
+    MTN_MOMO:      '#FBBF24',
+    AIRTEL_MONEY:  '#F87171',
+    CARD:          '#A78BFA',
+    CASH:          '#4ADE80',
+    OTHER:         '#94A3B8',
+  };
+  return colors[method] ?? '#94A3B8';
+}
+
 export default function FinanceDashboard(): JSX.Element {
   const [period, setPeriod] = useState<string>('month');
   const { data, isLoading, isError, refetch } = useFinanceSummary();
@@ -238,7 +265,171 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </div>
 
-      {/* Row 4 — MRR + Pending actions */}
+      {/* Row 4 — Income by service + Expense by category + Payment method breakdown */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Income by service bar chart */}
+        <SectionCard
+          title="Income by service — this month"
+          action={
+            <span className="text-xs text-cdy-muted">
+              {data?.charts?.totals?.income
+                ? formatCurrency(data.charts.totals.income)
+                : ''}
+            </span>
+          }
+        >
+          <div className="space-y-3">
+            {(data?.charts?.incomeByService ?? []).map((item) => (
+              <div key={item.service}>
+                <div className="mb-1 flex justify-between text-xs">
+                  <span className="text-cdy-muted">{item.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cdy-dim">
+                      {item.count} invoice{item.count !== 1 ? 's' : ''}
+                    </span>
+                    <span className="font-mono font-medium text-cdy-white">
+                      {formatCurrency(item.amount)}
+                    </span>
+                    <span className="w-10 text-right text-cdy-dim">{item.percentage}%</span>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-cdy-navy">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${item.percentage}%`,
+                      backgroundColor: serviceColor(item.service),
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            {(data?.charts?.incomeByService ?? []).length === 0 && !isLoading && (
+              <p className="py-4 text-center text-sm text-cdy-muted">
+                No income recorded this month
+              </p>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* Expense by category bar chart */}
+        <SectionCard
+          title="Expenses by category — this month"
+          action={
+            <span className="text-xs text-cdy-muted">
+              {data?.charts?.totals?.expenses
+                ? formatCurrency(data.charts.totals.expenses)
+                : ''}
+            </span>
+          }
+        >
+          <div className="space-y-3">
+            {(data?.charts?.expenseByCategory ?? []).map((item) => (
+              <div key={item.category}>
+                <div className="mb-1 flex justify-between text-xs">
+                  <span className="capitalize text-cdy-muted">
+                    {item.category.toLowerCase()}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-medium text-cdy-white">
+                      {formatCurrency(item.amount)}
+                    </span>
+                    <span className="w-10 text-right text-cdy-dim">{item.percentage}%</span>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-cdy-navy">
+                  <div
+                    className="h-full rounded-full bg-cdy-red transition-all"
+                    style={{ width: `${item.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {(data?.charts?.expenseByCategory ?? []).length === 0 && !isLoading && (
+              <p className="py-4 text-center text-sm text-cdy-muted">
+                No expenses this month
+              </p>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* Payment method — income vs expenses vs net */}
+        <SectionCard title="Payment methods — income vs expenses">
+          {/* Header row */}
+          <div className="mb-1 grid grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2">
+            {(['Method', 'Income', 'Expenses', 'Net'] as const).map((h, i) => (
+              <span
+                key={h}
+                className={`text-xs uppercase tracking-wide text-cdy-dim ${i > 0 ? 'text-right' : ''}`}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+          {(data?.charts?.paymentMethodSummary ?? []).map((item) => (
+            <div
+              key={item.method}
+              className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border/50 py-3 last:border-0"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="truncate text-sm text-cdy-muted">{item.label}</span>
+              </div>
+              <div className="text-right">
+                {item.income.amount > 0 ? (
+                  <>
+                    <span className="font-mono text-sm text-green-400">
+                      +{formatCurrency(item.income.amount)}
+                    </span>
+                    {item.income.count > 0 && (
+                      <span className="block text-xs text-cdy-dim">{item.income.count}×</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-xs text-cdy-dim">—</span>
+                )}
+              </div>
+              <div className="text-right">
+                {item.expenses.amount > 0 ? (
+                  <>
+                    <span className="font-mono text-sm text-red-400">
+                      −{formatCurrency(item.expenses.amount)}
+                    </span>
+                    {item.expenses.count > 0 && (
+                      <span className="block text-xs text-cdy-dim">{item.expenses.count}×</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-xs text-cdy-dim">—</span>
+                )}
+              </div>
+              <div className="text-right">
+                <span
+                  className={`font-mono text-sm font-semibold ${
+                    item.net > 0
+                      ? 'text-cdy-white'
+                      : item.net < 0
+                        ? 'text-red-400'
+                        : 'text-cdy-dim'
+                  }`}
+                >
+                  {item.net > 0 ? '+' : ''}{formatCurrency(item.net)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {(data?.charts?.paymentMethodSummary ?? []).length === 0 && !isLoading && (
+            <p className="py-6 text-center text-sm text-cdy-muted">
+              No payment activity this month
+            </p>
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Row 5 — MRR + Pending actions */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard title="Recurring revenue">
           <div className="space-y-3">
@@ -296,7 +487,7 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </div>
 
-      {/* Row 5 — Ventures summary (CEO + Finance Manager only) */}
+      {/* Row 6 — Ventures summary (CEO + Finance Manager only) */}
       {canRead('ventures.manage') && data?.ventures && (
         <SectionCard
           title="Ventures — MTD"
@@ -339,7 +530,7 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       )}
 
-      {/* Row 6 — Reserve Fund (Finance Manager + CEO only) */}
+      {/* Row 7 — Reserve Fund (Finance Manager + CEO only) */}
       <PermissionGate feature="finance.reserve" action="read">
         <SectionCard>
           <div className="mb-3 flex items-center justify-between">
@@ -373,7 +564,7 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </PermissionGate>
 
-      {/* Row 7 — Recent invoices + Top clients */}
+      {/* Row 8 — Recent invoices + Top clients */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard
           title="Recent invoices"

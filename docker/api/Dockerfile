@@ -56,7 +56,7 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 RUN mkdir -p /app/uploads/receipts
-RUN chmod +x /app/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 EXPOSE 3251
