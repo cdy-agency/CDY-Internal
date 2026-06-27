@@ -1035,6 +1035,14 @@ export interface VentureRecord {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  clients?: Array<{
+    id: string;
+    companyName: string | null;
+    contactName: string;
+    clientType: string;
+    email: string;
+    primaryService: string | null;
+  }>;
 }
 
 export interface VentureIncomeRecord {

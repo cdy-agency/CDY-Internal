@@ -1,13 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 import { InvoiceStatus, type ClientSource } from '@cdy/shared';
 import { useClient } from '@/hooks/useCrm';
+import { useVentures } from '@/hooks/useVentures';
 import { formatCurrency } from '@/lib/utils';
+import { ventureColorHex } from '@/lib/ventureUtils';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+import { PermissionGate } from '@/components/PermissionGate';
+import api from '@/lib/api';
+import type { ApiResponse } from '@cdy/shared';
 
 const SOURCE_CONFIG: Record<ClientSource, { label: string; color: string; bg: string; border: string }> = {
   PIPELINE:  { label: 'From pipeline',    color: 'text-blue-400',   bg: 'bg-blue-900/20',   border: 'border-blue-800' },
@@ -27,11 +34,87 @@ const SERVICE_CONFIG: Record<string, { label: string; color: string; bg: string;
 
 type ClientTab = 'overview' | 'leads' | 'activities' | 'invoices';
 
+function VentureTagPopover({
+  clientId,
+  currentVentureId,
+  onClose,
+}: {
+  clientId: string;
+  currentVentureId: string | null;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: ventures = [] } = useVentures();
+  const [selected, setSelected] = useState(currentVentureId ?? '');
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [onClose]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.patch<ApiResponse<unknown>>(`/crm/clients/${clientId}`, {
+        ventureId: selected || null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['crm', 'clients', clientId] });
+      await queryClient.invalidateQueries({ queryKey: ['crm', 'clients'] });
+      toast.success(selected ? 'Venture tag updated' : 'Venture tag removed');
+      onClose();
+    } catch {
+      /* interceptor shows error */
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      ref={ref}
+      className="absolute z-20 mt-1 w-64 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-3 shadow-xl"
+    >
+      <p className="mb-2 text-xs font-medium text-cdy-muted">Tag to venture</p>
+      <select
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        className="w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-2 py-1.5 text-sm text-cdy-white"
+      >
+        <option value="">No venture</option>
+        {ventures.map((v) => (
+          <option key={v.id} value={v.id}>{v.name}</option>
+        ))}
+      </select>
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="flex-1 rounded-md bg-cdy-red px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button
+          onClick={onClose}
+          className="flex-1 rounded-md border border-cdy-navy-border px-3 py-1.5 text-xs text-cdy-muted hover:text-cdy-white"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientDetailPage(): JSX.Element {
   const params = useParams();
   const id = params.id as string;
   const { data: client, isLoading } = useClient(id);
   const [tab, setTab] = useState<ClientTab>('overview');
+  const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
 
   if (isLoading || !client) {
     return <p className="text-cdy-muted">Loading client...</p>;
@@ -75,6 +158,47 @@ export default function ClientDetailPage(): JSX.Element {
             {client.serviceCurrency ?? 'RWF'} {Number(client.serviceValue).toLocaleString()}
           </span>
         )}
+        {/* Venture badge */}
+        <div className="relative">
+          {client.venture ? (
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={`/finance/ventures/${client.venture.id}`}
+                className="flex items-center gap-1.5 rounded border border-cdy-navy-border px-2 py-0.5 text-xs text-cdy-white hover:border-cdy-red"
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: ventureColorHex(client.venture.color) }}
+                />
+                {client.venture.name}
+              </Link>
+              <PermissionGate feature="ventures.manage" action="write">
+                <button
+                  onClick={() => setTagPopoverOpen((o) => !o)}
+                  className="text-xs text-cdy-muted hover:text-cdy-white"
+                >
+                  (change)
+                </button>
+              </PermissionGate>
+            </div>
+          ) : (
+            <PermissionGate feature="ventures.manage" action="write">
+              <button
+                onClick={() => setTagPopoverOpen((o) => !o)}
+                className="text-xs text-cdy-red hover:underline"
+              >
+                + Tag to venture
+              </button>
+            </PermissionGate>
+          )}
+          {tagPopoverOpen && (
+            <VentureTagPopover
+              clientId={id}
+              currentVentureId={client.ventureId ?? null}
+              onClose={() => setTagPopoverOpen(false)}
+            />
+          )}
+        </div>
       </div>
       {client.source === 'PIPELINE' && client.leadId && (
         <Link href={`/crm/leads/${client.leadId}`} className="text-xs text-cdy-red hover:underline">

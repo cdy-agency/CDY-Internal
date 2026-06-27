@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useClients, exportClientsCsv } from '@/hooks/useCrm';
+import { useVentures } from '@/hooks/useVentures';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import { Download, Plus } from 'lucide-react';
 import { PermissionGate } from '@/components/PermissionGate';
 import { AddClientDrawer } from '@/components/crm/clients/AddClientDrawer';
+import { ventureColorHex } from '@/lib/ventureUtils';
 import type { ClientSource } from '@cdy/shared';
 
 const SOURCE_CONFIG: Record<ClientSource, { label: string; className: string }> = {
@@ -29,9 +31,15 @@ const SOURCE_FILTERS: Array<{ value: ClientSource | ''; label: string }> = [
 export default function ClientsListPage(): JSX.Element {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<ClientSource | ''>('');
+  const [ventureFilter, setVentureFilter] = useState('');
   const [exporting, setExporting] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
-  const { data: clients, isLoading } = useClients(search || undefined, sourceFilter || undefined);
+  const { data: clients, isLoading } = useClients(
+    search || undefined,
+    sourceFilter || undefined,
+    ventureFilter || undefined,
+  );
+  const { data: ventures = [] } = useVentures();
 
   async function handleExport(): Promise<void> {
     setExporting(true);
@@ -78,6 +86,19 @@ export default function ClientsListPage(): JSX.Element {
             </option>
           ))}
         </select>
+        {ventures.length > 0 && (
+          <select
+            value={ventureFilter}
+            onChange={(e) => setVentureFilter(e.target.value)}
+            className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+          >
+            <option value="">All ventures</option>
+            <option value="none">No venture</option>
+            {ventures.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {isLoading && <p className="text-cdy-muted">Loading clients...</p>}
@@ -89,6 +110,7 @@ export default function ClientsListPage(): JSX.Element {
               <th className="px-4 py-3">Company</th>
               <th className="px-4 py-3">Contact</th>
               <th className="px-4 py-3">Source</th>
+              <th className="px-4 py-3">Venture</th>
               <th className="px-4 py-3">Invoiced</th>
               <th className="px-4 py-3">Outstanding</th>
               <th className="px-4 py-3">Client since</th>
@@ -116,6 +138,22 @@ export default function ClientsListPage(): JSX.Element {
                   <td className="px-4 py-3">
                     <span className={`text-xs font-medium ${src.className}`}>{src.label}</span>
                   </td>
+                  <td className="px-4 py-3">
+                    {client.venture ? (
+                      <Link
+                        href={`/finance/ventures/${client.venture.id}`}
+                        className="flex items-center gap-1.5 text-xs text-cdy-white hover:text-cdy-red"
+                      >
+                        <span
+                          className="h-2 w-2 flex-shrink-0 rounded-full"
+                          style={{ backgroundColor: ventureColorHex(client.venture.color) }}
+                        />
+                        {client.venture.name}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-cdy-muted">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-cdy-white">
                     {formatCurrency(client.financeSummary?.totalInvoiced ?? 0)}
                   </td>
@@ -138,7 +176,7 @@ export default function ClientsListPage(): JSX.Element {
             })}
             {!isLoading && !clients?.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-cdy-muted">
+                <td colSpan={8} className="px-4 py-6 text-center text-cdy-muted">
                   No clients found.
                 </td>
               </tr>

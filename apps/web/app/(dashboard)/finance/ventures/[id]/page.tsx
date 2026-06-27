@@ -27,7 +27,7 @@ import { buildVenturePresets, ventureColorHex } from '@/lib/ventureUtils';
 import type { ExpenseCategory } from '@cdy/shared';
 
 const presets = buildVenturePresets();
-type Tab = 'income' | 'expenses';
+type Tab = 'income' | 'expenses' | 'clients';
 
 interface InvoiceRow {
   id: string;
@@ -210,7 +210,7 @@ export default function VentureDetailPage(): JSX.Element {
 
             <div className="border-b border-cdy-navy-border">
               <div className="flex gap-4">
-                {(['income', 'expenses'] as Tab[]).map((t) => (
+                {(['income', 'expenses', 'clients'] as Tab[]).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -369,6 +369,55 @@ export default function VentureDetailPage(): JSX.Element {
                     </span>
                   </p>
                 )}
+              </div>
+            )}
+            {tab === 'clients' && (
+              <div className="space-y-4">
+                <p className="text-sm text-cdy-muted">
+                  Clients tagged to this venture ({venture.clients?.length ?? 0} total).
+                </p>
+                <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-cdy-navy text-left text-cdy-muted">
+                      <tr>
+                        <th className="px-4 py-3">Client</th>
+                        <th className="px-4 py-3">Contact</th>
+                        <th className="px-4 py-3">Email</th>
+                        <th className="px-4 py-3">Service</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(venture.clients ?? []).map((c) => (
+                        <tr key={c.id} className="border-t border-cdy-navy-border/50 hover:bg-cdy-navy/30">
+                          <td className="px-4 py-3 font-medium text-cdy-white">
+                            {c.companyName ?? c.contactName}
+                          </td>
+                          <td className="px-4 py-3 text-cdy-muted">{c.contactName}</td>
+                          <td className="px-4 py-3 text-cdy-muted">{c.email}</td>
+                          <td className="px-4 py-3 capitalize text-cdy-muted">
+                            {c.primaryService?.replace(/_/g, ' ').toLowerCase() ?? '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              href={`/crm/clients/${c.id}`}
+                              className="text-cdy-red hover:underline"
+                            >
+                              View →
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                      {(venture.clients?.length ?? 0) === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-6 text-center text-cdy-muted">
+                            No clients tagged to this venture yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </>

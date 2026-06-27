@@ -136,13 +136,14 @@ export function useSalesAgents() {
   });
 }
 
-export function useClients(search?: string, source?: string) {
+export function useClients(search?: string, source?: string, ventureId?: string) {
   return useQuery({
-    queryKey: ['crm', 'clients', search, source],
+    queryKey: ['crm', 'clients', search, source, ventureId],
     queryFn: async (): Promise<ClientRecord[]> => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (source) params.set('source', source);
+      if (ventureId !== undefined) params.set('ventureId', ventureId);
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await api.get<ApiResponse<ClientRecord[]>>(`/crm/clients${qs}`);
       return res.data.data;
@@ -170,6 +171,7 @@ export function useCreateClient() {
       primaryService?: string;
       serviceValue?: number;
       serviceCurrency?: string;
+      ventureId?: string;
     }) => {
       const res = await api.post<ApiResponse<ClientRecord>>('/crm/clients', data);
       return res.data.data;

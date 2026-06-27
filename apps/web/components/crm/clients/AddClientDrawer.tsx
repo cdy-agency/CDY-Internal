@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateClient, useSalesAgents } from '@/hooks/useCrm';
+import { useVentures } from '@/hooks/useVentures';
 
 const CLIENT_TYPE_OPTIONS = [
   { value: 'COMPANY',    label: '🏢 Company',    desc: 'Business, NGO, organisation' },
@@ -51,6 +52,7 @@ export function AddClientDrawer({
 }: AddClientDrawerProps): JSX.Element | null {
   const createClient = useCreateClient();
   const { data: agents = [] } = useSalesAgents();
+  const { data: ventures = [] } = useVentures();
 
   const [form, setForm] = useState({
     clientType: 'COMPANY',
@@ -68,6 +70,7 @@ export function AddClientDrawer({
     primaryService: '',
     serviceValue: '',
     serviceCurrency: 'RWF',
+    ventureId: '',
   });
   const [error, setError] = useState('');
 
@@ -112,6 +115,7 @@ export function AddClientDrawer({
         primaryService: form.primaryService,
         serviceValue: form.serviceValue ? Number(form.serviceValue) : undefined,
         serviceCurrency: form.serviceCurrency || 'RWF',
+        ventureId: form.ventureId || undefined,
       });
       toast.success(
         `${form.clientType === 'INDIVIDUAL' ? form.contactName : (form.companyName || form.contactName)} added as a client`,
@@ -134,6 +138,7 @@ export function AddClientDrawer({
         primaryService: '',
         serviceValue: '',
         serviceCurrency: 'RWF',
+        ventureId: '',
       });
     } catch (err: unknown) {
       const msg =
@@ -283,6 +288,30 @@ export function AddClientDrawer({
               ))}
             </div>
           </div>
+
+          {/* Venture */}
+          {ventures.length > 0 && (
+            <div>
+              <Label className="text-cdy-muted">Venture tag</Label>
+              <select
+                value={form.ventureId}
+                onChange={(e) => set('ventureId', e.target.value)}
+                className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              >
+                <option value="">No venture (optional)</option>
+                {ventures.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+              {form.ventureId && (
+                <p className="mt-1 text-xs text-blue-400">
+                  Invoices for this client will automatically be tagged to this venture.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Service */}
           <div>
