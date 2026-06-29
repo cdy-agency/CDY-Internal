@@ -307,6 +307,60 @@ export class FinanceService {
       },
     };
 
+    // ── New finance-improvement fields ────────────────────────────────────────
+    const [directIncomeMTDAgg, recentDueBillsList, ...monthlyCompRows] =
+      await Promise.all([
+        this.prisma.directIncome.aggregate({
+          _sum: { amount: true },
+          where: { deletedAt: null, date: { gte: currentMonthStart, lte: currentMonthEnd } },
+        }),
+        this.prisma.bill.findMany({
+          where: {
+            deletedAt: null,
+            status: 'UNPAID',
+            dueDate: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 10,
+          select: { id: true, vendorName: true, amount: true, currency: true, dueDate: true },
+        }),
+        ...Array.from({ length: 6 }, (_, i) => {
+          const s = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+          const e = new Date(now.getFullYear(), now.getMonth() - 5 + i + 1, 0, 23, 59, 59, 999);
+          return Promise.all([
+            this.sumPayments(s, e),
+            this.prisma.directIncome.aggregate({
+              _sum: { amount: true },
+              where: { deletedAt: null, date: { gte: s, lte: e } },
+            }).then((r) => this.toNumber(r._sum.amount)),
+            this.sumExpenses(s, e),
+            s,
+          ] as const);
+        }),
+      ]);
+
+    const directIncomeMTD = this.toNumber(directIncomeMTDAgg._sum.amount);
+    const totalIncome = currentCollected + directIncomeMTD;
+    const difference = totalIncome - currentExpenses;
+
+    const recentDueBills = recentDueBillsList.map((b) => ({
+      id: b.id,
+      vendorName: b.vendorName,
+      amount: Number(b.amount),
+      currency: b.currency,
+      dueDate: b.dueDate.toISOString(),
+      daysUntilDue: Math.ceil((b.dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    }));
+
+    const monthlyComparison = (monthlyCompRows as [number, number, number, Date][]).map(
+      ([invoiceIncome, directInc, expenses, monthStart]) => ({
+        month: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`,
+        income: Number((invoiceIncome + directInc).toFixed(2)),
+        expenses: Number(expenses.toFixed(2)),
+        net: Number((invoiceIncome + directInc - expenses).toFixed(2)),
+      }),
+    );
+
     this.logger.debug('Finance summary computed');
 
     return {
@@ -348,6 +402,11 @@ export class FinanceService {
       pendingLeaveRequests,
       reserve,
       charts,
+      directIncomeMTD,
+      totalIncome,
+      difference,
+      recentDueBills,
+      monthlyComparison,
     };
   }
 

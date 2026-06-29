@@ -65,6 +65,24 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
     depositsThisMonth: number;
     withdrawalsThisMonth: number;
   };
+  // Finance improvements — income overview
+  directIncomeMTD?: number;
+  totalIncome?: number;
+  difference?: number;
+  recentDueBills?: Array<{
+    id: string;
+    vendorName: string;
+    amount: number;
+    currency: string;
+    dueDate: string;
+    daysUntilDue: number;
+  }>;
+  monthlyComparison?: Array<{
+    month: string;
+    income: number;
+    expenses: number;
+    net: number;
+  }>;
   charts!: {
     incomeByService: Array<{
       service: string;

@@ -273,6 +273,24 @@ export interface FinanceSummary {
       payments: number;
     };
   };
+  // Finance improvements
+  directIncomeMTD?: number;
+  totalIncome?: number;
+  difference?: number;
+  recentDueBills?: Array<{
+    id: string;
+    vendorName: string;
+    amount: number;
+    currency: string;
+    dueDate: string;
+    daysUntilDue: number;
+  }>;
+  monthlyComparison?: Array<{
+    month: string;
+    income: number;
+    expenses: number;
+    net: number;
+  }>;
 }
 
 export enum NotificationType {
@@ -562,16 +580,20 @@ export interface PaginatedInvoices {
 
 export interface PaymentRecord {
   id: string;
-  invoiceId: string;
-  invoiceNumber: string;
-  clientId: string;
+  type: 'INVOICE_PAYMENT' | 'DIRECT_INCOME';
+  invoiceId: string | null;
+  invoiceNumber: string | null;
+  clientId: string | null;
+  clientName: string | null;
   amount: number;
-  method: PaymentMethod;
+  paymentMethod: PaymentMethod;
   reference: string | null;
-  paidAt: string;
-  receiptSent: boolean;
+  date: string;
+  description: string;
+  receiptSent?: boolean;
   notes: string | null;
-  recordedBy: string;
+  recordedBy: string | null;
+  category?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -584,8 +606,36 @@ export interface PaginatedPayments {
   totalPages: number;
   summary: {
     totalCollectedThisMonth: number;
+    invoicePaymentsThisMonth: number;
+    directIncomeThisMonth: number;
     paymentsThisMonth: number;
   };
+}
+
+export interface DirectIncomeRecord {
+  id: string;
+  clientId: string | null;
+  clientName: string | null;
+  description: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  reference: string | null;
+  category: string | null;
+  date: string;
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedDirectIncome {
+  data: DirectIncomeRecord[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  summary: { totalThisMonth: number; countThisMonth: number };
 }
 
 export interface ExpenseRecord {
@@ -630,6 +680,7 @@ export interface BillRecord {
   status: BillStatus;
   paidAt: string | null;
   notes: string | null;
+  instalmentId?: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -957,6 +1008,7 @@ export interface TaxLiabilityReport {
 export interface RetainerRecord {
   id: string;
   clientId: string;
+  clientName?: string | null;
   serviceName: string;
   description: string | null;
   amount: number;
@@ -964,6 +1016,9 @@ export interface RetainerRecord {
   billingDayOfMonth: number;
   startDate: string;
   endDate: string | null;
+  originalEndDate?: string | null;
+  extensionCount?: number;
+  notes?: string | null;
   status: RetainerStatus;
   taxRateId: string | null;
   taxRate: { id: string; name: string; ratePercent: number } | null;
@@ -976,6 +1031,17 @@ export interface RetainerRecord {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RetainerExtension {
+  id: string;
+  previousEndDate: string | null;
+  newEndDate: string | null;
+  previousAmount: number;
+  newAmount: number;
+  reason: string | null;
+  extendedBy: string;
+  extendedAt: string;
 }
 
 export interface RetainerMRRSummary {

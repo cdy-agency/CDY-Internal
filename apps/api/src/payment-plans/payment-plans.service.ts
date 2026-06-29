@@ -79,7 +79,7 @@ export class PaymentPlansService {
     }
 
     const plan = await this.prisma.$transaction(async (tx) => {
-      return tx.paymentPlan.create({
+      const created = await tx.paymentPlan.create({
         data: {
           invoiceId,
           totalAmount: remaining,
@@ -94,6 +94,26 @@ export class PaymentPlansService {
         },
         include: { instalments: { orderBy: { instalmentNumber: 'asc' } } },
       });
+
+      // Create one Bill per instalment so it shows up in bills management
+      await Promise.all(
+        created.instalments.map((item) =>
+          tx.bill.create({
+            data: {
+              vendorName: `Instalment ${item.instalmentNumber} — ${invoice.invoiceNumber}`,
+              category: 'Payment Plan',
+              amount: item.amount,
+              currency: invoice.currency,
+              dueDate: item.dueDate,
+              instalmentId: item.id,
+              createdBy: userId,
+              notes: `Auto-created for payment plan instalment ${item.instalmentNumber}`,
+            },
+          }),
+        ),
+      );
+
+      return created;
     });
 
     this.logger.log(`Payment plan created for invoice ${invoiceId}`);

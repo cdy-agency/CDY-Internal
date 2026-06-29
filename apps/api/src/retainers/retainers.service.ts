@@ -257,6 +257,82 @@ export class RetainersService {
     return this.serializeRetainer(updated);
   }
 
+  async extend(
+    id: string,
+    dto: { newEndDate?: string; newAmount?: number; reason?: string; notes?: string },
+    userId: string,
+    auditCtx: AuditContext,
+  ) {
+    const retainer = await this.prisma.retainerContract.findUnique({ where: { id } });
+    if (!retainer) throw new NotFoundException('Retainer not found');
+    if (retainer.status !== RetainerStatus.ACTIVE) {
+      throw new BadRequestException('Only active retainers can be extended');
+    }
+
+    await this.prisma.retainerExtension.create({
+      data: {
+        retainerContractId: id,
+        previousEndDate: retainer.endDate,
+        newEndDate: dto.newEndDate ? new Date(dto.newEndDate) : retainer.endDate,
+        previousAmount: retainer.amount,
+        newAmount: dto.newAmount ?? retainer.amount,
+        reason: dto.reason ?? null,
+        extendedBy: userId,
+      },
+    });
+
+    const updated = await this.prisma.retainerContract.update({
+      where: { id },
+      data: {
+        ...(dto.newEndDate && { endDate: new Date(dto.newEndDate) }),
+        ...(dto.newAmount !== undefined && { amount: dto.newAmount }),
+        ...(dto.notes && { notes: dto.notes }),
+        extensionCount: { increment: 1 },
+        originalEndDate: retainer.originalEndDate ?? retainer.endDate,
+      },
+      include: { taxRate: true },
+    });
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'retainer.extended',
+      entityType: 'RetainerContract',
+      entityId: id,
+      previousValue: {
+        endDate: retainer.endDate?.toISOString() ?? null,
+        amount: Number(retainer.amount),
+      },
+      newValue: {
+        endDate: updated.endDate?.toISOString() ?? null,
+        amount: Number(updated.amount),
+        extensionCount: updated.extensionCount,
+      },
+    });
+
+    return this.serializeRetainer(updated);
+  }
+
+  async getExtensions(id: string) {
+    const retainer = await this.prisma.retainerContract.findUnique({ where: { id } });
+    if (!retainer) throw new NotFoundException('Retainer not found');
+
+    const extensions = await this.prisma.retainerExtension.findMany({
+      where: { retainerContractId: id },
+      orderBy: { extendedAt: 'desc' },
+    });
+
+    return extensions.map((e) => ({
+      id: e.id,
+      previousEndDate: e.previousEndDate?.toISOString() ?? null,
+      newEndDate: e.newEndDate?.toISOString() ?? null,
+      previousAmount: Number(e.previousAmount),
+      newAmount: Number(e.newAmount),
+      reason: e.reason,
+      extendedBy: e.extendedBy,
+      extendedAt: e.extendedAt.toISOString(),
+    }));
+  }
+
   async getMRRSummary() {
     const activeRetainers = await this.prisma.retainerContract.findMany({
       where: { status: RetainerStatus.ACTIVE },
@@ -341,6 +417,9 @@ export class RetainersService {
       pauseReason: retainer.pauseReason,
       endedAt: retainer.endedAt?.toISOString() ?? null,
       endReason: retainer.endReason,
+      extensionCount: retainer.extensionCount,
+      originalEndDate: retainer.originalEndDate?.toISOString() ?? null,
+      notes: retainer.notes,
       createdBy: retainer.createdBy,
       createdAt: retainer.createdAt.toISOString(),
       updatedAt: retainer.updatedAt.toISOString(),

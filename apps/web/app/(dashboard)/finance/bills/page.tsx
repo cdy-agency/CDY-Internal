@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useBills } from '@/hooks/useBills';
 import { BillDrawer } from '@/components/finance/bills/BillDrawer';
-import { BillPayModal } from '@/components/finance/bills/BillPayModal';
+import { MarkBillPaidDrawer } from '@/components/finance/bills/MarkBillPaidDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { EmptyState } from '@/components/finance/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -264,7 +264,7 @@ export default function BillsPage(): JSX.Element {
       />
 
       {payBill && (
-        <BillPayModal
+        <MarkBillPaidDrawer
           open={Boolean(payBill)}
           onClose={() => setPayBill(null)}
           bill={payBill}

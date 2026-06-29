@@ -18,6 +18,7 @@ import { RetainerFiltersDto } from './dto/retainer-filters.dto';
 import { PauseRetainerDto } from './dto/pause-retainer.dto';
 import { EndRetainerDto } from './dto/end-retainer.dto';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
+import { ExtendRetainerDto } from './dto/extend-retainer.dto';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
 import { buildAuditContext } from '../common/audit/build-audit-context';
 
@@ -114,5 +115,31 @@ export class RetainersController {
   async end(@Param('id') id: string, @Body() dto: EndRetainerDto) {
     const data = await this.retainersService.end(id, dto.reason);
     return { data, message: 'Retainer ended', statusCode: HttpStatus.OK };
+  }
+
+  @Post(':id/extend')
+  @RequirePermission('finance.retainers', 'write')
+  @ApiOperation({ summary: 'Extend retainer contract (records history)' })
+  async extend(
+    @Param('id') id: string,
+    @Body() dto: ExtendRetainerDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.retainersService.extend(
+      id,
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Retainer extended', statusCode: HttpStatus.OK };
+  }
+
+  @Get(':id/extensions')
+  @RequirePermission('finance.retainers', 'read')
+  @ApiOperation({ summary: 'List extension history for a retainer' })
+  async getExtensions(@Param('id') id: string) {
+    const data = await this.retainersService.getExtensions(id);
+    return { data, message: 'Extensions retrieved', statusCode: HttpStatus.OK };
   }
 }

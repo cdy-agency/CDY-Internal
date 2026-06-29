@@ -10,6 +10,7 @@ import api from '@/lib/api';
 import { useRetainers, useRetainerSummary } from '@/hooks/useRetainers';
 import { RetainerDrawer } from '@/components/finance/retainers/RetainerDrawer';
 import { AmendRetainerModal } from '@/components/finance/retainers/AmendRetainerModal';
+import { ExtendRetainerDrawer } from '@/components/finance/retainers/ExtendRetainerDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
@@ -34,6 +35,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [amendOpen, setAmendOpen] = useState(false);
+  const [extendOpen, setExtendOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   async function pause(): Promise<void> {
@@ -70,7 +72,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   return (
     <Fragment>
       <tr className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy/30">
-        <td className="px-4 py-3 text-cdy-white">{retainer.clientId}</td>
+        <td className="px-4 py-3 text-cdy-white">{retainer.clientName ?? retainer.clientId}</td>
         <td className="px-4 py-3 text-cdy-white">{retainer.serviceName}</td>
         <td className="px-4 py-3 text-right text-cdy-white">
           {formatCurrency(retainer.amount, retainer.currency)}
@@ -93,11 +95,17 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
               <p className="text-cdy-muted">
                 Start: {format(new Date(retainer.startDate), 'MMM d, yyyy')}
                 {retainer.endDate && ` · Ends: ${format(new Date(retainer.endDate), 'MMM d, yyyy')}`}
+                {(retainer.extensionCount ?? 0) > 0 && (
+                  <span className="ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs text-blue-400">
+                    Extended ×{retainer.extensionCount}
+                  </span>
+                )}
               </p>
               <PermissionGate feature="finance.retainers" action="write">
                 <div className="flex flex-wrap gap-2">
                   {retainer.status === RetainerStatus.ACTIVE && (
                     <>
+                      <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>Extend Contract</Button>
                       <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>Amend</Button>
                       <Button variant="outline" size="sm" onClick={pause} disabled={actionLoading}>Pause</Button>
                       <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
@@ -115,6 +123,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
         </tr>
       )}
       <AmendRetainerModal open={amendOpen} onClose={() => setAmendOpen(false)} retainer={retainer} />
+      <ExtendRetainerDrawer open={extendOpen} onClose={() => setExtendOpen(false)} retainer={retainer} />
     </Fragment>
   );
 }
@@ -159,7 +168,7 @@ export default function RetainersPage(): JSX.Element {
           <ul className="space-y-1 text-sm text-amber-100">
             {summary.upForRenewal.map((r) => (
               <li key={r.id}>
-                {r.clientId} — {r.serviceName} — ends{' '}
+                {r.clientName ?? r.clientId} — {r.serviceName} — ends{' '}
                 {r.endDate ? format(new Date(r.endDate), 'MMM d, yyyy') : '—'}
               </li>
             ))}

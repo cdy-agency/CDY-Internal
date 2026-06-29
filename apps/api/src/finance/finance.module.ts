@@ -24,6 +24,7 @@ import { PayrollModule } from '../payroll/payroll.module';
 import { SettingsModule } from '../settings/settings.module';
 import { VenturesModule } from '../ventures/ventures.module';
 import { ReserveModule } from './reserve/reserve.module';
+import { DirectIncomeModule } from '../direct-income/direct-income.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ReserveModule } from './reserve/reserve.module';
     SettingsModule,
     VenturesModule,
     ReserveModule,
+    DirectIncomeModule,
   ],
 
   controllers: [FinanceController],

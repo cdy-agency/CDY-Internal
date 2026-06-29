@@ -9,14 +9,14 @@ import {
 } from 'class-validator';
 import { PaymentMethod } from '@prisma/client';
 
-export class CreateBillDto {
+export class CreateDirectIncomeDto {
   @IsString()
-  @IsNotEmpty()
-  vendorName!: string;
+  @IsOptional()
+  clientId?: string;
 
   @IsString()
   @IsNotEmpty()
-  category!: string;
+  description!: string;
 
   @IsNumber()
   @Min(0.01)
@@ -26,24 +26,20 @@ export class CreateBillDto {
   @IsOptional()
   currency?: string;
 
-  @IsDateString()
-  dueDate!: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-}
-
-export class PayBillDto {
-  @IsDateString()
-  paidAt!: string;
-
   @IsEnum(PaymentMethod)
-  method!: PaymentMethod;
+  paymentMethod!: PaymentMethod;
 
   @IsString()
   @IsOptional()
   reference?: string;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsDateString()
+  @IsOptional()
+  date?: string;
 
   @IsString()
   @IsOptional()

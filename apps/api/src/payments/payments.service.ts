@@ -17,16 +17,20 @@ import { NotificationType, Role } from '@prisma/client';
 
 export interface SerializedPayment {
   id: string;
-  invoiceId: string;
-  invoiceNumber: string;
-  clientId: string;
+  type: 'INVOICE_PAYMENT' | 'DIRECT_INCOME';
+  invoiceId: string | null;
+  invoiceNumber: string | null;
+  clientId: string | null;
+  clientName: string | null;
   amount: number;
-  method: PaymentMethod;
+  paymentMethod: PaymentMethod;
   reference: string | null;
-  paidAt: Date;
-  receiptSent: boolean;
+  date: Date;
+  description: string;
+  receiptSent?: boolean;
   notes: string | null;
-  recordedBy: string;
+  recordedBy: string | null;
+  category?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -195,63 +199,109 @@ export class PaymentsService {
   async findAll(filters: PaymentFiltersDto) {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 25;
-    const skip = (page - 1) * limit;
 
-    const where: Prisma.PaymentWhereInput = { deletedAt: null };
+    const dateFilter = filters.dateFrom || filters.dateTo
+      ? {
+          gte: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
+          lte: filters.dateTo ? (() => { const d = new Date(filters.dateTo!); d.setHours(23, 59, 59, 999); return d; })() : undefined,
+        }
+      : undefined;
 
-    if (filters.method) {
-      where.method = filters.method;
-    }
-
-    if (filters.dateFrom || filters.dateTo) {
-      where.paidAt = {};
-      if (filters.dateFrom) where.paidAt.gte = new Date(filters.dateFrom);
-      if (filters.dateTo) {
-        const end = new Date(filters.dateTo);
-        end.setHours(23, 59, 59, 999);
-        where.paidAt.lte = end;
-      }
-    }
-
-    if (filters.clientId) {
-      where.invoice = {
-        clientId: { contains: filters.clientId, mode: 'insensitive' },
-      };
-    }
-
-    const [payments, total] = await Promise.all([
+    const [payments, directIncomes] = await Promise.all([
       this.prisma.payment.findMany({
-        where,
-        include: { invoice: true },
+        where: {
+          deletedAt: null,
+          ...(filters.method && { method: filters.method }),
+          ...(dateFilter && { paidAt: dateFilter }),
+          ...(filters.clientId && {
+            invoice: { clientId: { contains: filters.clientId, mode: 'insensitive' } },
+          }),
+        },
+        include: {
+          invoice: {
+            include: { client: { select: { companyName: true, contactName: true } } },
+          },
+        },
         orderBy: { paidAt: 'desc' },
-        skip,
-        take: limit,
       }),
-      this.prisma.payment.count({ where }),
+      this.prisma.directIncome.findMany({
+        where: {
+          deletedAt: null,
+          ...(filters.method && { paymentMethod: filters.method }),
+          ...(dateFilter && { date: dateFilter }),
+          ...(filters.clientId && { clientId: { contains: filters.clientId, mode: 'insensitive' } }),
+        },
+        include: {
+          client: { select: { companyName: true, contactName: true } },
+        },
+        orderBy: { date: 'desc' },
+      }),
     ]);
+
+    const normalizedPayments: SerializedPayment[] = payments.map((p) =>
+      this.serializePayment(p, p.invoice),
+    );
+
+    const normalizedDirectIncomes: SerializedPayment[] = directIncomes.map((d) => ({
+      id: d.id,
+      type: 'DIRECT_INCOME' as const,
+      invoiceId: null,
+      invoiceNumber: null,
+      clientId: d.clientId,
+      clientName: d.client?.companyName ?? d.client?.contactName ?? null,
+      amount: Number(d.amount),
+      paymentMethod: d.paymentMethod,
+      reference: d.reference,
+      date: d.date,
+      description: d.description,
+      receiptSent: false,
+      notes: d.notes,
+      recordedBy: d.createdBy,
+      category: d.category,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    }));
+
+    const all = [...normalizedPayments, ...normalizedDirectIncomes].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    const total = all.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const skip = (page - 1) * limit;
+    const paginated = all.slice(skip, skip + limit);
 
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const monthAgg = await this.prisma.payment.aggregate({
-      _sum: { amount: true },
-      _count: true,
-      where: {
-        deletedAt: null,
-        paidAt: { gte: monthStart },
-      },
-    });
+    const [invoiceMonthAgg, directMonthAgg] = await Promise.all([
+      this.prisma.payment.aggregate({
+        _sum: { amount: true },
+        _count: true,
+        where: { deletedAt: null, paidAt: { gte: monthStart } },
+      }),
+      this.prisma.directIncome.aggregate({
+        _sum: { amount: true },
+        _count: true,
+        where: { deletedAt: null, date: { gte: monthStart } },
+      }),
+    ]);
+
+    const invoiceMonthTotal = Number(invoiceMonthAgg._sum.amount ?? 0);
+    const directMonthTotal = Number(directMonthAgg._sum.amount ?? 0);
 
     return {
-      data: payments.map((p) => this.serializePayment(p, p.invoice)),
+      data: paginated,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit) || 1,
+      totalPages,
       summary: {
-        totalCollectedThisMonth: Number(monthAgg._sum.amount ?? 0),
-        paymentsThisMonth: monthAgg._count,
+        totalCollectedThisMonth: invoiceMonthTotal + directMonthTotal,
+        invoicePaymentsThisMonth: invoiceMonthTotal,
+        directIncomeThisMonth: directMonthTotal,
+        paymentsThisMonth: invoiceMonthAgg._count + directMonthAgg._count,
       },
     };
   }
@@ -283,17 +333,24 @@ export class PaymentsService {
       createdAt: Date;
       updatedAt: Date;
     },
-    invoice: { invoiceNumber: string; clientId: string },
+    invoice: {
+      invoiceNumber: string;
+      clientId: string;
+      client?: { companyName: string | null; contactName: string } | null;
+    },
   ): SerializedPayment {
     return {
       id: payment.id,
+      type: 'INVOICE_PAYMENT',
       invoiceId: payment.invoiceId,
       invoiceNumber: invoice.invoiceNumber,
       clientId: invoice.clientId,
+      clientName: invoice.client?.companyName ?? invoice.client?.contactName ?? null,
       amount: Number(payment.amount),
-      method: payment.method,
+      paymentMethod: payment.method,
       reference: payment.reference,
-      paidAt: payment.paidAt,
+      date: payment.paidAt,
+      description: `Invoice ${invoice.invoiceNumber}`,
       receiptSent: payment.receiptSent,
       notes: payment.notes,
       recordedBy: payment.recordedBy,

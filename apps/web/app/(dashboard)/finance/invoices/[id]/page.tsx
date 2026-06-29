@@ -15,6 +15,7 @@ import {
   Receipt,
   Calendar,
   AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -69,6 +70,7 @@ export default function InvoiceDetailPage(): JSX.Element {
     useState<PaymentPlanInstalment | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [sendLoading, setSendLoading] = useState(false);
+  const [markSentLoading, setMarkSentLoading] = useState(false);
   const [cnPdfLoading, setCnPdfLoading] = useState<string | null>(null);
   const [cancelPlanLoading, setCancelPlanLoading] = useState(false);
 
@@ -87,6 +89,21 @@ export default function InvoiceDetailPage(): JSX.Element {
       /* handled by interceptor */
     } finally {
       setSendLoading(false);
+    }
+  }
+
+  async function handleMarkSent(): Promise<void> {
+    if (!invoice) return;
+    setMarkSentLoading(true);
+    try {
+      await api.patch(`/invoices/${invoice.id}/mark-sent`);
+      toast.success(`Invoice ${invoice.invoiceNumber} marked as sent`);
+      await queryClient.invalidateQueries({ queryKey: ['invoice', invoice.id] });
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setMarkSentLoading(false);
     }
   }
 
@@ -499,6 +516,14 @@ export default function InvoiceDetailPage(): JSX.Element {
                         <Send className="h-4 w-4" />
                       )}
                       Send Invoice
+                    </Button>
+                    <Button variant="outline" onClick={handleMarkSent} disabled={markSentLoading}>
+                      {markSentLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                      Mark as Sent
                     </Button>
                     <Button
                       variant="outline"

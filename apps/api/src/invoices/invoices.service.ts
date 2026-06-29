@@ -379,6 +379,29 @@ export class InvoicesService {
     return serialized;
   }
 
+  async markSent(id: string, auditCtx: AuditContext): Promise<SerializedInvoice> {
+    const existing = await this.getInvoiceOrThrow(id);
+    if (existing.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException('Only draft invoices can be marked as sent');
+    }
+
+    const invoice = await this.prisma.invoice.update({
+      where: { id },
+      data: { status: InvoiceStatus.SENT, sentAt: new Date() },
+    });
+
+    const serialized = this.serializeInvoice(invoice);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'invoice.marked_sent',
+      entityType: 'Invoice',
+      entityId: id,
+      newValue: { status: serialized.status, sentAt: serialized.sentAt },
+    });
+
+    return serialized;
+  }
+
   async generatePdf(id: string): Promise<{ buffer: Buffer; invoiceNumber: string }> {
     const invoice = await this.getInvoiceOrThrow(id);
     const buffer = await this.invoicePdfService.generate(invoice);

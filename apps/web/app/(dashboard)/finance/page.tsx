@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { subMonths, format } from 'date-fns';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { usePermissions } from '@/context/PermissionContext';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/components/PermissionGate';
+import { Button } from '@/components/ui/button';
+import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectIncomeDrawer';
 import {
   MetricHero,
   SectionCard,
@@ -60,6 +63,7 @@ function paymentMethodColor(method: string): string {
 
 export default function FinanceDashboard(): JSX.Element {
   const [period, setPeriod] = useState<string>('month');
+  const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
   const { data, isLoading, isError, refetch } = useFinanceSummary();
   const { canRead, canWrite } = usePermissions();
 
@@ -117,21 +121,29 @@ export default function FinanceDashboard(): JSX.Element {
         </div>
       )}
 
-      {/* Period selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            onClick={() => setPeriod(p.key)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              period === p.key
-                ? 'bg-blue-900/40 text-blue-400'
-                : 'text-cdy-muted hover:bg-cdy-navy-light'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+      {/* Period selector + Record Income */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {PERIODS.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setPeriod(p.key)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                period === p.key
+                  ? 'bg-blue-900/40 text-blue-400'
+                  : 'text-cdy-muted hover:bg-cdy-navy-light'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <PermissionGate feature="finance.payments" action="write">
+          <Button size="sm" onClick={() => setDirectIncomeOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Record Income
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Row 1 — Hero metrics */}
@@ -175,6 +187,39 @@ export default function FinanceDashboard(): JSX.Element {
             isLoading={isLoading}
             size="md"
           />
+        </SectionCard>
+      </div>
+
+      {/* Row 1b — Total Income / Expenses / Difference */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SectionCard>
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-400">Total Income MTD</p>
+          <p className="mt-2 text-2xl font-bold text-cdy-white">
+            {isLoading ? '—' : formatCurrency(data?.totalIncome ?? 0)}
+          </p>
+          <p className="mt-1 text-xs text-cdy-muted">
+            Invoice + direct income
+          </p>
+        </SectionCard>
+        <SectionCard>
+          <p className="text-xs font-medium uppercase tracking-wide text-red-400">Total Expenses MTD</p>
+          <p className="mt-2 text-2xl font-bold text-cdy-white">
+            {isLoading ? '—' : formatCurrency(data?.totalExpenses ?? 0)}
+          </p>
+          <p className="mt-1 text-xs text-cdy-muted">
+            All expense categories
+          </p>
+        </SectionCard>
+        <SectionCard>
+          <p className="text-xs font-medium uppercase tracking-wide text-violet-400">Net Difference MTD</p>
+          <p className={`mt-2 text-2xl font-bold ${
+            (data?.difference ?? 0) >= 0 ? 'text-cdy-white' : 'text-orange-400'
+          }`}>
+            {isLoading ? '—' : formatCurrency(data?.difference ?? 0)}
+          </p>
+          <p className="mt-1 text-xs text-cdy-muted">
+            Income − Expenses
+          </p>
         </SectionCard>
       </div>
 
@@ -564,6 +609,77 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </PermissionGate>
 
+      {/* Row 7b — Recent Due Bills + Monthly Comparison */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard
+          title="Bills due soon"
+          action={
+            <Link href="/finance/bills" className="text-xs text-cdy-red hover:underline">
+              View all →
+            </Link>
+          }
+        >
+          {(data?.recentDueBills ?? []).length === 0 ? (
+            <p className="py-4 text-center text-sm text-cdy-muted">No bills due in the next 7 days</p>
+          ) : (
+            <div className="space-y-2">
+              {(data?.recentDueBills ?? []).map((bill) => (
+                <div
+                  key={bill.id}
+                  className="flex items-center justify-between rounded-lg border border-cdy-navy-border/50 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-cdy-white">{bill.vendorName}</p>
+                    <p className={`text-xs ${bill.daysUntilDue <= 0 ? 'text-red-400' : bill.daysUntilDue <= 2 ? 'text-amber-400' : 'text-cdy-muted'}`}>
+                      {bill.daysUntilDue <= 0
+                        ? `${Math.abs(bill.daysUntilDue)} days overdue`
+                        : bill.daysUntilDue === 0
+                          ? 'Due today'
+                          : `Due in ${bill.daysUntilDue} day${bill.daysUntilDue === 1 ? '' : 's'}`}
+                    </p>
+                  </div>
+                  <span className="font-mono text-sm text-cdy-white">
+                    {formatCurrency(bill.amount, bill.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Income vs Expenses — 6 months">
+          <div className="space-y-0">
+            <div className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2 text-xs uppercase tracking-wide text-cdy-dim">
+              <span>Month</span>
+              <span className="text-right">Income</span>
+              <span className="text-right">Expenses</span>
+              <span className="text-right">Net</span>
+            </div>
+            {(data?.monthlyComparison ?? []).length === 0 ? (
+              <p className="py-4 text-center text-sm text-cdy-muted">No data available</p>
+            ) : (
+              (data?.monthlyComparison ?? []).map((row) => (
+                <div
+                  key={row.month}
+                  className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border/40 py-2 text-sm last:border-0"
+                >
+                  <span className="font-medium text-cdy-muted">{row.month}</span>
+                  <span className="text-right font-mono text-green-400">
+                    {formatCurrency(row.income)}
+                  </span>
+                  <span className="text-right font-mono text-red-400">
+                    {formatCurrency(row.expenses)}
+                  </span>
+                  <span className={`text-right font-mono font-semibold ${row.net >= 0 ? 'text-cdy-white' : 'text-orange-400'}`}>
+                    {row.net >= 0 ? '+' : ''}{formatCurrency(row.net)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </SectionCard>
+      </div>
+
       {/* Row 8 — Recent invoices + Top clients */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard
@@ -604,6 +720,11 @@ export default function FinanceDashboard(): JSX.Element {
           />
         </SectionCard>
       </div>
+
+      <DirectIncomeDrawer
+        open={directIncomeOpen}
+        onClose={() => setDirectIncomeOpen(false)}
+      />
     </div>
   );
 }

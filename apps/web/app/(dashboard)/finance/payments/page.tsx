@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { CreditCard, Check, Minus } from 'lucide-react';
+import { CreditCard, Plus } from 'lucide-react';
 import { usePayments } from '@/hooks/usePayments';
 import { PaymentMethodBadge } from '@/components/finance/payments/PaymentMethodBadge';
+import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectIncomeDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { EmptyState } from '@/components/finance/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import type { PaymentFilters } from '@/types/payment';
 import { PaymentMethod } from '@cdy/shared';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: PaymentMethod.BANK_TRANSFER, label: 'Bank Transfer' },
@@ -21,27 +23,66 @@ const METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: PaymentMethod.CARD, label: 'Card' },
 ];
 
+function TypeBadge({ type }: { type: 'INVOICE_PAYMENT' | 'DIRECT_INCOME' }): JSX.Element {
+  if (type === 'DIRECT_INCOME') {
+    return (
+      <span className="inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400">
+        Direct
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400">
+      Invoice
+    </span>
+  );
+}
+
 export default function PaymentsPage(): JSX.Element {
   const [filters, setFilters] = useState<PaymentFilters>({ page: 1, limit: 25 });
+  const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
   const { data, isLoading, isError } = usePayments(filters);
 
-  const hasFilters =
-    filters.clientId || filters.dateFrom || filters.dateTo || filters.method;
+  const hasFilters = filters.clientId || filters.dateFrom || filters.dateTo || filters.method;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-cdy-white">Payments</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-cdy-white">Payments</h1>
+        <PermissionGate feature="finance.payments" action="write">
+          <Button onClick={() => setDirectIncomeOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Record Income
+          </Button>
+        </PermissionGate>
+      </div>
 
       {data && (
-        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light px-4 py-3 text-sm text-cdy-muted">
-          Total collected this month:{' '}
-          <span className="font-medium text-[var(--cdy-success)]">
-            {formatCurrency(data.summary.totalCollectedThisMonth)}
+        <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light px-4 py-3 text-sm text-cdy-muted">
+          <span>
+            Total collected:{' '}
+            <span className="font-medium text-[var(--cdy-success)]">
+              {formatCurrency(data.summary.totalCollectedThisMonth)}
+            </span>
           </span>
-          <span className="mx-3">|</span>
-          Payments this month:{' '}
-          <span className="font-medium text-cdy-white">
-            {data.summary.paymentsThisMonth}
+          {data.summary.invoicePaymentsThisMonth !== undefined && (
+            <span>
+              Invoice payments:{' '}
+              <span className="font-medium text-blue-400">
+                {formatCurrency(data.summary.invoicePaymentsThisMonth)}
+              </span>
+            </span>
+          )}
+          {data.summary.directIncomeThisMonth !== undefined && (
+            <span>
+              Direct income:{' '}
+              <span className="font-medium text-green-400">
+                {formatCurrency(data.summary.directIncomeThisMonth)}
+              </span>
+            </span>
+          )}
+          <span>
+            Count: <span className="font-medium text-cdy-white">{data.summary.paymentsThisMonth}</span>
           </span>
         </div>
       )}
@@ -129,13 +170,13 @@ export default function PaymentsPage(): JSX.Element {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
+                  <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium">Invoice #</th>
+                  <th className="px-4 py-3 font-medium">Description / Invoice</th>
                   <th className="px-4 py-3 font-medium">Client</th>
                   <th className="px-4 py-3 font-medium text-right">Amount</th>
                   <th className="px-4 py-3 font-medium">Method</th>
                   <th className="px-4 py-3 font-medium">Reference</th>
-                  <th className="px-4 py-3 font-medium text-center">Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,33 +185,35 @@ export default function PaymentsPage(): JSX.Element {
                     key={payment.id}
                     className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy-light/50"
                   >
+                    <td className="px-4 py-3">
+                      <TypeBadge type={payment.type} />
+                    </td>
                     <td className="px-4 py-3 text-cdy-white">
-                      {format(new Date(payment.paidAt), 'MMM d, yyyy')}
+                      {format(new Date(payment.date), 'MMM d, yyyy')}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/finance/invoices/${payment.invoiceId}`}
-                        className="font-mono text-cdy-red hover:underline"
-                      >
-                        {payment.invoiceNumber}
-                      </Link>
+                      {payment.type === 'INVOICE_PAYMENT' && payment.invoiceId ? (
+                        <Link
+                          href={`/finance/invoices/${payment.invoiceId}`}
+                          className="font-mono text-cdy-red hover:underline"
+                        >
+                          {payment.invoiceNumber}
+                        </Link>
+                      ) : (
+                        <span className="text-cdy-muted">{payment.description}</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-cdy-white">{payment.clientId}</td>
+                    <td className="px-4 py-3 text-cdy-white">
+                      {payment.clientName ?? '—'}
+                    </td>
                     <td className="px-4 py-3 text-right font-medium text-[var(--cdy-success)]">
                       {formatCurrency(payment.amount)}
                     </td>
                     <td className="px-4 py-3">
-                      <PaymentMethodBadge method={payment.method} />
+                      <PaymentMethodBadge method={payment.paymentMethod} />
                     </td>
                     <td className="px-4 py-3 font-mono text-cdy-muted">
                       {payment.reference ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {payment.receiptSent ? (
-                        <Check className="mx-auto h-4 w-4 text-[var(--cdy-success)]" />
-                      ) : (
-                        <Minus className="mx-auto h-4 w-4 text-cdy-muted" />
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -207,6 +250,11 @@ export default function PaymentsPage(): JSX.Element {
           </div>
         </>
       )}
+
+      <DirectIncomeDrawer
+        open={directIncomeOpen}
+        onClose={() => setDirectIncomeOpen(false)}
+      />
     </div>
   );
 }

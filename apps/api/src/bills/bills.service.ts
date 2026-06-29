@@ -4,7 +4,7 @@
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { BillStatus, Prisma } from '@prisma/client';
+import { BillStatus, ExpenseCategory, ExpensePaymentMethod, PaymentMethod, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto, PayBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
@@ -141,15 +141,34 @@ export class BillsService {
       throw new BadRequestException('Bill is already paid');
     }
 
+    const paidAt = new Date(dto.paidAt);
+
     const updated = await this.prisma.bill.update({
       where: { id },
       data: {
         status: BillStatus.PAID,
-        paidAt: new Date(dto.paidAt),
+        paidAt,
         notes: dto.reference
           ? `${bill.notes ?? ''}\nPaid via ${dto.method}: ${dto.reference}`.trim()
           : bill.notes,
       },
+    });
+
+    // Auto-create corresponding expense record
+    void this.prisma.expense.create({
+      data: {
+        vendorName: bill.vendorName,
+        category: ExpenseCategory.SUPPLIER,
+        amount: bill.amount,
+        currency: bill.currency,
+        date: paidAt,
+        notes: dto.notes ?? `Bill payment: ${bill.category}`,
+        createdBy: auditCtx.userId,
+        expensePaymentMethod: this.toExpensePaymentMethod(dto.method),
+        paymentReference: dto.reference ?? null,
+      },
+    }).catch((err: unknown) => {
+      this.logger.error(`Auto-expense creation failed for bill ${id}`, String(err));
     });
 
     const serialized = this.serialize(updated);
@@ -163,6 +182,17 @@ export class BillsService {
     });
 
     return serialized;
+  }
+
+  private toExpensePaymentMethod(method: PaymentMethod): ExpensePaymentMethod {
+    const map: Partial<Record<PaymentMethod, ExpensePaymentMethod>> = {
+      BANK_TRANSFER: ExpensePaymentMethod.BANK_TRANSFER,
+      MTN_MOMO:      ExpensePaymentMethod.MTN_MOMO,
+      AIRTEL_MONEY:  ExpensePaymentMethod.AIRTEL_MONEY,
+      CASH:          ExpensePaymentMethod.CASH,
+      CARD:          ExpensePaymentMethod.CARD,
+    };
+    return map[method] ?? ExpensePaymentMethod.OTHER;
   }
 
   async softDelete(id: string): Promise<{ message: string }> {

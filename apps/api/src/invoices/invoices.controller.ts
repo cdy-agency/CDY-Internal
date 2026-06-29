@@ -141,6 +141,21 @@ export class InvoicesController {
     };
   }
 
+  @Patch(':id/mark-sent')
+  @RequirePermission('finance.invoices', 'write')
+  @ApiOperation({ summary: 'Mark invoice as sent (no email)' })
+  async markSent(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.invoicesService.markSent(
+      id,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Invoice marked as sent', statusCode: HttpStatus.OK };
+  }
+
   @Post(':id/write-off')
   @RequirePermission('finance.invoices', 'write')
   @ApiOperation({ summary: 'Write off an unpaid invoice' })
