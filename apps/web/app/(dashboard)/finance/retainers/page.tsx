@@ -19,11 +19,12 @@ import { PermissionGate } from '@/components/PermissionGate';
 
 function StatusBadge({ status }: { status: RetainerStatus }): JSX.Element {
   const map: Record<RetainerStatus, { label: string; className: string }> = {
+    [RetainerStatus.DRAFT]: { label: 'Draft', className: 'bg-cdy-navy text-cdy-muted' },
     [RetainerStatus.ACTIVE]: { label: 'Active', className: 'bg-green-950 text-green-400' },
     [RetainerStatus.PAUSED]: { label: 'Paused', className: 'bg-amber-950 text-amber-400' },
-    [RetainerStatus.ENDED]: { label: 'Ended', className: 'bg-cdy-navy text-cdy-muted' },
+    [RetainerStatus.ENDED]: { label: 'Ended', className: 'bg-cdy-navy text-cdy-dim' },
   };
-  const { label, className } = map[status];
+  const { label, className } = map[status] ?? { label: status, className: 'bg-cdy-navy text-cdy-muted' };
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
       {label}

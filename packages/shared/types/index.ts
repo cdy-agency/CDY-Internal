@@ -947,6 +947,7 @@ export interface ReconciliationCompleteResult {
 }
 
 export enum RetainerStatus {
+  DRAFT = 'DRAFT',
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',
   ENDED = 'ENDED',
