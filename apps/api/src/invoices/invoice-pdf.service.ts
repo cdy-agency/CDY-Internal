@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { Invoice } from '@prisma/client';
+import { CDY_LOGO_DATA_URI } from './assets/logo-data-uri';
 import puppeteer, { Browser } from 'puppeteer';
 import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 import { SettingsService } from '../settings/settings.service';
@@ -26,13 +25,9 @@ interface ClientInfo {
 export class InvoicePdfService implements OnModuleDestroy {
   private readonly logger = new Logger(InvoicePdfService.name);
   private browserPromise: Promise<Browser> | null = null;
-  private readonly logoDataUri: string;
+  private readonly logoDataUri = CDY_LOGO_DATA_URI;
 
-  constructor(private readonly settingsService: SettingsService) {
-    const logoPath = join(__dirname, 'assets', 'logo.png');
-    const logoBase64 = readFileSync(logoPath).toString('base64');
-    this.logoDataUri = `data:image/png;base64,${logoBase64}`;
-  }
+  constructor(private readonly settingsService: SettingsService) {}
 
   async onModuleDestroy(): Promise<void> {
     if (this.browserPromise) {
