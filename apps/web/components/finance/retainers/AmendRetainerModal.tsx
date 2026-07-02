@@ -67,7 +67,7 @@ export function AmendRetainerModal({
             <button type="button" onClick={onClose} className="text-cdy-muted hover:text-cdy-white"><X className="h-5 w-5" /></button>
           </div>
           <p className="mb-4 text-sm text-cdy-muted">
-            {retainer.clientId} / {retainer.serviceName}
+            {retainer.clientName ?? retainer.clientId} / {retainer.serviceName}
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <p className="text-sm text-cdy-muted">

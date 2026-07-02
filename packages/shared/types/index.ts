@@ -55,6 +55,7 @@ export enum ExpenseCategory {
   TRAVEL = 'TRAVEL',
   SUPPLIER = 'SUPPLIER',
   COMMISSION = 'COMMISSION',
+  INFLUENCER_PAYMENT = 'INFLUENCER_PAYMENT',
   OTHER = 'OTHER',
 }
 
@@ -277,6 +278,10 @@ export interface FinanceSummary {
   directIncomeMTD?: number;
   totalIncome?: number;
   difference?: number;
+  // Date-range filtered totals
+  rangeIncome?: number;
+  rangeExpenses?: number;
+  rangeBalance?: number;
   recentDueBills?: Array<{
     id: string;
     vendorName: string;
@@ -290,6 +295,24 @@ export interface FinanceSummary {
     income: number;
     expenses: number;
     net: number;
+  }>;
+  recentIncomeTransactions?: Array<{
+    id: string;
+    type: 'payment' | 'direct';
+    description: string;
+    clientName: string;
+    amount: number;
+    method: string;
+    date: string;
+  }>;
+  recentExpenseTransactions?: Array<{
+    id: string;
+    vendorName: string;
+    category: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string | null;
+    date: string;
   }>;
 }
 
@@ -421,6 +444,11 @@ export enum PayrollStatus {
   LOCKED = 'LOCKED',
 }
 
+export enum PayrollLineItemPaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+}
+
 export interface PayrollLineItem {
   id: string;
   payrollRunId: string;
@@ -439,6 +467,9 @@ export interface PayrollLineItem {
   notes: string | null;
   adjustedBy: string | null;
   adjustmentReason: string | null;
+  paymentStatus: PayrollLineItemPaymentStatus;
+  paidAt: string | null;
+  paidBy: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -748,6 +779,7 @@ export interface AgeingBucketData {
     id: string;
     invoiceNumber: string;
     clientId: string;
+    clientName: string;
     total: number;
     remaining: number;
     dueDate: string;
@@ -881,6 +913,7 @@ export interface ArLedgerInvoiceRow {
 
 export interface ArLedgerClientRow {
   clientId: string;
+  clientName: string;
   invoiceCount: number;
   totalOutstanding: number;
   oldestDueDate: string;
@@ -1059,6 +1092,7 @@ export interface ProjectBudgetStatus {
   projectId: string;
   projectName: string;
   clientId: string;
+  clientName: string;
   currency: string;
   approvedBudget: number;
   totalCosts: number;

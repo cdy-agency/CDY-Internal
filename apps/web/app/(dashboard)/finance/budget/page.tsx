@@ -152,7 +152,7 @@ export default function BudgetListPage(): JSX.Element {
                 budgets.map((b) => (
                   <tr key={b.projectId} className="border-b border-cdy-navy-border/50">
                     <td className="px-4 py-3 text-cdy-white">{b.projectName}</td>
-                    <td className="px-4 py-3 text-cdy-muted">{b.clientId}</td>
+                    <td className="px-4 py-3 text-cdy-muted">{b.clientName}</td>
                     <td className="px-4 py-3 text-right text-cdy-white">
                       {formatCurrency(b.approvedBudget, b.currency)}
                     </td>

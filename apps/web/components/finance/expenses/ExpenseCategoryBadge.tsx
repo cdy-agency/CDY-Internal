@@ -5,11 +5,11 @@ const CATEGORY_CONFIG: Record<
   { label: string; className: string }
 > = {
   [ExpenseCategory.STAFF]: {
-    label: 'Staff',
+    label: 'Staff & Payroll',
     className: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
   },
   [ExpenseCategory.SOFTWARE]: {
-    label: 'Software',
+    label: 'Software & Technology',
     className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
   },
   [ExpenseCategory.MARKETING]: {
@@ -17,7 +17,7 @@ const CATEGORY_CONFIG: Record<
     className: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
   },
   [ExpenseCategory.OFFICE]: {
-    label: 'Office',
+    label: 'Office & Admin',
     className: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
   },
   [ExpenseCategory.TRAVEL]: {
@@ -25,12 +25,16 @@ const CATEGORY_CONFIG: Record<
     className: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
   },
   [ExpenseCategory.SUPPLIER]: {
-    label: 'Supplier',
+    label: 'Supplier / Vendor',
     className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
   },
   [ExpenseCategory.COMMISSION]: {
     label: 'Commission',
     className: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  },
+  [ExpenseCategory.INFLUENCER_PAYMENT]: {
+    label: 'Influencer Payment',
+    className: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
   },
   [ExpenseCategory.OTHER]: {
     label: 'Other',
@@ -45,7 +49,7 @@ interface ExpenseCategoryBadgeProps {
 export function ExpenseCategoryBadge({
   category,
 }: ExpenseCategoryBadgeProps): JSX.Element {
-  const config = CATEGORY_CONFIG[category];
+  const config = CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG[ExpenseCategory.OTHER];
   return (
     <span
       className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.className}`}
@@ -62,3 +66,18 @@ export const EXPENSE_CATEGORIES = Object.entries(CATEGORY_CONFIG).map(
     className: config.className,
   }),
 );
+
+/** General categories used on income and bill forms. Overlaps with expense categories for consistency. */
+export const FINANCE_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'STAFF', label: 'Staff & Payroll' },
+  { value: 'SOFTWARE', label: 'Software & Technology' },
+  { value: 'MARKETING', label: 'Marketing' },
+  { value: 'OFFICE', label: 'Office & Admin' },
+  { value: 'TRAVEL', label: 'Travel' },
+  { value: 'SUPPLIER', label: 'Supplier / Vendor' },
+  { value: 'COMMISSION', label: 'Commission' },
+  { value: 'SERVICES', label: 'Services / Consulting' },
+  { value: 'SALES', label: 'Sales' },
+  { value: 'RENTAL', label: 'Rental' },
+  { value: 'OTHER', label: 'Other' },
+];

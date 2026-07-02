@@ -246,7 +246,7 @@ export function InvoiceDrawer({
             <div className="space-y-2">
               <Label>Client</Label>
               {isReadOnly ? (
-                <Input value={invoice?.clientId ?? ''} disabled />
+                <Input value={invoice?.client?.companyName ?? invoice?.clientId ?? ''} disabled />
               ) : (
                 <ClientSearch
                   value={selectedClient}

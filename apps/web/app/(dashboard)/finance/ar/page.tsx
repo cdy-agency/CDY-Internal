@@ -279,7 +279,7 @@ export default function ArLedgerPage(): JSX.Element {
                         className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy/30"
                       >
                         <td className="px-4 py-3 font-medium text-cdy-white">
-                          {client.clientId}
+                          {client.clientName}
                         </td>
                         <td className="px-4 py-3 text-center text-cdy-muted">
                           {client.invoiceCount}

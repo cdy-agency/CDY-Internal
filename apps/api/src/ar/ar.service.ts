@@ -35,6 +35,7 @@ export class ArService {
           where: { deletedAt: null },
           select: { amount: true },
         },
+        client: { select: { companyName: true, contactName: true } },
       },
       orderBy: { dueDate: 'asc' },
     });
@@ -46,7 +47,8 @@ export class ArService {
       clientMap.set(inv.clientId, list);
     }
 
-    let ledgerRows = Array.from(clientMap.entries()).map(([clientId, invoices]) => {
+    let ledgerRows = Array.from(clientMap.entries()).map(([clientId, invoices]: [string, typeof unpaidInvoices]) => {
+      const clientName = invoices[0]?.client?.companyName ?? invoices[0]?.client?.contactName ?? clientId;
       const totalOutstanding = invoices.reduce((sum, inv) => {
         const paid = inv.payments.reduce(
           (ps, p) => ps + Number(p.amount),
@@ -72,6 +74,7 @@ export class ArService {
 
       return {
         clientId,
+        clientName,
         invoiceCount: invoices.length,
         totalOutstanding: Number(totalOutstanding.toFixed(2)),
         oldestDueDate: oldestInvoice.dueDate.toISOString(),

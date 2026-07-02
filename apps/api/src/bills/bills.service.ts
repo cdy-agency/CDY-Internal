@@ -4,7 +4,7 @@
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { BillStatus, ExpenseCategory, ExpensePaymentMethod, PaymentMethod, Prisma } from '@prisma/client';
+import { BillStatus, ExpenseCategory, PaymentMethod, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto, PayBillDto } from './dto/create-bill.dto';
 import { UpdateBillDto } from './dto/update-bill.dto';
@@ -156,6 +156,7 @@ export class BillsService {
 
     // Auto-create corresponding expense record
     void this.prisma.expense.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         vendorName: bill.vendorName,
         category: ExpenseCategory.SUPPLIER,
@@ -164,9 +165,9 @@ export class BillsService {
         date: paidAt,
         notes: dto.notes ?? `Bill payment: ${bill.category}`,
         createdBy: auditCtx.userId,
-        expensePaymentMethod: this.toExpensePaymentMethod(dto.method),
+        paymentMethod: dto.method ?? null,
         paymentReference: dto.reference ?? null,
-      },
+      } as any,
     }).catch((err: unknown) => {
       this.logger.error(`Auto-expense creation failed for bill ${id}`, String(err));
     });
@@ -182,17 +183,6 @@ export class BillsService {
     });
 
     return serialized;
-  }
-
-  private toExpensePaymentMethod(method: PaymentMethod): ExpensePaymentMethod {
-    const map: Partial<Record<PaymentMethod, ExpensePaymentMethod>> = {
-      BANK_TRANSFER: ExpensePaymentMethod.BANK_TRANSFER,
-      MTN_MOMO:      ExpensePaymentMethod.MTN_MOMO,
-      AIRTEL_MONEY:  ExpensePaymentMethod.AIRTEL_MONEY,
-      CASH:          ExpensePaymentMethod.CASH,
-      CARD:          ExpensePaymentMethod.CARD,
-    };
-    return map[method] ?? ExpensePaymentMethod.OTHER;
   }
 
   async softDelete(id: string): Promise<{ message: string }> {

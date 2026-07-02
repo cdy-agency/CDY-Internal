@@ -66,6 +66,10 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    const message =
+      (error.response?.data as { message?: string })?.message ||
+      'Something went wrong';
+    toast.error(typeof message === 'string' ? message : 'Something went wrong');
     return Promise.reject(error);
   },
 );

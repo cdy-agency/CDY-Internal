@@ -77,10 +77,16 @@ export class BudgetService {
       throw new NotFoundException(`No budget found for project ${projectId}`);
     }
 
-    const expenseAggregate = await this.prisma.expense.aggregate({
-      where: { projectId, deletedAt: null },
-      _sum: { amount: true },
-    });
+    const [expenseAggregate, clientRecord] = await Promise.all([
+      this.prisma.expense.aggregate({
+        where: { projectId, deletedAt: null },
+        _sum: { amount: true },
+      }),
+      this.prisma.client.findUnique({
+        where: { id: budget.clientId },
+        select: { companyName: true, contactName: true },
+      }),
+    ]);
 
     const totalCosts = Number(expenseAggregate._sum.amount ?? 0);
     const approvedBudget = Number(budget.approvedBudget);
@@ -102,6 +108,7 @@ export class BudgetService {
       projectId,
       projectName: budget.projectName,
       clientId: budget.clientId,
+      clientName: clientRecord?.companyName ?? clientRecord?.contactName ?? budget.clientId,
       currency: budget.currency,
       approvedBudget,
       totalCosts: Number(totalCosts.toFixed(2)),

@@ -15,6 +15,10 @@ export class CreateDirectIncomeDto {
   clientId?: string;
 
   @IsString()
+  @IsOptional()
+  ventureId?: string;
+
+  @IsString()
   @IsNotEmpty()
   description!: string;
 

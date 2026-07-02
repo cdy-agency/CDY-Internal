@@ -65,7 +65,6 @@ export class CeoDashboardService {
 
       rawIncomeByService,
       rawPaymentByMethod,
-      rawExpenseByMethodCeo,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -262,16 +261,6 @@ export class CeoDashboardService {
         _count: { id: true },
         orderBy: { _sum: { amount: 'desc' } },
       }),
-      this.prisma.expense.groupBy({
-        by: ['expensePaymentMethod'],
-        where: {
-          date: { gte: monthStart, lte: monthEnd },
-          deletedAt: null,
-          expensePaymentMethod: { not: null },
-        },
-        _sum: { amount: true },
-        _count: { id: true },
-      }),
     ]);
 
     // Venture summary
@@ -356,20 +345,16 @@ export class CeoDashboardService {
           })),
           paymentMethodSummary: CEO_ALL_METHODS.map((method) => {
             const inc = rawPaymentByMethod.find((r) => r.method === method);
-            const exp = rawExpenseByMethodCeo.find(
-              (r) => r.expensePaymentMethod === method,
-            );
             const incAmt = Number(inc?._sum.amount ?? 0);
-            const expAmt = Number(exp?._sum.amount ?? 0);
             return {
               method,
               label: ceoPaymentLabel(method),
               color: CEO_METHOD_COLORS[method] ?? '#94A3B8',
               income:   { amount: incAmt, count: inc?._count.id ?? 0 },
-              expenses: { amount: expAmt, count: exp?._count.id ?? 0 },
-              net: incAmt - expAmt,
+              expenses: { amount: 0, count: 0 },
+              net: incAmt,
             };
-          }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
+          }).filter((m) => m.income.amount > 0),
         },
       },
 

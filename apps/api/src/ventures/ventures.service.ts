@@ -87,7 +87,7 @@ export class VenturesService {
   ): Promise<VenturePeriodSummary> {
     await this.findOne(ventureId);
 
-    const [invoiceAgg, invoiceByCategory, expenseRows] = await Promise.all([
+    const [invoiceAgg, invoiceByCategory, expenseRows, directIncomeAgg] = await Promise.all([
       this.prisma.invoice.aggregate({
         where: {
           ventureId,
@@ -120,10 +120,21 @@ export class VenturesService {
           category: true,
         },
       }),
+      this.prisma.directIncome.aggregate({
+        where: {
+          ventureId,
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        } as Parameters<typeof this.prisma.directIncome.aggregate>[0]['where'],
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
     ]);
 
-    const income = Number(invoiceAgg._sum.total ?? 0);
-    const incomeCount = invoiceAgg._count.id;
+    const invoiceIncome = Number(invoiceAgg._sum.total ?? 0);
+    const directIncome = Number(directIncomeAgg._sum.amount ?? 0);
+    const income = invoiceIncome + directIncome;
+    const incomeCount = invoiceAgg._count.id + (directIncomeAgg._count.id ?? 0);
 
     let expenseTotal = 0;
     let ventureExpenseTotal = 0;
@@ -192,7 +203,7 @@ export class VenturesService {
   }
 
   async getMtdTotals(from: Date, to: Date) {
-    const [activeCount, invoiceAgg, expenseRows] = await Promise.all([
+    const [activeCount, invoiceAgg, expenseRows, directIncomeAgg] = await Promise.all([
       this.prisma.venture.count({ where: { isActive: true } }),
       this.prisma.invoice.aggregate({
         where: {
@@ -211,6 +222,14 @@ export class VenturesService {
         },
         select: { amount: true, ventureSharePercent: true },
       }),
+      this.prisma.directIncome.aggregate({
+        where: {
+          ventureId: { not: null },
+          date: { gte: from, lte: to },
+          deletedAt: null,
+        } as Parameters<typeof this.prisma.directIncome.aggregate>[0]['where'],
+        _sum: { amount: true },
+      }),
     ]);
 
     let totalExpensesMTD = 0;
@@ -220,9 +239,12 @@ export class VenturesService {
       totalExpensesMTD += (raw * sharePct) / 100;
     }
 
+    const invoiceIncomeMTD = Number(invoiceAgg._sum.total ?? 0);
+    const directIncomeMTD = Number(directIncomeAgg._sum.amount ?? 0);
+
     return {
       count: activeCount,
-      totalIncomeMTD: Number(invoiceAgg._sum.total ?? 0),
+      totalIncomeMTD: invoiceIncomeMTD + directIncomeMTD,
       totalExpensesMTD: Number(totalExpensesMTD.toFixed(2)),
     };
   }

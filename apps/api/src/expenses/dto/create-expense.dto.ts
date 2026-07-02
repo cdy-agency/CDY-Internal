@@ -9,7 +9,7 @@ import {
   IsDateString,
   IsOptional,
 } from 'class-validator';
-import { ExpenseCategory } from '@prisma/client';
+import { ExpenseCategory, PaymentMethod } from '@prisma/client';
 
 export class CreateExpenseDto {
   @IsString()
@@ -42,6 +42,14 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   ventureId?: string;
+
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
+
+  @IsString()
+  @IsOptional()
+  paymentReference?: string;
 
   @Type(() => Number)
   @IsNumber()

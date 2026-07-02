@@ -233,7 +233,7 @@ model Expense {
   notes               String?
   isPayrollExpense    Boolean   @default(false)
   payrollRunId        String?
-  expensePaymentMethod  ExpensePaymentMethod?
+  paymentMethod         PaymentMethod?
   paymentReference      String?
   createdBy           String
   createdAt  DateTime        @default(now())
@@ -260,15 +260,6 @@ enum ExpenseCategory {
   SUPPLIER
   COMMISSION
   INFLUENCER_PAYMENT
-  OTHER
-}
-
-enum ExpensePaymentMethod {
-  BANK_TRANSFER
-  MTN_MOMO
-  AIRTEL_MONEY
-  CARD
-  CASH
   OTHER
 }
 
@@ -703,6 +694,11 @@ enum PayrollStatus {
   LOCKED
 }
 
+enum PayrollLineItemPaymentStatus {
+  PENDING
+  PAID
+}
+
 model PayrollRun {
   id              String        @id @default(cuid())
   month           String
@@ -741,11 +737,14 @@ model PayrollLineItem {
   taxDeduction     Decimal  @db.Decimal(12, 2) @default(0)
   otherDeductions  Decimal  @db.Decimal(12, 2) @default(0)
   netPay           Decimal  @db.Decimal(12, 2)
-  payslipSent      Boolean  @default(false)
+  payslipSent      Boolean                        @default(false)
   payslipUrl       String?
   notes            String?
   adjustedBy       String?
   adjustmentReason String?
+  paymentStatus    PayrollLineItemPaymentStatus    @default(PENDING)
+  paidAt           DateTime?
+  paidBy           String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -820,6 +819,7 @@ model Venture {
   invoices       Invoice[]
   expenses       Expense[]
   clients        Client[]
+  directIncome   DirectIncome[]
 
   @@index([isActive])
 }
@@ -878,6 +878,7 @@ model VentureExpense {
 model DirectIncome {
   id            String        @id @default(cuid())
   clientId      String?
+  ventureId     String?
   description   String
   amount        Decimal       @db.Decimal(12, 2)
   currency      String        @default("RWF")
@@ -891,10 +892,12 @@ model DirectIncome {
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
 
-  client  Client? @relation(fields: [clientId], references: [id])
-  creator User    @relation(fields: [createdBy], references: [id])
+  client  Client?  @relation(fields: [clientId], references: [id])
+  venture Venture? @relation(fields: [ventureId], references: [id])
+  creator User     @relation(fields: [createdBy], references: [id])
 
   @@index([clientId])
+  @@index([ventureId])
   @@index([date])
   @@index([paymentMethod])
 }

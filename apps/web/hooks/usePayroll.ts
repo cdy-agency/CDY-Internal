@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type {
   ApiResponse,
+  PayrollLineItem,
   PayrollRun,
   EmployeeSalary,
 } from '@cdy/shared';
@@ -48,6 +49,21 @@ export function usePayrollPreview(month: string) {
     },
     enabled: !!month,
     staleTime: 30_000,
+  });
+}
+
+export function useMarkPayrollItemPaid(runId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (itemId: string): Promise<PayrollLineItem> => {
+      const res = await api.patch<ApiResponse<PayrollLineItem>>(
+        `/payroll/runs/${runId}/items/${itemId}/mark-paid`,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['payroll', 'run', runId] });
+    },
   });
 }
 

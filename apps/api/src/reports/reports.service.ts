@@ -54,6 +54,7 @@ interface AgeingInvoiceRow {
   id: string;
   invoiceNumber: string;
   clientId: string;
+  clientName: string;
   total: number;
   remaining: number;
   dueDate: Date;
@@ -439,6 +440,7 @@ export class ReportsService {
           where: { deletedAt: null },
           select: { amount: true },
         },
+        client: { select: { companyName: true, contactName: true } },
       },
       orderBy: { dueDate: 'asc' },
     });
@@ -480,6 +482,7 @@ export class ReportsService {
         id: i.id,
         invoiceNumber: i.invoiceNumber,
         clientId: i.clientId,
+        clientName: i.client?.companyName ?? i.client?.contactName ?? i.clientId,
         total: this.toNumber(i.total),
         remaining: i.remaining,
         dueDate: i.dueDate,

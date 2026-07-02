@@ -9,6 +9,7 @@ import {
   CommissionStatus,
   EmployeeStatus,
   ExpenseCategory,
+  PayrollLineItemPaymentStatus,
   PayrollRun,
   PayrollStatus,
   Prisma,
@@ -234,12 +235,6 @@ export class PayrollService {
       );
     }
 
-    if (run.createdBy === userId) {
-      throw new ForbiddenException(
-        'The person who created the payroll run cannot also process it. This is a separation of duties control.',
-      );
-    }
-
     for (const lineItem of run.lineItems) {
       try {
         const pdfBuffer = await this.payslipPdfService.generate(lineItem, run);
@@ -365,6 +360,34 @@ export class PayrollService {
     });
 
     return this.serializeRun(locked);
+  }
+
+  async markItemPaid(runId: string, itemId: string, userId: string) {
+    const run = await this.prisma.payrollRun.findUnique({ where: { id: runId } });
+    if (!run) throw new NotFoundException('Payroll run not found');
+    if (run.status === PayrollStatus.DRAFT) {
+      throw new BadRequestException('Process the payroll run before marking payments');
+    }
+
+    const item = await this.prisma.payrollLineItem.findFirst({
+      where: { id: itemId, payrollRunId: runId },
+    });
+    if (!item) throw new NotFoundException('Line item not found');
+
+    if ((item as unknown as Record<string, unknown>).paymentStatus === PayrollLineItemPaymentStatus.PAID) {
+      throw new BadRequestException('This employee payment is already marked as paid');
+    }
+
+    const updated = await (this.prisma.payrollLineItem.update as (args: unknown) => Promise<unknown>)({
+      where: { id: itemId },
+      data: {
+        paymentStatus: PayrollLineItemPaymentStatus.PAID,
+        paidAt: new Date(),
+        paidBy: userId,
+      },
+    });
+
+    return this.serializeLineItem(updated as Prisma.PayrollLineItemGetPayload<object>);
   }
 
   async getPayslipPdf(runId: string, lineItemId: string, userId: string) {
@@ -615,6 +638,9 @@ export class PayrollService {
       notes: item.notes,
       adjustedBy: item.adjustedBy,
       adjustmentReason: item.adjustmentReason,
+      paymentStatus: (item as unknown as Record<string, unknown>).paymentStatus as string ?? 'PENDING',
+      paidAt: ((item as unknown as Record<string, unknown>).paidAt as Date | null)?.toISOString() ?? null,
+      paidBy: (item as unknown as Record<string, unknown>).paidBy as string | null ?? null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
     };

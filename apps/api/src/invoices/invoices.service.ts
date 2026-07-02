@@ -338,9 +338,14 @@ export class InvoicesService {
       throw new BadRequestException('Only draft invoices can be sent');
     }
 
+    const clientRecord = await this.prisma.client.findUnique({
+      where: { id: existing.clientId },
+      select: { companyName: true, contactName: true, email: true, address: true, city: true, country: true },
+    });
+
     let pdfBuffer: Buffer;
     try {
-      pdfBuffer = await this.invoicePdfService.generate(existing);
+      pdfBuffer = await this.invoicePdfService.generate(existing, clientRecord ?? undefined);
     } catch (error) {
       this.logger.error(`PDF generation failed: ${String(error)}`);
       throw new InternalServerErrorException('Failed to generate invoice PDF');
@@ -404,7 +409,11 @@ export class InvoicesService {
 
   async generatePdf(id: string): Promise<{ buffer: Buffer; invoiceNumber: string }> {
     const invoice = await this.getInvoiceOrThrow(id);
-    const buffer = await this.invoicePdfService.generate(invoice);
+    const clientRecord = await this.prisma.client.findUnique({
+      where: { id: invoice.clientId },
+      select: { companyName: true, contactName: true, email: true, address: true, city: true, country: true },
+    });
+    const buffer = await this.invoicePdfService.generate(invoice, clientRecord ?? undefined);
     return { buffer, invoiceNumber: invoice.invoiceNumber };
   }
 

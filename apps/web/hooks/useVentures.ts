@@ -124,6 +124,38 @@ export function useVentureExpenses(ventureId: string, filters: VentureListFilter
   });
 }
 
+export interface DirectIncomeEntry {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  reference: string | null;
+  category: string | null;
+  date: string;
+  clientName: string | null;
+  ventureId: string | null;
+}
+
+export function useVentureDirectIncome(ventureId: string, filters: VentureListFilters = {}) {
+  return useQuery({
+    queryKey: ['ventures', 'direct-income', ventureId, filters],
+    queryFn: async (): Promise<{ data: DirectIncomeEntry[]; total: number }> => {
+      const params = new URLSearchParams({ ventureId });
+      if (filters.from) params.set('dateFrom', filters.from);
+      if (filters.to) params.set('dateTo', filters.to);
+      if (filters.page) params.set('page', String(filters.page));
+      if (filters.limit) params.set('limit', String(filters.limit));
+      const response = await api.get<ApiResponse<{ data: DirectIncomeEntry[]; total: number }>>(
+        `/finance/income/direct?${params.toString()}`,
+      );
+      return response.data.data;
+    },
+    enabled: Boolean(ventureId),
+    staleTime: 30_000,
+  });
+}
+
 interface CreateVentureInput {
   name: string;
   description?: string;

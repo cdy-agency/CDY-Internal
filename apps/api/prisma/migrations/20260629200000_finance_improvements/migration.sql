@@ -84,9 +84,9 @@ CREATE INDEX IF NOT EXISTS "DirectIncome_clientId_idx" ON "DirectIncome"("client
 CREATE INDEX IF NOT EXISTS "DirectIncome_date_idx" ON "DirectIncome"("date");
 CREATE INDEX IF NOT EXISTS "DirectIncome_paymentMethod_idx" ON "DirectIncome"("paymentMethod");
 CREATE INDEX IF NOT EXISTS "RetainerExtension_retainerContractId_idx" ON "RetainerExtension"("retainerContractId");
-CREATE UNIQUE INDEX IF NOT EXISTS "Bill_instalmentId_key" ON "Bill"("instalmentId") WHERE "instalmentId" IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "Bill_instalmentId_key" ON "Bill"("instalmentId");
 CREATE INDEX IF NOT EXISTS "Bill_instalmentId_idx" ON "Bill"("instalmentId");
-CREATE INDEX IF NOT EXISTS "Client_ventureId_idx" ON "Client"("ventureId") WHERE "ventureId" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "Client_ventureId_idx" ON "Client"("ventureId");
 CREATE INDEX IF NOT EXISTS "Client_clientType_idx" ON "Client"("clientType");
 CREATE INDEX IF NOT EXISTS "Client_primaryService_idx" ON "Client"("primaryService");
 
@@ -118,7 +118,17 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- AddForeignKey Client → Venture (idempotent)
-ALTER TABLE "Client" DROP CONSTRAINT IF EXISTS "Client_ventureId_fkey";
-ALTER TABLE "Client" ADD CONSTRAINT "Client_ventureId_fkey"
-    FOREIGN KEY ("ventureId") REFERENCES "Venture"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey Client → Venture
+-- Wrapped to handle the case where Venture table does not yet exist in this
+-- migration order (Venture is created in 20260711100000_ventures_module).
+-- The FK is formally established in 20260712000000_client_venture_fk.
+DO $$ BEGIN
+    ALTER TABLE "Client" DROP CONSTRAINT IF EXISTS "Client_ventureId_fkey";
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE "Client" ADD CONSTRAINT "Client_ventureId_fkey"
+        FOREIGN KEY ("ventureId") REFERENCES "Venture"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+WHEN undefined_table THEN NULL;
+END $$;

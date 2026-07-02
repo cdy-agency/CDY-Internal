@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ApiResponse, BillRecord } from '@cdy/shared';
+import { FINANCE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
 import type { AxiosError } from 'axios';
 
 interface BillDrawerProps {
@@ -137,13 +138,18 @@ export function BillDrawer({
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Input
+              <select
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Utilities, Rent"
                 required
-              />
+                className="w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              >
+                <option value="">— Select category —</option>
+                {FINANCE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

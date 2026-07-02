@@ -102,6 +102,18 @@ export class PayrollController {
     return { data, message: 'Payroll run locked', statusCode: HttpStatus.OK };
   }
 
+  @Patch('runs/:id/items/:itemId/mark-paid')
+  @RequirePermission('finance.payroll', 'write')
+  @ApiOperation({ summary: 'Mark individual employee payment as paid' })
+  async markItemPaid(
+    @Param('id') runId: string,
+    @Param('itemId') itemId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.payrollService.markItemPaid(runId, itemId, user.sub);
+    return { data, message: 'Payment marked as paid', statusCode: HttpStatus.OK };
+  }
+
   @Get('runs/:id/items/:itemId/payslip')
   @RequirePermission('finance.payroll', 'read')
   @ApiOperation({ summary: 'Download payslip PDF' })

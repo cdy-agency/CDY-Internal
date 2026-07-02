@@ -29,8 +29,10 @@ export class DirectIncomeService {
     }
 
     const record = await this.prisma.directIncome.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         clientId: dto.clientId ?? null,
+        ventureId: dto.ventureId ?? null,
         description: dto.description,
         amount: dto.amount,
         currency: dto.currency ?? 'RWF',
@@ -40,13 +42,14 @@ export class DirectIncomeService {
         date: dto.date ? new Date(dto.date) : new Date(),
         notes: dto.notes ?? null,
         createdBy: userId,
-      },
+      } as any,
       include: {
         client: { select: { id: true, companyName: true, contactName: true } },
       },
     });
 
-    const serialized = this.serialize(record);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const serialized = this.serialize(record as any);
     this.auditService.log({
       ...auditCtx,
       action: 'direct_income.created',
@@ -66,6 +69,8 @@ export class DirectIncomeService {
     const where: Prisma.DirectIncomeWhereInput = { deletedAt: null };
 
     if (filters.clientId) where.clientId = filters.clientId;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (filters.ventureId) (where as any).ventureId = filters.ventureId;
     if (filters.paymentMethod) where.paymentMethod = filters.paymentMethod;
     if (filters.category) where.category = { contains: filters.category, mode: 'insensitive' };
 
@@ -181,6 +186,7 @@ export class DirectIncomeService {
       id: record.id,
       clientId: record.clientId,
       clientName: record.client?.companyName ?? record.client?.contactName ?? null,
+      ventureId: (record as unknown as Record<string, unknown>).ventureId as string | null ?? null,
       description: record.description,
       amount: Number(record.amount),
       currency: record.currency,

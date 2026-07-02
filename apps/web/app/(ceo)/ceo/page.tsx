@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -9,11 +10,14 @@ import {
   DonutChart,
   LineChart,
   GaugeChart,
+  DataTable,
 } from '@/components/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import api from '@/lib/api';
 import type { ApiResponse } from '@cdy/shared';
+import { useFinanceSummary } from '@/hooks/useFinanceSummary';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -161,6 +165,9 @@ function ceoPaymentColor(method: string): string {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function CeoDashboardPage() {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const { data: summary, isLoading, refetch, dataUpdatedAt } = useQuery<CeoSummary>({
     queryKey: ['ceo', 'summary'],
     queryFn: async () => {
@@ -170,6 +177,17 @@ export default function CeoDashboardPage() {
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+
+  const { data: financeRange, isLoading: rangeLoading } = useFinanceSummary({
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  });
+
+  const hasDateRange = !!(dateFrom && dateTo);
+  const displayIncome = hasDateRange ? (financeRange?.rangeIncome ?? 0) : (financeRange?.totalIncome ?? 0);
+  const displayExpenses = hasDateRange ? (financeRange?.rangeExpenses ?? 0) : (financeRange?.totalExpenses ?? 0);
+  const displayBalance = hasDateRange ? (financeRange?.rangeBalance ?? 0) : (financeRange?.difference ?? 0);
+  const ceoRangePeriodLabel = hasDateRange ? 'Selected period' : 'MTD';
 
   const alerts = summary?.alerts;
   const hasAlerts = alerts && Object.values(alerts).some((v) => Number(v) > 0);
@@ -198,15 +216,33 @@ export default function CeoDashboardPage() {
               </button>
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {(['This Month', 'Last Month', 'This Quarter', 'YTD'] as const).map((p) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <label className="whitespace-nowrap text-xs text-cdy-muted">From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="whitespace-nowrap text-xs text-cdy-muted">To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
               <button
-                key={p}
-                className="rounded-lg px-3 py-1.5 text-sm text-cdy-muted hover:bg-cdy-navy-light transition-colors"
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="text-xs text-cdy-muted underline hover:text-cdy-white"
               >
-                {p}
+                Clear
               </button>
-            ))}
+            )}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -307,6 +343,107 @@ export default function CeoDashboardPage() {
               </SectionCard>
             </>
           )}
+        </div>
+
+        {/* Row 2b — Income / Expenses / Balance (date-range filterable) */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <SectionCard>
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-400">
+              Total Income — {ceoRangePeriodLabel}
+            </p>
+            <p className="mt-2 text-2xl font-bold text-cdy-white">
+              {rangeLoading ? '—' : formatCurrency(displayIncome)}
+            </p>
+            <p className="mt-1 text-xs text-cdy-muted">Invoice + direct income</p>
+          </SectionCard>
+          <SectionCard>
+            <p className="text-xs font-medium uppercase tracking-wide text-red-400">
+              Total Expenses — {ceoRangePeriodLabel}
+            </p>
+            <p className="mt-2 text-2xl font-bold text-cdy-white">
+              {rangeLoading ? '—' : formatCurrency(displayExpenses)}
+            </p>
+            <p className="mt-1 text-xs text-cdy-muted">All expense categories</p>
+          </SectionCard>
+          <SectionCard>
+            <p className="text-xs font-medium uppercase tracking-wide text-violet-400">
+              Balance — {ceoRangePeriodLabel}
+            </p>
+            <p className={`mt-2 text-2xl font-bold ${displayBalance >= 0 ? 'text-cdy-white' : 'text-orange-400'}`}>
+              {rangeLoading ? '—' : formatCurrency(displayBalance)}
+            </p>
+            <p className="mt-1 text-xs text-cdy-muted">Income − Expenses</p>
+          </SectionCard>
+        </div>
+
+        {/* Row 2c — Bills due soon */}
+        {(financeRange?.recentDueBills ?? []).length > 0 && (
+          <SectionCard
+            title="Bills due soon"
+            action={
+              <Link href="/finance/bills" className="text-xs text-cdy-red hover:underline">
+                View all →
+              </Link>
+            }
+          >
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {(financeRange?.recentDueBills ?? []).map((bill) => (
+                <div
+                  key={bill.id}
+                  className="flex items-center justify-between rounded-lg border border-cdy-navy-border/50 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-cdy-white">{bill.vendorName}</p>
+                    <p
+                      className={`text-xs ${
+                        bill.daysUntilDue <= 0
+                          ? 'text-red-400'
+                          : bill.daysUntilDue <= 2
+                            ? 'text-amber-400'
+                            : 'text-cdy-muted'
+                      }`}
+                    >
+                      {bill.daysUntilDue <= 0
+                        ? `${Math.abs(bill.daysUntilDue)} day${Math.abs(bill.daysUntilDue) === 1 ? '' : 's'} overdue`
+                        : bill.daysUntilDue === 1
+                          ? 'Due tomorrow'
+                          : `Due in ${bill.daysUntilDue} days`}
+                    </p>
+                  </div>
+                  <span className="ml-4 font-mono text-sm text-cdy-white">
+                    {formatCurrency(bill.amount, bill.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Row 2d — Recent income + Recent expenses tables */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <SectionCard title="Recent income">
+            <DataTable
+              columns={['Description', 'Client', 'Method', 'Amount']}
+              rows={(financeRange?.recentIncomeTransactions ?? []).map((t) => [
+                t.description,
+                t.clientName,
+                t.method.replace(/_/g, ' '),
+                formatCurrency(t.amount),
+              ])}
+            />
+          </SectionCard>
+
+          <SectionCard title="Recent expenses">
+            <DataTable
+              columns={['Vendor', 'Category', 'Method', 'Amount']}
+              rows={(financeRange?.recentExpenseTransactions ?? []).map((e) => [
+                e.vendorName,
+                e.category.replace(/_/g, ' '),
+                e.paymentMethod ? e.paymentMethod.replace(/_/g, ' ') : '—',
+                formatCurrency(e.amount),
+              ])}
+            />
+          </SectionCard>
         </div>
 
         {/* Row 3 — Finance charts */}

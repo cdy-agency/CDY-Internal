@@ -4,16 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
-import { usePayrollRun } from '@/hooks/usePayroll';
+import { usePayrollRun, useMarkPayrollItemPaid } from '@/hooks/usePayroll';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { formatCurrency } from '@/lib/utils';
 import { formatMonthKey } from '@/lib/reportDates';
-import { PayrollStatus } from '@cdy/shared';
+import { PayrollStatus, PayrollLineItemPaymentStatus } from '@cdy/shared';
 import { useCanWrite } from '@/hooks/usePermission';
 import { PermissionGate } from '@/components/PermissionGate';
 import type { ApiResponse, PayrollLineItem, UserProfile } from '@cdy/shared';
@@ -167,6 +167,7 @@ export default function PayrollDetailPage(): JSX.Element {
   const id = params.id as string;
 
   const { data: run, isLoading } = usePayrollRun(id);
+  const markPaidMutation = useMarkPayrollItemPaid(id);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [adjustItem, setAdjustItem] = useState<PayrollLineItem | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -182,11 +183,9 @@ export default function PayrollDetailPage(): JSX.Element {
   }, []);
 
   const canWritePayroll = useCanWrite('finance.payroll');
-  const isCreator = user?.id === run?.createdBy;
   const canProcess =
     canWritePayroll &&
-    run?.status === PayrollStatus.DRAFT &&
-    !isCreator;
+    run?.status === PayrollStatus.DRAFT;
 
   async function processRun(): Promise<void> {
     setProcessing(true);
@@ -247,11 +246,6 @@ export default function PayrollDetailPage(): JSX.Element {
               <Button
                 className="bg-cdy-red hover:bg-cdy-red/90"
                 disabled={!canProcess}
-                title={
-                  isCreator
-                    ? 'This run was created by you. Another manager must process it.'
-                    : undefined
-                }
                 onClick={() => setConfirmProcess(true)}
               >
                 Process Payroll
@@ -271,19 +265,6 @@ export default function PayrollDetailPage(): JSX.Element {
           </PermissionGate>
         </div>
       </div>
-
-      {isCreator && run.status === PayrollStatus.DRAFT && (
-        <div className="flex gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-cdy-muted">
-          <Info className="h-5 w-5 shrink-0 text-blue-400" />
-          <div>
-            <p className="font-medium text-cdy-white">Separation of duties</p>
-            <p className="mt-1">
-              You created this payroll run. A different Finance Manager or the CEO
-              must process it.
-            </p>
-          </div>
-        </div>
-      )}
 
       {allPayslipsSent && (
         <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm">
@@ -321,6 +302,24 @@ export default function PayrollDetailPage(): JSX.Element {
         ))}
       </div>
 
+      {run.status !== PayrollStatus.DRAFT && (
+        <div className="flex items-center gap-3 text-sm text-cdy-muted">
+          <span>
+            Payment progress:{' '}
+            <span className="font-medium text-cdy-white">
+              {run.lineItems.filter((i) => i.paymentStatus === PayrollLineItemPaymentStatus.PAID).length}
+              {' / '}
+              {run.lineItems.length} paid
+            </span>
+          </span>
+          {run.lineItems.every((i) => i.paymentStatus === PayrollLineItemPaymentStatus.PAID) && (
+            <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
+              All paid
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
         <table className="w-full text-sm">
           <thead>
@@ -332,52 +331,91 @@ export default function PayrollDetailPage(): JSX.Element {
               <th className="px-4 py-3 font-medium text-right">Gross</th>
               <th className="px-4 py-3 font-medium text-right">Tax</th>
               <th className="px-4 py-3 font-medium text-right">Net</th>
+              <th className="px-4 py-3 font-medium">Payment</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
-            {run.lineItems.map((item) => (
-              <tr key={item.id} className="border-b border-cdy-navy-border/50">
-                <td className="px-4 py-3 text-cdy-white">{item.employeeName}</td>
-                <td className="px-4 py-3 text-right text-cdy-white">
-                  {formatCurrency(item.baseSalary)}
-                </td>
-                <td className="px-4 py-3 text-right text-cdy-white">
-                  {formatCurrency(item.commission)}
-                </td>
-                <td className="px-4 py-3 text-right text-cdy-white">
-                  {formatCurrency(item.bonus)}
-                </td>
-                <td className="px-4 py-3 text-right text-cdy-white">
-                  {formatCurrency(item.grossPay)}
-                </td>
-                <td className="px-4 py-3 text-right text-cdy-red">
-                  −{formatCurrency(item.taxDeduction)}
-                </td>
-                <td className="px-4 py-3 text-right font-medium text-cdy-white">
-                  {formatCurrency(item.netPay)}
-                </td>
-                <td className="px-4 py-3">
-                  {run.status === PayrollStatus.DRAFT &&
-                    canWritePayroll &&
-                    (user?.id === item.employeeId ? (
-                      <span className="text-xs text-cdy-muted">
-                        Cannot adjust own record
-                      </span>
+            {run.lineItems.map((item) => {
+              const isPaid = item.paymentStatus === PayrollLineItemPaymentStatus.PAID;
+              return (
+                <tr key={item.id} className="border-b border-cdy-navy-border/50">
+                  <td className="px-4 py-3 text-cdy-white">
+                    <div>{item.employeeName}</div>
+                    <div className="text-xs text-cdy-muted">{item.employeeEmail}</div>
+                  </td>
+                  <td className="px-4 py-3 text-right text-cdy-white">
+                    {formatCurrency(item.baseSalary)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-cdy-white">
+                    {formatCurrency(item.commission)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-cdy-white">
+                    {formatCurrency(item.bonus)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-cdy-white">
+                    {formatCurrency(item.grossPay)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-cdy-red">
+                    −{formatCurrency(item.taxDeduction)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-cdy-white">
+                    {formatCurrency(item.netPay)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {run.status === PayrollStatus.DRAFT ? (
+                      <span className="text-xs text-cdy-muted">—</span>
+                    ) : isPaid ? (
+                      <div>
+                        <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
+                          Paid
+                        </span>
+                        {item.paidAt && (
+                          <div className="mt-0.5 text-xs text-cdy-muted">
+                            {new Date(item.paidAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <PermissionGate feature="finance.payroll" action="write">
-                        <button
-                          type="button"
-                          className="text-cdy-red hover:underline"
-                          onClick={() => setAdjustItem(item)}
-                        >
-                          Adjust
-                        </button>
-                      </PermissionGate>
-                    ))}
-                </td>
-              </tr>
-            ))}
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400">
+                        Pending
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1">
+                      {run.status === PayrollStatus.DRAFT &&
+                        canWritePayroll &&
+                        (user?.id === item.employeeId ? (
+                          <span className="text-xs text-cdy-muted">Cannot adjust own</span>
+                        ) : (
+                          <PermissionGate feature="finance.payroll" action="write">
+                            <button
+                              type="button"
+                              className="text-cdy-red hover:underline text-xs"
+                              onClick={() => setAdjustItem(item)}
+                            >
+                              Adjust
+                            </button>
+                          </PermissionGate>
+                        ))}
+                      {run.status !== PayrollStatus.DRAFT && !isPaid && canWritePayroll && (
+                        <PermissionGate feature="finance.payroll" action="write">
+                          <button
+                            type="button"
+                            disabled={markPaidMutation.isPending}
+                            className="text-xs text-green-400 hover:underline disabled:opacity-50"
+                            onClick={() => void markPaidMutation.mutateAsync(item.id)}
+                          >
+                            {markPaidMutation.isPending ? 'Saving…' : 'Mark Paid'}
+                          </button>
+                        </PermissionGate>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

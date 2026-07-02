@@ -55,6 +55,7 @@ export class ExpensesService {
     }
 
     const expense = await this.prisma.expense.create({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         vendorName: dto.vendorName,
         category: dto.category,
@@ -65,13 +66,16 @@ export class ExpensesService {
         ventureId: dto.ventureId,
         ventureSharePercent: dto.ventureSharePercent,
         notes: dto.notes,
+        paymentMethod: dto.paymentMethod,
+        paymentReference: dto.paymentReference,
         receiptUrl,
         uploadPath,
         createdBy: userId,
-      },
+      } as any,
     });
 
-    const serialized = this.serialize(expense);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const serialized = this.serialize(expense as any);
     this.auditService.log({
       ...auditCtx,
       action: 'expense.created',
@@ -165,7 +169,8 @@ export class ExpensesService {
       throw new NotFoundException('Expense not found');
     }
 
-    return this.serialize(expense);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.serialize(expense as any);
   }
 
   async update(id: string, dto: UpdateExpenseDto, auditCtx: AuditContext) {
@@ -194,6 +199,7 @@ export class ExpensesService {
 
     const expense = await this.prisma.expense.update({
       where: { id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         ...(dto.vendorName !== undefined && { vendorName: dto.vendorName }),
         ...(dto.category !== undefined && { category: dto.category }),
@@ -202,10 +208,13 @@ export class ExpensesService {
         ...(dto.date !== undefined && { date: new Date(dto.date) }),
         ...(dto.projectId !== undefined && { projectId: dto.projectId }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
-      },
+        ...(dto.paymentMethod !== undefined && { paymentMethod: dto.paymentMethod }),
+        ...(dto.paymentReference !== undefined && { paymentReference: dto.paymentReference }),
+      } as any,
     });
 
-    const serialized = this.serialize(expense);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const serialized = this.serialize(expense as any);
     this.auditService.log({
       ...auditCtx,
       action: 'expense.updated',
@@ -259,6 +268,8 @@ export class ExpensesService {
     notes: string | null;
     isPayrollExpense: boolean;
     payrollRunId: string | null;
+    paymentMethod: string | null;
+    paymentReference: string | null;
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;

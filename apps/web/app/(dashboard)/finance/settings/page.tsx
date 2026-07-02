@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useFinanceSettings } from '@/hooks/useSettings';
 import { useTaxRates } from '@/hooks/useTax';
+import { useAvailableUsers } from '@/hooks/useHr';
 import { AddTaxRateModal } from '@/components/finance/tax/AddTaxRateModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ export default function FinanceSettingsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useFinanceSettings();
   const { data: taxRates } = useTaxRates();
+  const { data: availableUsers = [] } = useAvailableUsers();
   const [tab, setTab] = useState<Tab>('general');
   const [saving, setSaving] = useState(false);
   const [taxModalOpen, setTaxModalOpen] = useState(false);
@@ -85,7 +87,7 @@ export default function FinanceSettingsPage(): JSX.Element {
       toast.success('Settings saved');
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
     } catch {
-      /* interceptor */
+      // error toast shown by api interceptor
     } finally {
       setSaving(false);
     }
@@ -248,16 +250,23 @@ export default function FinanceSettingsPage(): JSX.Element {
       {tab === 'payroll' && (
         <div className="max-w-lg space-y-4">
           <label className="block text-sm text-cdy-muted">
-            Second approver (user ID)
-            <Input
+            Second approver
+            <select
               value={form.payroll_approver_id}
               onChange={(e) =>
                 setForm({ ...form, payroll_approver_id: e.target.value })
               }
-              className="mt-1"
-            />
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-cdy-white"
+            >
+              <option value="">— None —</option>
+              {availableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName} ({u.email})
+                </option>
+              ))}
+            </select>
             <span className="mt-1 block text-xs text-cdy-muted">
-              The payroll run creator cannot process their own run.
+              Optional. The payroll run creator cannot process their own run.
             </span>
           </label>
           <label className="block text-sm text-cdy-muted">

@@ -13,9 +13,12 @@ import {
   useVentureSummary,
   useVentureInvoices,
   useVentureExpenses,
+  useVentureDirectIncome,
+  type DirectIncomeEntry,
 } from '@/hooks/useVentures';
 import { LogExpenseDrawer } from '@/components/finance/ventures/LogExpenseDrawer';
 import { LogIncomeDrawer } from '@/components/finance/ventures/LogIncomeDrawer';
+import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectIncomeDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +68,7 @@ export default function VentureDetailPage(): JSX.Element {
   const [to, setTo] = useState(presets[0].to);
   const [tab, setTab] = useState<Tab>('income');
   const [incomeOpen, setIncomeOpen] = useState(false);
+  const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editName, setEditName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -73,9 +77,11 @@ export default function VentureDetailPage(): JSX.Element {
   const { data: summary, isLoading: summaryLoading } = useVentureSummary(ventureId, { from, to });
   const { data: invoicesData, isLoading: invoicesLoading } = useVentureInvoices(ventureId, { from, to });
   const { data: expensesData, isLoading: expensesLoading } = useVentureExpenses(ventureId, { from, to });
+  const { data: directIncomeData } = useVentureDirectIncome(ventureId, { from, to });
 
   const invoices = (invoicesData as PaginatedResult<InvoiceRow> | undefined)?.data ?? [];
   const expenses = (expensesData as PaginatedResult<ExpenseRow> | undefined)?.data ?? [];
+  const directIncomeEntries: DirectIncomeEntry[] = directIncomeData?.data ?? [];
   const isLoading = ventureLoading || summaryLoading;
 
   async function handleDeactivate(): Promise<void> {
@@ -228,17 +234,61 @@ export default function VentureDetailPage(): JSX.Element {
             </div>
 
             {tab === 'income' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-cdy-muted">
-                    Finance invoices tagged to this venture ({invoices.length} in period).
+                    Income tagged to this venture ({invoices.length} invoices, {directIncomeEntries.length} direct in period).
                   </p>
                   <PermissionGate feature="ventures.manage" action="write">
-                    <Button size="sm" onClick={() => setIncomeOpen(true)}>
-                      <Plus className="h-4 w-4" /> Log Income
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setDirectIncomeOpen(true)}>
+                        <Plus className="h-4 w-4" /> Log Direct Income
+                      </Button>
+                      <Button size="sm" onClick={() => setIncomeOpen(true)}>
+                        <Plus className="h-4 w-4" /> Log Invoice
+                      </Button>
+                    </div>
                   </PermissionGate>
                 </div>
+
+                {directIncomeEntries.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium text-cdy-muted">Direct Income</h3>
+                    <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-cdy-navy text-left text-cdy-muted">
+                          <tr>
+                            <th className="px-4 py-3">Date</th>
+                            <th className="px-4 py-3">Description</th>
+                            <th className="px-4 py-3">Category</th>
+                            <th className="px-4 py-3">Method</th>
+                            <th className="px-4 py-3 text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {directIncomeEntries.map((entry) => (
+                            <tr key={entry.id} className="border-t border-cdy-navy-border/50 hover:bg-cdy-navy/30">
+                              <td className="px-4 py-3 text-cdy-muted">
+                                {format(new Date(entry.date), 'MMM d')}
+                              </td>
+                              <td className="px-4 py-3 text-cdy-white">{entry.description}</td>
+                              <td className="px-4 py-3 text-cdy-muted">{entry.category ?? '—'}</td>
+                              <td className="px-4 py-3 capitalize text-cdy-muted">
+                                {entry.paymentMethod.replace(/_/g, ' ')}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-green-400">
+                                {formatCurrency(entry.amount, entry.currency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="mb-2 text-sm font-medium text-cdy-muted">Invoices</h3>
                 {invoicesLoading ? (
                   <InvoiceTableSkeleton />
                 ) : (
@@ -296,11 +346,12 @@ export default function VentureDetailPage(): JSX.Element {
                   </div>
                 )}
                 {summary && (
-                  <p className="text-sm text-cdy-muted">
+                  <p className="mt-2 text-sm text-cdy-muted">
                     Paid invoices total:{' '}
                     <span className="font-medium text-cdy-white">{formatCurrency(summary.income.total)}</span>
                   </p>
                 )}
+                </div>
               </div>
             )}
 
@@ -430,6 +481,12 @@ export default function VentureDetailPage(): JSX.Element {
               ventureId={ventureId}
               ventureName={venture.name}
               onClose={() => setIncomeOpen(false)}
+            />
+            <DirectIncomeDrawer
+              open={directIncomeOpen}
+              ventureId={ventureId}
+              ventureName={venture.name}
+              onClose={() => setDirectIncomeOpen(false)}
             />
             <LogExpenseDrawer
               open={expenseOpen}

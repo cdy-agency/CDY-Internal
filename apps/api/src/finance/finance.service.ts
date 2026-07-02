@@ -35,7 +35,7 @@ export class FinanceService {
     return Number(((current - previous) / previous * 100).toFixed(1));
   }
 
-  async getSummary(): Promise<FinanceSummaryDto> {
+  async getSummary(rangeStart?: Date, rangeEnd?: Date): Promise<FinanceSummaryDto> {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(
@@ -109,6 +109,8 @@ export class FinanceService {
       recentInvoices,
       topClients,
       pendingLeaveRequests,
+      recentIncomeTransactions,
+      recentExpenseTransactions,
     ] = await Promise.all([
       this.sumInvoices(currentMonthStart, currentMonthEnd),
       this.sumPayments(currentMonthStart, currentMonthEnd),
@@ -159,6 +161,8 @@ export class FinanceService {
       this.getRecentInvoices(5),
       this.getTopClientsByRevenue(5),
       this.getPendingLeaveRequests(),
+      this.getRecentIncomeTransactions(10),
+      this.getRecentExpenses(10),
     ]);
 
     const currentMetrics: FinanceSummaryMetrics = {
@@ -196,7 +200,6 @@ export class FinanceService {
       rawIncomeByService,
       rawExpenseByCategory,
       rawPaymentByMethod,
-      rawExpenseByMethod,
     ] = await Promise.all([
       this.prisma.invoice.groupBy({
         by: ['serviceType'],
@@ -228,16 +231,6 @@ export class FinanceService {
         _sum: { amount: true },
         _count: { id: true },
         orderBy: { _sum: { amount: 'desc' } },
-      }),
-      this.prisma.expense.groupBy({
-        by: ['expensePaymentMethod'],
-        where: {
-          date: { gte: currentMonthStart, lte: currentMonthEnd },
-          deletedAt: null,
-          expensePaymentMethod: { not: null },
-        },
-        _sum: { amount: true },
-        _count: { id: true },
       }),
     ]);
 
@@ -286,18 +279,14 @@ export class FinanceService {
       })),
       paymentMethodSummary: ALL_PAYMENT_METHODS.map((method) => {
         const inc = rawPaymentByMethod.find((r) => r.method === method);
-        const exp = rawExpenseByMethod.find(
-          (r) => r.expensePaymentMethod === method,
-        );
         const incAmt = this.toNumber(inc?._sum.amount ?? null);
-        const expAmt = this.toNumber(exp?._sum.amount ?? null);
         return {
           method,
           label: paymentMethodLabel(method),
           color: PAYMENT_METHOD_COLORS[method] ?? '#94A3B8',
           income:   { amount: incAmt, count: inc?._count.id ?? 0 },
-          expenses: { amount: expAmt, count: exp?._count.id ?? 0 },
-          net: incAmt - expAmt,
+          expenses: { amount: 0, count: 0 },
+          net: incAmt,
         };
       }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
       totals: {
@@ -361,6 +350,26 @@ export class FinanceService {
       }),
     );
 
+    // ── Date-range filtered totals (optional) ────────────────────────────────
+    let rangeIncome: number | undefined;
+    let rangeExpenses: number | undefined;
+    let rangeBalance: number | undefined;
+
+    if (rangeStart && rangeEnd) {
+      const [rangePayments, rangeDirectIncomeAgg, rangeExp] = await Promise.all([
+        this.sumPayments(rangeStart, rangeEnd),
+        this.prisma.directIncome.aggregate({
+          _sum: { amount: true },
+          where: { deletedAt: null, date: { gte: rangeStart, lte: rangeEnd } },
+        }),
+        this.sumExpenses(rangeStart, rangeEnd),
+      ]);
+      const rangeDirectInc = this.toNumber(rangeDirectIncomeAgg._sum.amount);
+      rangeIncome = Number((rangePayments + rangeDirectInc).toFixed(2));
+      rangeExpenses = Number(rangeExp.toFixed(2));
+      rangeBalance = Number((rangeIncome - rangeExpenses).toFixed(2));
+    }
+
     this.logger.debug('Finance summary computed');
 
     return {
@@ -405,8 +414,13 @@ export class FinanceService {
       directIncomeMTD,
       totalIncome,
       difference,
+      rangeIncome,
+      rangeExpenses,
+      rangeBalance,
       recentDueBills,
       monthlyComparison,
+      recentIncomeTransactions,
+      recentExpenseTransactions,
     };
   }
 
@@ -781,6 +795,91 @@ export class FinanceService {
       totalInvoiced: this.toNumber(r.totalInvoiced),
       totalCollected: this.toNumber(r.totalCollected),
       outstanding: this.toNumber(r.outstanding),
+    }));
+  }
+
+  private async getRecentIncomeTransactions(limit: number) {
+    const [payments, directIncome] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { deletedAt: null },
+        orderBy: { paidAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          paidAt: true,
+          invoice: {
+            select: {
+              invoiceNumber: true,
+              client: { select: { companyName: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.directIncome.findMany({
+        where: { deletedAt: null },
+        orderBy: { date: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          currency: true,
+          paymentMethod: true,
+          date: true,
+          client: { select: { companyName: true } },
+        },
+      }),
+    ]);
+
+    return [
+      ...payments.map((p) => ({
+        id: p.id,
+        type: 'payment' as const,
+        description: p.invoice.invoiceNumber,
+        clientName: p.invoice.client?.companyName ?? '—',
+        amount: this.toNumber(p.amount),
+        method: p.method as string,
+        date: p.paidAt.toISOString(),
+      })),
+      ...directIncome.map((d) => ({
+        id: d.id,
+        type: 'direct' as const,
+        description: d.description,
+        clientName: d.client?.companyName ?? '—',
+        amount: this.toNumber(d.amount),
+        method: d.paymentMethod as string,
+        date: d.date.toISOString(),
+      })),
+    ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit);
+  }
+
+  private async getRecentExpenses(limit: number) {
+    const expenses = await (this.prisma.expense.findMany as (args: unknown) => Promise<Array<Record<string, unknown>>>)({
+      where: { deletedAt: null },
+      orderBy: { date: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        vendorName: true,
+        category: true,
+        amount: true,
+        currency: true,
+        paymentMethod: true,
+        date: true,
+      },
+    });
+    return expenses.map((e) => ({
+      id: e.id as string,
+      vendorName: e.vendorName as string,
+      category: e.category as string,
+      amount: this.toNumber(e.amount as Parameters<typeof this.toNumber>[0]),
+      currency: e.currency as string,
+      paymentMethod: (e.paymentMethod as string | null) ?? null,
+      date: (e.date as Date).toISOString(),
     }));
   }
 

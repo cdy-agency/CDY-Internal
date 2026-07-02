@@ -20,13 +20,6 @@ import {
   DataTable,
 } from '@/components/dashboard';
 
-const PERIODS = [
-  { key: 'month', label: 'This Month' },
-  { key: 'last_month', label: 'Last Month' },
-  { key: 'quarter', label: 'This Quarter' },
-  { key: 'ytd', label: 'YTD' },
-] as const;
-
 function collectionQuality(rate: number): { label: string; variant: 'green' | 'blue' | 'amber' | 'red' } {
   if (rate >= 80) return { label: 'GREAT', variant: 'green' };
   if (rate >= 60) return { label: 'GOOD', variant: 'blue' };
@@ -62,14 +55,24 @@ function paymentMethodColor(method: string): string {
 }
 
 export default function FinanceDashboard(): JSX.Element {
-  const [period, setPeriod] = useState<string>('month');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
-  const { data, isLoading, isError, refetch } = useFinanceSummary();
+  const { data, isLoading, isError, refetch } = useFinanceSummary({
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  });
   const { canRead, canWrite } = usePermissions();
 
   const months = Array.from({ length: 6 }, (_, i) =>
     format(subMonths(new Date(), 5 - i), 'MMM'),
   );
+
+  const hasDateRange = !!(dateFrom && dateTo);
+  const displayIncome = hasDateRange ? (data?.rangeIncome ?? 0) : (data?.totalIncome ?? 0);
+  const displayExpenses = hasDateRange ? (data?.rangeExpenses ?? 0) : (data?.totalExpenses ?? 0);
+  const displayBalance = hasDateRange ? (data?.rangeBalance ?? 0) : (data?.difference ?? 0);
+  const periodLabel = hasDateRange ? 'Selected period' : 'MTD';
 
   const collectionRate = data?.collectionRate ?? 0;
   const { label: collLabel, variant: collVariant } = collectionQuality(collectionRate);
@@ -121,22 +124,35 @@ export default function FinanceDashboard(): JSX.Element {
         </div>
       )}
 
-      {/* Period selector + Record Income */}
+      {/* Date range filter + Record Income */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {PERIODS.map((p) => (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="whitespace-nowrap text-xs text-cdy-muted">From</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="whitespace-nowrap text-xs text-cdy-muted">To</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
             <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                period === p.key
-                  ? 'bg-blue-900/40 text-blue-400'
-                  : 'text-cdy-muted hover:bg-cdy-navy-light'
-              }`}
+              onClick={() => { setDateFrom(''); setDateTo(''); }}
+              className="text-xs text-cdy-muted underline hover:text-cdy-white"
             >
-              {p.label}
+              Clear
             </button>
-          ))}
+          )}
         </div>
         <PermissionGate feature="finance.payments" action="write">
           <Button size="sm" onClick={() => setDirectIncomeOpen(true)}>
@@ -190,36 +206,34 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </div>
 
-      {/* Row 1b — Total Income / Expenses / Difference */}
+      {/* Row 1b — Total Income / Expenses / Balance */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SectionCard>
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-400">Total Income MTD</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-400">
+            Total Income — {periodLabel}
+          </p>
           <p className="mt-2 text-2xl font-bold text-cdy-white">
-            {isLoading ? '—' : formatCurrency(data?.totalIncome ?? 0)}
+            {isLoading ? '—' : formatCurrency(displayIncome)}
           </p>
-          <p className="mt-1 text-xs text-cdy-muted">
-            Invoice + direct income
-          </p>
+          <p className="mt-1 text-xs text-cdy-muted">Invoice + direct income</p>
         </SectionCard>
         <SectionCard>
-          <p className="text-xs font-medium uppercase tracking-wide text-red-400">Total Expenses MTD</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-red-400">
+            Total Expenses — {periodLabel}
+          </p>
           <p className="mt-2 text-2xl font-bold text-cdy-white">
-            {isLoading ? '—' : formatCurrency(data?.totalExpenses ?? 0)}
+            {isLoading ? '—' : formatCurrency(displayExpenses)}
           </p>
-          <p className="mt-1 text-xs text-cdy-muted">
-            All expense categories
-          </p>
+          <p className="mt-1 text-xs text-cdy-muted">All expense categories</p>
         </SectionCard>
         <SectionCard>
-          <p className="text-xs font-medium uppercase tracking-wide text-violet-400">Net Difference MTD</p>
-          <p className={`mt-2 text-2xl font-bold ${
-            (data?.difference ?? 0) >= 0 ? 'text-cdy-white' : 'text-orange-400'
-          }`}>
-            {isLoading ? '—' : formatCurrency(data?.difference ?? 0)}
+          <p className="text-xs font-medium uppercase tracking-wide text-violet-400">
+            Balance — {periodLabel}
           </p>
-          <p className="mt-1 text-xs text-cdy-muted">
-            Income − Expenses
+          <p className={`mt-2 text-2xl font-bold ${displayBalance >= 0 ? 'text-cdy-white' : 'text-orange-400'}`}>
+            {isLoading ? '—' : formatCurrency(displayBalance)}
           </p>
+          <p className="mt-1 text-xs text-cdy-muted">Income − Expenses</p>
         </SectionCard>
       </div>
 
@@ -680,7 +694,34 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
       </div>
 
-      {/* Row 8 — Recent invoices + Top clients */}
+      {/* Row 8 — Recent income + Recent expenses */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Recent income">
+          <DataTable
+            columns={['Description', 'Client', 'Method', 'Amount']}
+            rows={(data?.recentIncomeTransactions ?? []).map((t) => [
+              t.description,
+              t.clientName,
+              t.method.replace(/_/g, ' '),
+              formatCurrency(t.amount),
+            ])}
+          />
+        </SectionCard>
+
+        <SectionCard title="Recent expenses">
+          <DataTable
+            columns={['Vendor', 'Category', 'Method', 'Amount']}
+            rows={(data?.recentExpenseTransactions ?? []).map((e) => [
+              e.vendorName,
+              e.category.replace(/_/g, ' '),
+              e.paymentMethod ? e.paymentMethod.replace(/_/g, ' ') : '—',
+              formatCurrency(e.amount),
+            ])}
+          />
+        </SectionCard>
+      </div>
+
+      {/* Row 9 — Recent invoices + Top clients */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard
           title="Recent invoices"

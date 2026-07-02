@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PaymentMethod } from '@cdy/shared';
+import { FINANCE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
 import type { AxiosError } from 'axios';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -24,13 +25,15 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 interface DirectIncomeDrawerProps {
   open: boolean;
   onClose: () => void;
+  ventureId?: string;
+  ventureName?: string;
 }
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]!;
 }
 
-export function DirectIncomeDrawer({ open, onClose }: DirectIncomeDrawerProps): JSX.Element | null {
+export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: DirectIncomeDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
@@ -66,10 +69,15 @@ export function DirectIncomeDrawer({ open, onClose }: DirectIncomeDrawerProps): 
         category: category || undefined,
         date,
         notes: notes || undefined,
+        ventureId: ventureId || undefined,
       });
       toast.success('Income recorded');
       await queryClient.invalidateQueries({ queryKey: ['payments'] });
       await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
+      if (ventureId) {
+        await queryClient.invalidateQueries({ queryKey: ['ventures', ventureId] });
+        await queryClient.invalidateQueries({ queryKey: ['ventures', 'direct-income', ventureId] });
+      }
       reset();
       onClose();
     } catch (err) {
@@ -87,7 +95,9 @@ export function DirectIncomeDrawer({ open, onClose }: DirectIncomeDrawerProps): 
       <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} role="presentation" />
       <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
         <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
-          <h2 className="text-lg font-semibold text-cdy-white">Record Direct Income</h2>
+          <h2 className="text-lg font-semibold text-cdy-white">
+            Record Direct Income{ventureName ? ` — ${ventureName}` : ''}
+          </h2>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-cdy-muted hover:text-cdy-white" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
@@ -156,12 +166,17 @@ export function DirectIncomeDrawer({ open, onClose }: DirectIncomeDrawerProps): 
 
             <div className="space-y-2">
               <Label htmlFor="di-category">Category (optional)</Label>
-              <Input
+              <select
                 id="di-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Consultation, Sale, Rental"
-              />
+                className="w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              >
+                <option value="">— Select category —</option>
+                {FINANCE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">

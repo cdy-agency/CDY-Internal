@@ -28,11 +28,12 @@ export class SettingsService {
     return setting?.value ?? null;
   }
 
-  async set(key: string, value: string, userId: string): Promise<void> {
+  async set(key: string, value: string | undefined, userId: string): Promise<void> {
+    const v = value ?? '';
     await this.prisma.financeSetting.upsert({
       where: { key },
-      create: { key, value, updatedBy: userId },
-      update: { value, updatedBy: userId },
+      create: { key, value: v, updatedBy: userId },
+      update: { value: v, updatedBy: userId },
     });
   }
 

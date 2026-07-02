@@ -69,6 +69,10 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
   directIncomeMTD?: number;
   totalIncome?: number;
   difference?: number;
+  // Date-range filtered totals (returned when dateFrom/dateTo params supplied)
+  rangeIncome?: number;
+  rangeExpenses?: number;
+  rangeBalance?: number;
   recentDueBills?: Array<{
     id: string;
     vendorName: string;
@@ -82,6 +86,24 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
     income: number;
     expenses: number;
     net: number;
+  }>;
+  recentIncomeTransactions?: Array<{
+    id: string;
+    type: 'payment' | 'direct';
+    description: string;
+    clientName: string;
+    amount: number;
+    method: string;
+    date: string;
+  }>;
+  recentExpenseTransactions?: Array<{
+    id: string;
+    vendorName: string;
+    category: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string | null;
+    date: string;
   }>;
   charts!: {
     incomeByService: Array<{

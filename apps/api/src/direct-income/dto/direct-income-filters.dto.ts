@@ -9,6 +9,10 @@ export class DirectIncomeFiltersDto {
   clientId?: string;
 
   @IsOptional()
+  @IsString()
+  ventureId?: string;
+
+  @IsOptional()
   @IsEnum(PaymentMethod)
   paymentMethod?: PaymentMethod;
 

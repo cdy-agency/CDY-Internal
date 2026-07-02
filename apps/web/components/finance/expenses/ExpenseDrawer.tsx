@@ -54,7 +54,7 @@ export function ExpenseDrawer({
   const [date, setDate] = useState(todayString());
   const [projectId, setProjectId] = useState('');
   const [notes, setNotes] = useState('');
-  const [expensePaymentMethod, setExpensePaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -68,6 +68,8 @@ export function ExpenseDrawer({
       setDate(expense.date.split('T')[0]);
       setProjectId(expense.projectId ?? '');
       setNotes(expense.notes ?? '');
+      setPaymentMethod((expense as unknown as Record<string, string>).paymentMethod ?? '');
+      setPaymentReference((expense as unknown as Record<string, string>).paymentReference ?? '');
       setReceiptFile(null);
       setPreviewUrl(null);
     } else if (open && !expense) {
@@ -78,7 +80,7 @@ export function ExpenseDrawer({
       setDate(todayString());
       setProjectId('');
       setNotes('');
-      setExpensePaymentMethod('');
+      setPaymentMethod('');
       setPaymentReference('');
       setReceiptFile(null);
       setPreviewUrl(null);
@@ -134,7 +136,7 @@ export function ExpenseDrawer({
       if (notes) formData.append('notes', notes);
       if (receiptFile) formData.append('receipt', receiptFile);
 
-      if (expensePaymentMethod) formData.append('expensePaymentMethod', expensePaymentMethod);
+      if (paymentMethod) formData.append('paymentMethod', paymentMethod);
       if (paymentReference) formData.append('paymentReference', paymentReference);
 
       if (isEdit && expense) {
@@ -148,7 +150,7 @@ export function ExpenseDrawer({
             date,
             projectId: projectId || undefined,
             notes: notes || undefined,
-            expensePaymentMethod: expensePaymentMethod || undefined,
+            paymentMethod: paymentMethod || undefined,
             paymentReference: paymentReference || undefined,
           },
         );
@@ -291,51 +293,6 @@ export function ExpenseDrawer({
             </div>
 
             <div className="space-y-2">
-              <Label>How was this paid? <span className="font-normal text-cdy-muted">(optional)</span></Label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'BANK_TRANSFER', label: '🏦 Bank Transfer' },
-                  { value: 'MTN_MOMO',      label: '📱 MTN MoMo' },
-                  { value: 'AIRTEL_MONEY',  label: '📱 Airtel Money' },
-                  { value: 'CARD',          label: '💳 Card' },
-                  { value: 'CASH',          label: '💵 Cash' },
-                  { value: 'OTHER',         label: '⋯ Other' },
-                ].map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() =>
-                      setExpensePaymentMethod(
-                        expensePaymentMethod === m.value ? '' : m.value,
-                      )
-                    }
-                    className={`rounded-lg border p-2.5 text-center text-sm transition-colors ${
-                      expensePaymentMethod === m.value
-                        ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
-                        : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {expensePaymentMethod && (
-              <div className="space-y-2">
-                <Label htmlFor="paymentReference">Payment reference <span className="font-normal text-cdy-muted">(optional)</span></Label>
-                <Input
-                  id="paymentReference"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="Receipt no., MoMo ID, bank ref..."
-                  disabled={isReadOnly}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
               <Label htmlFor="projectId">Project ID (optional)</Label>
               <Input
                 id="projectId"
@@ -409,6 +366,35 @@ export function ExpenseDrawer({
                 )}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>Payment Method (optional)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['BANK_TRANSFER', 'MTN_MOMO', 'AIRTEL_MONEY', 'CARD', 'CASH', 'OTHER'] as const).map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setPaymentMethod(paymentMethod === method ? '' : method)}
+                    className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
+                      paymentMethod === method
+                        ? 'border-cdy-red bg-cdy-red/20 text-cdy-red'
+                        : 'border-cdy-navy-border bg-cdy-navy text-cdy-muted hover:border-cdy-red/50 hover:text-cdy-white'
+                    }`}
+                  >
+                    {method.replace(/_/g, ' ')}
+                  </button>
+                ))}
+              </div>
+              {paymentMethod && (
+                <Input
+                  placeholder="Reference / transaction ID (optional)"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  disabled={isReadOnly}
+                />
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (optional)</Label>

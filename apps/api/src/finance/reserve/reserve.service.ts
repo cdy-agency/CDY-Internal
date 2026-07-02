@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ExpenseCategory, ReserveType } from '@prisma/client';
+import { ExpenseCategory, PaymentMethod, ReserveType } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -120,6 +120,19 @@ export class ReserveService {
           balanceAfter: newBalance,
           description: dto.description,
           reference: dto.reference,
+          createdBy: userId,
+        },
+      });
+
+      await tx.directIncome.create({
+        data: {
+          description: `Reserve withdrawal: ${dto.description}`,
+          amount: dto.amount,
+          currency: account.currency,
+          paymentMethod: PaymentMethod.CASH,
+          reference: dto.reference ?? null,
+          category: 'Reserve',
+          date: new Date(),
           createdBy: userId,
         },
       });

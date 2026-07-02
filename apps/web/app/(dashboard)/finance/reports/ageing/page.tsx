@@ -116,7 +116,7 @@ function BucketCard({
                       {inv.invoiceNumber}
                     </Link>
                   </td>
-                  <td className="py-2 text-cdy-white">{inv.clientId}</td>
+                  <td className="py-2 text-cdy-white">{inv.clientName}</td>
                   <td className="py-2 text-right text-cdy-white">
                     {formatCurrency(inv.remaining)}
                   </td>
