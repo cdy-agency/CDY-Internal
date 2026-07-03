@@ -48,4 +48,8 @@ export class CreateRetainerDto {
   @IsOptional()
   @IsString()
   taxRateId?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 }

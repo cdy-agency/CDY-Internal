@@ -33,18 +33,32 @@ export function usePayrollRun(id: string) {
   });
 }
 
+export interface PayrollPreviewEmployee {
+  id: string;
+  name: string;
+  email: string;
+  baseSalary: number;
+  commission: number;
+  grossPay: number;
+  netPay: number;
+  alreadyInRun: boolean;
+}
+
+export interface PayrollPreview {
+  employeeCount: number;
+  approvedCommissionTotal: number;
+  agentCount: number;
+  estimatedTotalNet: number;
+  employees: PayrollPreviewEmployee[];
+}
+
 export function usePayrollPreview(month: string) {
   return useQuery({
     queryKey: ['payroll', 'preview', month],
-    queryFn: async () => {
-      const res = await api.get<
-        ApiResponse<{
-          employeeCount: number;
-          approvedCommissionTotal: number;
-          agentCount: number;
-          estimatedTotalNet: number;
-        }>
-      >(`/payroll/runs/preview?month=${month}`);
+    queryFn: async (): Promise<PayrollPreview> => {
+      const res = await api.get<ApiResponse<PayrollPreview>>(
+        `/payroll/runs/preview?month=${month}`,
+      );
       return res.data.data;
     },
     enabled: !!month,

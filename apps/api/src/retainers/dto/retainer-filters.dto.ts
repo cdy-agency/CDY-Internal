@@ -13,4 +13,8 @@ export class RetainerFiltersDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 }

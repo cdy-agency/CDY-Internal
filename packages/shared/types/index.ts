@@ -1043,6 +1043,8 @@ export interface RetainerRecord {
   id: string;
   clientId: string;
   clientName?: string | null;
+  ventureId?: string | null;
+  ventureName?: string | null;
   serviceName: string;
   description: string | null;
   amount: number;

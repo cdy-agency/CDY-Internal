@@ -55,6 +55,7 @@ export class RetainersService {
     const retainer = await this.prisma.retainerContract.create({
       data: {
         clientId: dto.clientId,
+        ventureId: dto.ventureId ?? null,
         serviceName: dto.serviceName,
         description: dto.description,
         amount: dto.amount,
@@ -66,7 +67,7 @@ export class RetainersService {
         nextBillingDate,
         createdBy: userId,
       },
-      include: { taxRate: true },
+      include: { taxRate: true, venture: { select: { id: true, name: true } } },
     });
 
     this.auditService.log({
@@ -86,6 +87,7 @@ export class RetainersService {
     if (filters.clientId) {
       where.clientId = { contains: filters.clientId, mode: 'insensitive' };
     }
+    if (filters.ventureId) where.ventureId = filters.ventureId;
     if (filters.search) {
       const term = filters.search;
       where.OR = [
@@ -99,6 +101,7 @@ export class RetainersService {
       include: {
         taxRate: true,
         client: { select: { id: true, companyName: true } },
+        venture: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -106,13 +109,14 @@ export class RetainersService {
     return retainers.map((r) => ({
       ...this.serializeRetainer(r),
       clientName: r.client?.companyName ?? null,
+      ventureName: r.venture?.name ?? null,
     }));
   }
 
   async findOne(id: string) {
     const retainer = await this.prisma.retainerContract.findUnique({
       where: { id },
-      include: { taxRate: true },
+      include: { taxRate: true, venture: { select: { id: true, name: true } } },
     });
     if (!retainer) throw new NotFoundException('Retainer not found');
     return this.serializeRetainer(retainer);
@@ -389,12 +393,14 @@ export class RetainersService {
 
   private serializeRetainer(
     retainer: Prisma.RetainerContractGetPayload<{
-      include: { taxRate: true };
+      include: { taxRate: true; venture: { select: { id: true; name: true } } | true };
     }>,
   ) {
     return {
       id: retainer.id,
       clientId: retainer.clientId,
+      ventureId: retainer.ventureId ?? null,
+      ventureName: retainer.venture?.name ?? null,
       serviceName: retainer.serviceName,
       description: retainer.description,
       amount: Number(retainer.amount),

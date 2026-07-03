@@ -593,6 +593,7 @@ enum RetainerStatus {
 model RetainerContract {
   id                String         @id @default(cuid())
   clientId          String
+  ventureId         String?
   serviceName       String
   description       String?
   amount            Decimal        @db.Decimal(12, 2)
@@ -619,11 +620,13 @@ model RetainerContract {
   invoices        Invoice[]          @relation("RetainerInvoices")
   marketingClient MarketingClient?
   client          Client             @relation(fields: [clientId], references: [id])
+  venture         Venture?           @relation(fields: [ventureId], references: [id])
   extensions      RetainerExtension[]
 
   @@index([status])
   @@index([nextBillingDate])
   @@index([clientId])
+  @@index([ventureId])
 }
 
 model RetainerExtension {
@@ -719,7 +722,6 @@ model PayrollRun {
   lineItems PayrollLineItem[]
   expenses  Expense[]
 
-  @@unique([month])
   @@index([status])
   @@index([month])
 }
@@ -814,12 +816,13 @@ model Venture {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  incomeEntries  VentureIncome[]
-  expenseEntries VentureExpense[]
-  invoices       Invoice[]
-  expenses       Expense[]
-  clients        Client[]
-  directIncome   DirectIncome[]
+  incomeEntries    VentureIncome[]
+  expenseEntries   VentureExpense[]
+  invoices         Invoice[]
+  expenses         Expense[]
+  clients          Client[]
+  directIncome     DirectIncome[]
+  retainerContracts RetainerContract[]
 
   @@index([isActive])
 }

@@ -40,22 +40,56 @@ export class PayrollService {
   ) {}
 
   async createRun(dto: CreatePayrollRunDto, userId: string): Promise<PayrollRun> {
-    const { month } = dto;
+    const { month, employeeIds } = dto;
 
-    const existing = await this.prisma.payrollRun.findUnique({
-      where: { month },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        `A payroll run for ${month} already exists with status ${existing.status}`,
-      );
-    }
-
-    const salaries = await this.getActivePayrollSalaries(month);
+    let salaries = await this.getActivePayrollSalaries(month);
 
     if (salaries.length === 0) {
       throw new BadRequestException(
         'No active employee salaries found. Add employee salaries before running payroll.',
+      );
+    }
+
+    // Filter to requested employees if provided
+    if (employeeIds && employeeIds.length > 0) {
+      salaries = salaries.filter((s) => employeeIds.includes(s.employeeId));
+      if (salaries.length === 0) {
+        throw new BadRequestException('None of the selected employees have active salary records.');
+      }
+    }
+
+    // Guard: prevent including an employee who is already in a non-DRAFT run this month
+    const existingItems = await this.prisma.payrollLineItem.findMany({
+      where: {
+        employeeId: { in: salaries.map((s) => s.employeeId) },
+        payrollRun: { month },
+      },
+      include: { payrollRun: { select: { status: true, id: true } } },
+    });
+    const alreadyProcessed = existingItems.filter(
+      (i) => i.payrollRun.status !== PayrollStatus.DRAFT,
+    );
+    if (alreadyProcessed.length > 0) {
+      const names = salaries
+        .filter((s) => alreadyProcessed.some((i) => i.employeeId === s.employeeId))
+        .map((s) => s.employeeName)
+        .join(', ');
+      throw new BadRequestException(
+        `The following employees are already in a processed/locked run for ${month}: ${names}`,
+      );
+    }
+
+    // Guard: prevent adding the same employee to a second DRAFT run this month
+    const alreadyDraft = existingItems.filter(
+      (i) => i.payrollRun.status === PayrollStatus.DRAFT,
+    );
+    if (alreadyDraft.length > 0) {
+      const names = salaries
+        .filter((s) => alreadyDraft.some((i) => i.employeeId === s.employeeId))
+        .map((s) => s.employeeName)
+        .join(', ');
+      throw new BadRequestException(
+        `The following employees already have a draft run for ${month}: ${names}. Edit that run instead.`,
       );
     }
 
@@ -464,7 +498,7 @@ export class PayrollService {
   }
 
   async getPayrollPreview(month: string) {
-    const salaries = await this.getActivePayrollSalaries();
+    const salaries = await this.getActivePayrollSalaries(month);
     const commissions = await this.prisma.commissionRecord.findMany({
       where: { month, status: CommissionStatus.APPROVED },
     });
@@ -486,18 +520,42 @@ export class PayrollService {
       {},
     );
 
-    const estimatedNet = salaries.reduce((sum, salary) => {
+    // Find employees already included in any run for this month
+    const existingItems = await this.prisma.payrollLineItem.findMany({
+      where: {
+        employeeId: { in: salaries.map((s) => s.employeeId) },
+        payrollRun: { month },
+      },
+      select: { employeeId: true, payrollRun: { select: { status: true } } },
+    });
+    const alreadyInRunIds = new Set(existingItems.map((i) => i.employeeId));
+
+    const employees = salaries.map((salary) => {
       const base = Number(salary.baseSalary);
       const commission = commissionByAgent[salary.employeeId] ?? 0;
       const gross = base + commission;
-      return sum + gross - gross * taxRate;
-    }, 0);
+      const netPay = gross - gross * taxRate;
+      return {
+        id: salary.employeeId,
+        name: salary.employeeName,
+        email: salary.employeeEmail,
+        baseSalary: base,
+        commission,
+        grossPay: Number(gross.toFixed(2)),
+        netPay: Number(netPay.toFixed(2)),
+        alreadyInRun: alreadyInRunIds.has(salary.employeeId),
+      };
+    });
+
+    const available = employees.filter((e) => !e.alreadyInRun);
+    const estimatedNet = available.reduce((s, e) => s + e.netPay, 0);
 
     return {
-      employeeCount: salaries.length,
+      employeeCount: available.length,
       approvedCommissionTotal: totalCommission,
       agentCount,
       estimatedTotalNet: Number(estimatedNet.toFixed(2)),
+      employees,
     };
   }
 

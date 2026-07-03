@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useTaxRates } from '@/hooks/useTax';
+import { useVentures } from '@/hooks/useVentures';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,8 +27,11 @@ const CURRENCIES = ['RWF'];
 export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
   const { data: taxRates } = useTaxRates();
+  const { data: ventures } = useVentures();
+  const activeVentures = (ventures ?? []).filter((v) => v.isActive);
   const [loading, setLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
+  const [ventureId, setVentureId] = useState('');
   const [serviceName, setServiceName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -59,6 +63,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
   useEffect(() => {
     if (open) {
       setSelectedClient(null);
+      setVentureId('');
       setServiceName('');
       setDescription('');
       setAmount('');
@@ -77,6 +82,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
       if (!selectedClient) { toast.error('Please select a client'); return; }
       await api.post<ApiResponse<RetainerRecord>>('/retainers', {
         clientId: selectedClient.id,
+        ventureId: ventureId || undefined,
         serviceName,
         description: description || undefined,
         amount: parsedAmount,
@@ -117,6 +123,19 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
               onChange={setSelectedClient}
               placeholder="Search CRM clients..."
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Venture (optional)</Label>
+            <select
+              value={ventureId}
+              onChange={(e) => setVentureId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            >
+              <option value="">— No venture —</option>
+              {activeVentures.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <Label>Service name</Label>

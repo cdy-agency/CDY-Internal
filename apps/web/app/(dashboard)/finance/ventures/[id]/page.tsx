@@ -8,6 +8,7 @@ import { Pencil, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 import {
   useVenture,
   useVentureSummary,
@@ -16,6 +17,7 @@ import {
   useVentureDirectIncome,
   type DirectIncomeEntry,
 } from '@/hooks/useVentures';
+import type { ApiResponse, RetainerRecord } from '@cdy/shared';
 import { LogExpenseDrawer } from '@/components/finance/ventures/LogExpenseDrawer';
 import { LogIncomeDrawer } from '@/components/finance/ventures/LogIncomeDrawer';
 import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectIncomeDrawer';
@@ -28,9 +30,10 @@ import { ExpenseCategoryBadge } from '@/components/finance/expenses/ExpenseCateg
 import { formatCurrency } from '@/lib/utils';
 import { buildVenturePresets, ventureColorHex } from '@/lib/ventureUtils';
 import type { ExpenseCategory } from '@cdy/shared';
+import { formatMonthKey } from '@/lib/reportDates';
 
 const presets = buildVenturePresets();
-type Tab = 'income' | 'expenses' | 'clients';
+type Tab = 'income' | 'expenses' | 'clients' | 'retainers';
 
 interface InvoiceRow {
   id: string;
@@ -78,6 +81,18 @@ export default function VentureDetailPage(): JSX.Element {
   const { data: invoicesData, isLoading: invoicesLoading } = useVentureInvoices(ventureId, { from, to });
   const { data: expensesData, isLoading: expensesLoading } = useVentureExpenses(ventureId, { from, to });
   const { data: directIncomeData } = useVentureDirectIncome(ventureId, { from, to });
+  const { data: retainersData } = useQuery({
+    queryKey: ['retainers', 'venture', ventureId],
+    queryFn: async (): Promise<RetainerRecord[]> => {
+      const res = await api.get<ApiResponse<RetainerRecord[]>>(
+        `/retainers?ventureId=${ventureId}`,
+      );
+      return res.data.data;
+    },
+    enabled: !!ventureId,
+    staleTime: 30_000,
+  });
+  const ventureRetainers = retainersData ?? [];
 
   const invoices = (invoicesData as PaginatedResult<InvoiceRow> | undefined)?.data ?? [];
   const expenses = (expensesData as PaginatedResult<ExpenseRow> | undefined)?.data ?? [];
@@ -216,7 +231,7 @@ export default function VentureDetailPage(): JSX.Element {
 
             <div className="border-b border-cdy-navy-border">
               <div className="flex gap-4">
-                {(['income', 'expenses', 'clients'] as Tab[]).map((t) => (
+                {(['income', 'expenses', 'clients', 'retainers'] as Tab[]).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -422,6 +437,62 @@ export default function VentureDetailPage(): JSX.Element {
                 )}
               </div>
             )}
+            {tab === 'retainers' && (
+              <div className="space-y-4">
+                <p className="text-sm text-cdy-muted">
+                  Retainer contracts linked to this venture ({ventureRetainers.length} total).
+                </p>
+                <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-cdy-navy text-left text-cdy-muted">
+                      <tr>
+                        <th className="px-4 py-3">Client</th>
+                        <th className="px-4 py-3">Service</th>
+                        <th className="px-4 py-3 text-right">Amount / mo</th>
+                        <th className="px-4 py-3">Billing Day</th>
+                        <th className="px-4 py-3">Next Invoice</th>
+                        <th className="px-4 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ventureRetainers.map((r) => (
+                        <tr key={r.id} className="border-t border-cdy-navy-border/50 hover:bg-cdy-navy/30">
+                          <td className="px-4 py-3 font-medium text-cdy-white">
+                            {r.clientName ?? r.clientId}
+                          </td>
+                          <td className="px-4 py-3 text-cdy-white">{r.serviceName}</td>
+                          <td className="px-4 py-3 text-right text-cdy-white">
+                            {formatCurrency(r.amount, r.currency)}
+                          </td>
+                          <td className="px-4 py-3 text-cdy-muted">{r.billingDayOfMonth}</td>
+                          <td className="px-4 py-3 text-cdy-muted">
+                            {formatMonthKey(r.nextBillingDate.slice(0, 7))}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              r.status === 'ACTIVE' ? 'bg-green-900/40 text-green-400' :
+                              r.status === 'PAUSED' ? 'bg-amber-900/40 text-amber-400' :
+                              r.status === 'ENDED'  ? 'bg-red-900/40 text-red-400' :
+                              'bg-gray-800 text-gray-400'
+                            }`}>
+                              {r.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {ventureRetainers.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-center text-cdy-muted">
+                            No retainers linked to this venture yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {tab === 'clients' && (
               <div className="space-y-4">
                 <p className="text-sm text-cdy-muted">
