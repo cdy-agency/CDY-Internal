@@ -82,7 +82,7 @@ export default function PayrollPage(): JSX.Element {
       const payload: { month: string; employeeIds?: string[] } = { month };
       // Only send employeeIds if it's a subset (not all available employees)
       if (selectedIds.size < availableEmployees.length) {
-        payload.employeeIds = [...selectedIds];
+        payload.employeeIds = Array.from(selectedIds);
       }
       const res = await api.post<{ data: PayrollRun }>('/payroll/runs', payload);
       toast.success('Payroll run created');
