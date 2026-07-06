@@ -386,7 +386,7 @@ export default function LeadsListPage(): JSX.Element {
                       href={`/crm/leads/${lead.id}`}
                       className="font-medium text-cdy-white hover:text-cdy-red"
                     >
-                      {lead.companyName}
+                      {lead.companyName ?? lead.contactName}
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-cdy-muted">{lead.contactName}</td>

@@ -126,7 +126,7 @@ export default function PipelinePage(): JSX.Element {
         if (!search) return true;
         const q = search.toLowerCase();
         return (
-          lead.companyName.toLowerCase().includes(q) ||
+          (lead.companyName ?? '').toLowerCase().includes(q) ||
           lead.contactName.toLowerCase().includes(q) ||
           lead.email.toLowerCase().includes(q)
         );

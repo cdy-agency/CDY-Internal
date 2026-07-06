@@ -43,7 +43,7 @@ export function LeadCard({ lead, draggable, onDragStart }: LeadCardProps): JSX.E
         )}
       </div>
       <Link href={`/crm/leads/${lead.id}`} className="block font-medium text-cdy-white hover:text-cdy-red">
-        {lead.companyName}
+        {lead.companyName ?? lead.contactName}
       </Link>
       <p className="text-sm text-cdy-muted">
         {lead.contactName} · {lead.email}

@@ -249,7 +249,7 @@ export default function LeadDetailPage(): JSX.Element {
       <nav className="text-sm text-cdy-muted">
         <Link href="/crm/leads" className="hover:text-cdy-white">Leads</Link>
         <span className="mx-2">/</span>
-        <span className="text-cdy-white">{lead.companyName}</span>
+        <span className="text-cdy-white">{lead.companyName ?? lead.contactName}</span>
       </nav>
 
       {lead.overdueFollowUp && (
@@ -275,7 +275,7 @@ export default function LeadDetailPage(): JSX.Element {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
-            <h1 className="text-2xl font-bold text-cdy-white">{lead.companyName}</h1>
+            <h1 className="text-2xl font-bold text-cdy-white">{lead.companyName ?? lead.contactName}</h1>
             <p className="text-cdy-muted">{lead.contactName}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="rounded-full bg-cdy-red/20 px-3 py-1 text-xs text-cdy-red">

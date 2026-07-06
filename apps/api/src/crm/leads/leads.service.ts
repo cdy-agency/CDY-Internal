@@ -13,6 +13,7 @@ import {
   PipelineStage,
   Prisma,
   ProposalStatus,
+  RetainerStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LeadScoringService } from './lead-scoring.service';
@@ -600,6 +601,7 @@ export class LeadsService {
           billingDayOfMonth: 1,
           startDate: now,
           nextBillingDate,
+          status: RetainerStatus.DRAFT,
           createdBy: userId,
         },
       });
@@ -666,7 +668,7 @@ export class LeadsService {
       await this.notificationsService.createNotification({
         userId: lead.assignedTo,
         type: NotificationType.SYSTEM,
-        title: `Deal closed — ${lead.companyName}`,
+        title: `Deal closed — ${lead.companyName ?? lead.contactName}`,
         body:
           'Congratulations! Your deal has been marked Closed Won. Commission has been calculated and is pending review.',
         link: '/finance/commissions/my',
@@ -853,7 +855,7 @@ export class LeadsService {
       buildCsvRow([
         lead.id,
         lead.contactName,
-        lead.companyName,
+        lead.companyName ?? '',
         lead.email,
         lead.phone,
         lead.country,

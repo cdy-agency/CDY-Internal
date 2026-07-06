@@ -98,7 +98,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
         assignedTo: assignedTo || undefined,
         notes: notes || undefined,
       });
-      toast.success(`Lead added — ${companyName}`);
+      toast.success(`Lead added — ${companyName || contactName}`);
       onClose();
     } catch {
       /* interceptor */
