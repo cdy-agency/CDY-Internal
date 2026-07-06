@@ -200,7 +200,7 @@ export function middleware(request: NextRequest): NextResponse {
       ([key, val]) => key.startsWith(prefix) && (val.canRead || val.canWrite),
     );
   } else {
-    const perm = payload.permissions[routeRule.feature];
+    const perm = payload.permissions[routeRule.feature || ''];
     allowed = routeRule.action === 'read' ? (perm?.canRead ?? false) : (perm?.canWrite ?? false);
   }
 
