@@ -19,6 +19,7 @@ interface SetupContext {
   clientName: string;
   leadId?: string;
   managerId?: string;
+  ventureId?: string;
 }
 
 @Injectable()
@@ -118,6 +119,7 @@ export class ClientServiceService {
         currency,
         notes: 'Auto-created from client registration. Linked to software project.',
         userId,
+        ventureId: ctx.ventureId,
       });
     }
 
@@ -163,6 +165,7 @@ export class ClientServiceService {
         currency,
         notes: 'Auto-created from client registration. Linked to branding project.',
         userId,
+        ventureId: ctx.ventureId,
       });
     }
 
@@ -258,6 +261,7 @@ export class ClientServiceService {
         currency,
         notes: 'Auto-created from client registration. Linked to influencer campaign.',
         userId,
+        ventureId: ctx.ventureId,
       });
     }
 
@@ -305,6 +309,7 @@ export class ClientServiceService {
         currency,
         notes: 'Auto-created from client registration. Linked to sales campaign.',
         userId,
+        ventureId: ctx.ventureId,
       });
     }
 
@@ -357,6 +362,7 @@ export class ClientServiceService {
         currency,
         notes: 'Auto-created from client registration.',
         userId,
+        ventureId: ctx.ventureId,
       });
     }
 
@@ -378,12 +384,14 @@ export class ClientServiceService {
     currency: string;
     notes: string;
     userId: string;
+    ventureId?: string;
   }): Promise<void> {
     const invoiceNumber = await this.invoiceNumberService.generate();
     await this.prisma.invoice.create({
       data: {
         invoiceNumber,
         clientId: data.clientId,
+        ventureId: data.ventureId ?? null,
         serviceType: data.serviceType,
         lineItems: [
           {

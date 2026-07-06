@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateLead, useSalesAgents } from '@/hooks/useCrm';
+import { useVentures } from '@/hooks/useVentures';
 import {
   calculateLeadScore,
   getScoreBand,
@@ -18,10 +19,9 @@ const SERVICE_OPTIONS = [
   { value: 'marketing', label: 'Marketing' },
   { value: 'software_dev', label: 'Software Dev' },
   { value: 'branding', label: 'Branding' },
-  { value: 'influencer', label: 'Influencer' },
+  { value: 'influencer_marketing', label: 'Influencer Marketing' },
   { value: 'sales_services', label: 'Sales Services' },
-  { value: 'tech', label: 'Tech' },
-  { value: 'other', label: 'Other' },
+  { value: 'general', label: 'General / Consulting' },
 ];
 
 const SOURCE_OPTIONS = Object.values(LeadSource);
@@ -33,13 +33,19 @@ interface AddLeadDrawerProps {
 
 export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Element | null {
   const { data: agents } = useSalesAgents();
+  const { data: ventures } = useVentures();
+  const activeVentures = (ventures ?? []).filter((v) => v.isActive);
   const createLead = useCreateLead();
+
+  const [leadType, setLeadType] = useState<'service' | 'venture'>('service');
+  const [contactType, setContactType] = useState<'COMPANY' | 'INDIVIDUAL'>('COMPANY');
   const [contactName, setContactName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('RW');
   const [serviceInterest, setServiceInterest] = useState('marketing');
+  const [ventureId, setVentureId] = useState('');
   const [source, setSource] = useState<LeadSource>(LeadSource.REFERRAL);
   const [estimatedValue, setEstimatedValue] = useState('');
   const [currency, setCurrency] = useState('RWF');
@@ -60,12 +66,15 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
 
   useEffect(() => {
     if (!open) {
+      setLeadType('service');
+      setContactType('COMPANY');
       setContactName('');
       setCompanyName('');
       setEmail('');
       setPhone('');
       setEstimatedValue('');
       setNotes('');
+      setVentureId('');
     }
   }, [open]);
 
@@ -74,12 +83,15 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
   async function handleSubmit(): Promise<void> {
     try {
       await createLead.mutateAsync({
+        leadType: contactType,
         contactName,
-        companyName,
+        companyName: contactType === 'COMPANY' ? companyName : undefined,
         email,
         phone: phone || undefined,
         country,
-        serviceInterest,
+        ...(leadType === 'service'
+          ? { serviceInterest }
+          : { ventureId: ventureId || undefined }),
         source,
         estimatedValue: estimatedValue ? Number(estimatedValue) : undefined,
         currency,
@@ -93,6 +105,13 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
     }
   }
 
+  const canSubmit =
+    !createLead.isPending &&
+    Boolean(contactName) &&
+    (contactType === 'INDIVIDUAL' || Boolean(companyName)) &&
+    Boolean(email) &&
+    (leadType === 'service' ? Boolean(serviceInterest) : Boolean(ventureId));
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} role="presentation" />
@@ -104,14 +123,75 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
           </button>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-6">
+
+          {/* Company / Person toggle */}
           <div>
-            <Label>Contact name</Label>
+            <Label>Contact type</Label>
+            <div className="mt-1 flex overflow-hidden rounded-md border border-cdy-navy-border">
+              <button
+                type="button"
+                onClick={() => setContactType('COMPANY')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  contactType === 'COMPANY'
+                    ? 'bg-cdy-red text-white'
+                    : 'bg-cdy-navy text-cdy-muted hover:text-cdy-white'
+                }`}
+              >
+                Company
+              </button>
+              <button
+                type="button"
+                onClick={() => setContactType('INDIVIDUAL')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  contactType === 'INDIVIDUAL'
+                    ? 'bg-cdy-red text-white'
+                    : 'bg-cdy-navy text-cdy-muted hover:text-cdy-white'
+                }`}
+              >
+                Person
+              </button>
+            </div>
+          </div>
+
+          {/* Lead type toggle */}
+          <div>
+            <Label>Lead type</Label>
+            <div className="mt-1 flex overflow-hidden rounded-md border border-cdy-navy-border">
+              <button
+                type="button"
+                onClick={() => setLeadType('service')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  leadType === 'service'
+                    ? 'bg-cdy-red text-white'
+                    : 'bg-cdy-navy text-cdy-muted hover:text-cdy-white'
+                }`}
+              >
+                Service
+              </button>
+              <button
+                type="button"
+                onClick={() => setLeadType('venture')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  leadType === 'venture'
+                    ? 'bg-cdy-red text-white'
+                    : 'bg-cdy-navy text-cdy-muted hover:text-cdy-white'
+                }`}
+              >
+                Venture
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Label>{contactType === 'INDIVIDUAL' ? 'Full name' : 'Contact name'}</Label>
             <Input value={contactName} onChange={(e) => setContactName(e.target.value)} className="mt-1" />
           </div>
-          <div>
-            <Label>Company name</Label>
-            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="mt-1" />
-          </div>
+          {contactType === 'COMPANY' && (
+            <div>
+              <Label>Company name</Label>
+              <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="mt-1" />
+            </div>
+          )}
           <div>
             <Label>Email</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" />
@@ -124,18 +204,36 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
             <Label>Country</Label>
             <Input value={country} onChange={(e) => setCountry(e.target.value)} className="mt-1" />
           </div>
-          <div>
-            <Label>Service interest</Label>
-            <select
-              value={serviceInterest}
-              onChange={(e) => setServiceInterest(e.target.value)}
-              className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
-            >
-              {SERVICE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
+
+          {leadType === 'service' ? (
+            <div>
+              <Label>Service interest</Label>
+              <select
+                value={serviceInterest}
+                onChange={(e) => setServiceInterest(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              >
+                {SERVICE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <Label>Venture</Label>
+              <select
+                value={ventureId}
+                onChange={(e) => setVentureId(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              >
+                <option value="">— Select venture —</option>
+                {activeVentures.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <Label>Lead source</Label>
             <select
@@ -144,7 +242,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
               className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
             >
               {SOURCE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt.replace('_', ' ')}</option>
+                <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
               ))}
             </select>
           </div>
@@ -198,7 +296,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button
             className="flex-1 bg-cdy-red hover:bg-cdy-red/90"
-            disabled={createLead.isPending || !contactName || !companyName || !email}
+            disabled={!canSubmit}
             onClick={() => void handleSubmit()}
           >
             {createLead.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Lead'}

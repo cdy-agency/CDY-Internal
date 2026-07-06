@@ -234,14 +234,16 @@ export function useMoveLeadStage() {
       leadId,
       stage,
       lostReason,
+      wonOutcome,
     }: {
       leadId: string;
       stage: PipelineStage;
       lostReason?: string;
+      wonOutcome?: 'invoice' | 'retainer';
     }) => {
       const res = await api.patch<ApiResponse<LeadRecord>>(
         `/crm/leads/${leadId}/stage`,
-        { stage, lostReason },
+        { stage, lostReason, wonOutcome },
       );
       return res.data.data;
     },

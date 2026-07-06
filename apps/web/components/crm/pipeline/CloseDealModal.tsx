@@ -6,6 +6,7 @@ import { PipelineStage } from '@cdy/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { FileText, RefreshCw } from 'lucide-react';
 
 interface CloseDealModalProps {
   open: boolean;
@@ -23,13 +24,20 @@ export function CloseDealModal({
   const moveStage = useMoveLeadStage();
   const { data: presetReasons } = useLostReasons();
   const [mode, setMode] = useState<'won' | 'lost'>('won');
+  const [wonOutcome, setWonOutcome] = useState<'invoice' | 'retainer' | ''>('');
   const [lostReason, setLostReason] = useState('');
   const [customReason, setCustomReason] = useState('');
 
   if (!open || !leadId) return null;
 
-  const resolvedLeadId = leadId;
   const reasons = presetReasons ?? [];
+
+  function reset() {
+    setMode('won');
+    setWonOutcome('');
+    setLostReason('');
+    setCustomReason('');
+  }
 
   async function confirm(): Promise<void> {
     const reason =
@@ -42,42 +50,87 @@ export function CloseDealModal({
     if (mode === 'lost' && !reason) return;
 
     await moveStage.mutateAsync({
-      leadId: resolvedLeadId,
-      stage:
-        mode === 'won' ? PipelineStage.CLOSED_WON : PipelineStage.CLOSED_LOST,
+      leadId,
+      stage: mode === 'won' ? PipelineStage.CLOSED_WON : PipelineStage.CLOSED_LOST,
       lostReason: reason,
+      wonOutcome: mode === 'won' ? (wonOutcome as 'invoice' | 'retainer') : undefined,
     });
 
     onSuccess?.();
     onClose();
-    setLostReason('');
-    setCustomReason('');
+    reset();
   }
+
+  const canConfirm =
+    !moveStage.isPending &&
+    (mode === 'won'
+      ? Boolean(wonOutcome)
+      : Boolean(lostReason === 'Other' ? customReason.trim() : lostReason));
+
+  const outcomeLink =
+    wonOutcome === 'retainer' ? '/finance/retainers' : '/finance/invoices';
+  const outcomeLinkLabel =
+    wonOutcome === 'retainer' ? 'Finance → Retainers' : 'Finance → Invoices';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
         <h2 className="text-lg font-semibold text-cdy-white">Close this lead?</h2>
+
+        {/* Won / Lost choice */}
         <div className="mt-4 space-y-3">
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="radio"
               checked={mode === 'won'}
-              onChange={() => setMode('won')}
+              onChange={() => { setMode('won'); setWonOutcome(''); }}
               className="mt-1"
             />
             <span>
               <span className="font-medium text-cdy-white">Closed Won</span>
               <span className="block text-sm text-cdy-muted">
-                This will create a draft invoice and calculate commission.
+                Converts lead to client and calculates commission.
               </span>
             </span>
           </label>
+
+          {/* Invoice / Retainer choice — only shown when Won is selected */}
+          {mode === 'won' && (
+            <div className="ml-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setWonOutcome('invoice')}
+                className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors ${
+                  wonOutcome === 'invoice'
+                    ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                    : 'border-cdy-navy-border bg-cdy-navy text-cdy-muted hover:border-cdy-red/50 hover:text-cdy-white'
+                }`}
+              >
+                <FileText className="h-5 w-5" />
+                <span className="font-medium">Invoice</span>
+                <span className="text-center text-xs opacity-75">One-time payment</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWonOutcome('retainer')}
+                className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors ${
+                  wonOutcome === 'retainer'
+                    ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                    : 'border-cdy-navy-border bg-cdy-navy text-cdy-muted hover:border-cdy-red/50 hover:text-cdy-white'
+                }`}
+              >
+                <RefreshCw className="h-5 w-5" />
+                <span className="font-medium">Retainer</span>
+                <span className="text-center text-xs opacity-75">Recurring contract</span>
+              </button>
+            </div>
+          )}
+
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="radio"
               checked={mode === 'lost'}
-              onChange={() => setMode('lost')}
+              onChange={() => { setMode('lost'); setWonOutcome(''); }}
               className="mt-1"
             />
             <span className="w-full">
@@ -92,9 +145,7 @@ export function CloseDealModal({
                     >
                       <option value="">Select reason...</option>
                       {reasons.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
+                        <option key={r} value={r}>{r}</option>
                       ))}
                     </select>
                   ) : (
@@ -116,27 +167,25 @@ export function CloseDealModal({
             </span>
           </label>
         </div>
+
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={() => { onClose(); reset(); }}>
             Cancel
           </Button>
           <Button
             className="bg-cdy-red hover:bg-cdy-red/90"
-            disabled={
-              moveStage.isPending ||
-              (mode === 'lost' &&
-                !(lostReason === 'Other' ? customReason.trim() : lostReason))
-            }
+            disabled={!canConfirm}
             onClick={() => void confirm()}
           >
-            Confirm
+            {moveStage.isPending ? 'Closing…' : 'Confirm'}
           </Button>
         </div>
-        {mode === 'won' && (
+
+        {mode === 'won' && wonOutcome && (
           <p className="mt-3 text-xs text-cdy-muted">
-            After confirm, review the draft invoice in{' '}
-            <Link href="/finance/invoices" className="text-cdy-red hover:underline">
-              Finance → Invoices
+            A draft {wonOutcome} will be created. Review it in{' '}
+            <Link href={outcomeLink} className="text-cdy-red hover:underline">
+              {outcomeLinkLabel}
             </Link>
           </p>
         )}

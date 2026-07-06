@@ -1261,12 +1261,15 @@ export enum ProposalStatus {
 
 export interface LeadRecord {
   id: string;
+  leadType: 'COMPANY' | 'INDIVIDUAL';
   contactName: string;
-  companyName: string;
+  companyName: string | null;
   email: string;
   phone: string | null;
   country: string;
   serviceInterest: string;
+  ventureId: string | null;
+  ventureName?: string | null;
   source: LeadSource;
   estimatedValue: number | null;
   currency: string;

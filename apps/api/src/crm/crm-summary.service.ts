@@ -148,7 +148,7 @@ export class CrmSummaryService {
         take: 10,
         orderBy: { performedAt: 'desc' },
         include: {
-          lead: { select: { companyName: true } },
+          lead: { select: { companyName: true, contactName: true } },
         },
       }),
       this.prisma.leadActivity.findMany({
@@ -157,7 +157,7 @@ export class CrmSummaryService {
           nextAction: { not: null },
           lead: { deletedAt: null },
         },
-        include: { lead: { select: { id: true, companyName: true } } },
+        include: { lead: { select: { id: true, companyName: true, contactName: true } } },
         orderBy: { nextActionDate: 'asc' },
         take: 10,
       }),
@@ -321,13 +321,13 @@ export class CrmSummaryService {
         type: activity.type,
         summary: activity.summary,
         performedAt: activity.performedAt.toISOString(),
-        companyName: activity.lead.companyName,
+        companyName: activity.lead.companyName ?? activity.lead.contactName,
         performedByName:
           performerMap.get(activity.performedBy) ?? 'Unknown',
       })),
       overdueFollowUps: overdueFollowUps.map((activity) => ({
         leadId: activity.lead.id,
-        companyName: activity.lead.companyName,
+        companyName: activity.lead.companyName ?? activity.lead.contactName,
         nextAction: activity.nextAction ?? '',
         nextActionDate: activity.nextActionDate?.toISOString() ?? '',
       })),

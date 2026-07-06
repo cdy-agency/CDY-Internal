@@ -87,7 +87,7 @@ export class LeadsService {
     const qualityScore = this.leadScoringService.calculate({
       source: dto.source,
       estimatedValue: dto.estimatedValue,
-      serviceInterest: dto.serviceInterest,
+      serviceInterest: dto.serviceInterest ?? '',
       hasPhone: Boolean(dto.phone),
       hasEmail: Boolean(dto.email),
       weights,
@@ -95,12 +95,14 @@ export class LeadsService {
 
     const lead = await this.prisma.lead.create({
       data: {
+        leadType: dto.leadType ?? ClientType.COMPANY,
         contactName: dto.contactName,
-        companyName: dto.companyName,
+        companyName: dto.companyName ?? null,
         email: dto.email,
         phone: dto.phone,
         country: dto.country ?? 'RW',
-        serviceInterest: dto.serviceInterest,
+        serviceInterest: dto.serviceInterest ?? '',
+        ventureId: dto.ventureId ?? null,
         source: dto.source,
         estimatedValue: dto.estimatedValue,
         currency: dto.currency ?? 'RWF',
@@ -212,6 +214,7 @@ export class LeadsService {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
+        venture: { select: { id: true, name: true } },
       },
       orderBy: [{ updatedAt: 'desc' }],
     });
@@ -224,6 +227,7 @@ export class LeadsService {
         activities: { orderBy: { performedAt: 'desc' } },
         proposals: { orderBy: { createdAt: 'desc' } },
         client: true,
+        venture: { select: { id: true, name: true } },
       },
     });
 
@@ -406,6 +410,12 @@ export class LeadsService {
       );
     }
 
+    if (dto.stage === PipelineStage.CLOSED_WON && !dto.wonOutcome) {
+      throw new BadRequestException(
+        'Please choose whether to create an invoice or a retainer for this deal',
+      );
+    }
+
     if (dto.stage === PipelineStage.CLOSED_LOST && dto.lostReason) {
       const presets = await this.crmSettingsService.getLostReasons();
       if (
@@ -453,7 +463,7 @@ export class LeadsService {
 
     if (dto.stage === PipelineStage.CLOSED_WON) {
       setImmediate(() => {
-        void this.handleDealClosed(updatedLead, userId).catch((err: unknown) => {
+        void this.handleDealClosed(updatedLead, userId, dto.wonOutcome ?? 'invoice').catch((err: unknown) => {
           this.logger.error(
             `Deal closed triggers failed for lead ${id}`,
             String(err),
@@ -525,15 +535,18 @@ export class LeadsService {
     });
   }
 
-  private async handleDealClosed(lead: Lead, userId: string): Promise<void> {
+  private async handleDealClosed(
+    lead: Lead,
+    userId: string,
+    wonOutcome: 'invoice' | 'retainer',
+  ): Promise<void> {
+    const companyMatch = lead.companyName
+      ? [{ companyName: { equals: lead.companyName, mode: 'insensitive' as const } }]
+      : [];
+
     let client = await this.prisma.client.findFirst({
       where: {
-        OR: [
-          { email: lead.email },
-          {
-            companyName: { equals: lead.companyName, mode: 'insensitive' },
-          },
-        ],
+        OR: [{ email: lead.email }, ...companyMatch],
         deletedAt: null,
       },
     });
@@ -541,8 +554,9 @@ export class LeadsService {
     if (!client) {
       client = await this.prisma.client.create({
         data: {
-          clientType: ClientType.COMPANY,
-          companyName: lead.companyName,
+          clientType: lead.leadType,
+          // For individuals, use contactName as the display name when no companyName
+          companyName: lead.companyName ?? lead.contactName,
           contactName: lead.contactName,
           email: lead.email,
           phone: lead.phone,
@@ -567,36 +581,86 @@ export class LeadsService {
         agentId: lead.assignedTo,
         dealId: lead.id,
         dealValue: Number(lead.estimatedValue),
-        serviceType: lead.serviceInterest,
+        serviceType: lead.serviceInterest || 'general',
       });
       this.logger.log(`Commission triggered for agent ${lead.assignedTo}`);
     }
 
-    // Map lead serviceInterest to ClientService enum
-    const clientService =
-      LeadsService.SERVICE_MAP[lead.serviceInterest?.toLowerCase()] ??
-      ClientServiceEnum.GENERAL;
+    if (wonOutcome === 'retainer') {
+      // User chose to create a retainer — build a draft RetainerContract
+      const now = new Date();
+      const nextBillingDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      await this.prisma.retainerContract.create({
+        data: {
+          clientId: client.id,
+          ventureId: lead.ventureId ?? null,
+          serviceName: lead.serviceInterest || 'Retainer Service',
+          amount: lead.estimatedValue ?? 0,
+          currency: lead.currency ?? 'USD',
+          billingDayOfMonth: 1,
+          startDate: now,
+          nextBillingDate,
+          createdBy: userId,
+        },
+      });
+      this.logger.log(`Draft retainer created for client ${client.id}`);
 
-    // Update client with service info from the lead
-    await this.prisma.client.update({
-      where: { id: client.id },
-      data: {
-        primaryService: clientService,
-        serviceValue: lead.estimatedValue,
-        serviceCurrency: lead.currency ?? 'USD',
-      },
-    });
+      // Update client service info
+      await this.prisma.client.update({
+        where: { id: client.id },
+        data: {
+          ...(lead.ventureId ? { ventureId: lead.ventureId } : {}),
+          serviceValue: lead.estimatedValue,
+          serviceCurrency: lead.currency ?? 'USD',
+        },
+      });
+    } else if (lead.ventureId) {
+      // Venture-based invoice lead
+      await this.prisma.client.update({
+        where: { id: client.id },
+        data: {
+          ventureId: lead.ventureId,
+          serviceValue: lead.estimatedValue,
+          serviceCurrency: lead.currency ?? 'USD',
+        },
+      });
 
-    // Auto-create service project/campaign in the right module
-    // (also creates the draft invoice — no duplicate invoice creation here)
-    await this.clientServiceService.setupClientService(
-      client.id,
-      clientService,
-      lead.estimatedValue ? Number(lead.estimatedValue) : null,
-      lead.currency ?? 'USD',
-      userId,
-      { clientName: getClientDisplayName(client), leadId: lead.id },
-    );
+      await this.clientServiceService.setupClientService(
+        client.id,
+        ClientServiceEnum.GENERAL,
+        lead.estimatedValue ? Number(lead.estimatedValue) : null,
+        lead.currency ?? 'USD',
+        userId,
+        {
+          clientName: getClientDisplayName(client),
+          leadId: lead.id,
+          ventureId: lead.ventureId,
+        },
+      );
+    } else {
+      // Service-based invoice lead
+      const clientService =
+        LeadsService.SERVICE_MAP[lead.serviceInterest?.toLowerCase() ?? ''] ??
+        ClientServiceEnum.GENERAL;
+
+      await this.prisma.client.update({
+        where: { id: client.id },
+        data: {
+          primaryService: clientService,
+          serviceValue: lead.estimatedValue,
+          serviceCurrency: lead.currency ?? 'USD',
+        },
+      });
+
+      await this.clientServiceService.setupClientService(
+        client.id,
+        clientService,
+        lead.estimatedValue ? Number(lead.estimatedValue) : null,
+        lead.currency ?? 'USD',
+        userId,
+        { clientName: getClientDisplayName(client), leadId: lead.id },
+      );
+    }
 
     if (lead.assignedTo) {
       await this.notificationsService.createNotification({

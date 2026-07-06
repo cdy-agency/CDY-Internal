@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
 import { PipelineStage } from '@prisma/client';
 
 export class MoveStageDto {
@@ -8,4 +8,8 @@ export class MoveStageDto {
   @IsOptional()
   @IsString()
   lostReason?: string;
+
+  @IsOptional()
+  @IsIn(['invoice', 'retainer'])
+  wonOutcome?: 'invoice' | 'retainer';
 }

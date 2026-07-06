@@ -8,16 +8,20 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { LeadSource } from '@prisma/client';
+import { ClientType, LeadSource } from '@prisma/client';
 
 export class CreateLeadDto {
+  @IsOptional()
+  @IsEnum(ClientType)
+  leadType?: ClientType;
+
   @IsString()
   @IsNotEmpty()
   contactName!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  companyName!: string;
+  companyName?: string;
 
   @IsEmail()
   email!: string;
@@ -30,9 +34,13 @@ export class CreateLeadDto {
   @IsString()
   country?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  serviceInterest!: string;
+  serviceInterest?: string;
+
+  @IsOptional()
+  @IsString()
+  ventureId?: string;
 
   @IsEnum(LeadSource)
   source!: LeadSource;
