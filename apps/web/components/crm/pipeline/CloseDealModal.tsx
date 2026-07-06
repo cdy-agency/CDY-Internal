@@ -50,7 +50,7 @@ export function CloseDealModal({
     if (mode === 'lost' && !reason) return;
 
     await moveStage.mutateAsync({
-      leadId,
+      leadId: leadId as string,
       stage: mode === 'won' ? PipelineStage.CLOSED_WON : PipelineStage.CLOSED_LOST,
       lostReason: reason,
       wonOutcome: mode === 'won' ? (wonOutcome as 'invoice' | 'retainer') : undefined,
