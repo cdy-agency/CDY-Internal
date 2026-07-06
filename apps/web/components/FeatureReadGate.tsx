@@ -16,7 +16,7 @@ export function FeatureReadGate({
   featureName,
   children,
 }: FeatureReadGateProps): JSX.Element {
-  const { canRead, isLoading } = usePermissions();
+  const { canRead, canWrite, isLoading } = usePermissions();
 
   if (isLoading) {
     return (
@@ -27,7 +27,9 @@ export function FeatureReadGate({
     );
   }
 
-  if (!canRead(feature)) {
+  // Allow access if the user has at least one permission (read OR write).
+  // Individual sections that require write are still guarded by PermissionGate.
+  if (!canRead(feature) && !canWrite(feature)) {
     return <AccessDenied feature={featureName} />;
   }
 

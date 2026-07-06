@@ -895,7 +895,10 @@ export interface PaymentPlanInstalment {
 export interface PaymentPlanRecord {
   id: string;
   invoiceId: string;
+  clientId: string;
+  clientName: string | null;
   totalAmount: number;
+  remainingAmount: number;
   status: PaymentPlanStatus | string;
   createdAt: string;
   instalments: PaymentPlanInstalment[];

@@ -268,7 +268,11 @@ export class InvoicesService {
       payments: invoice.payments.map((p) => this.serializePayment(p)),
       creditNotes: invoice.creditNotes.map((cn) => this.serializeCreditNote(cn)),
       paymentPlan: invoice.paymentPlan
-        ? this.serializePaymentPlan(invoice.paymentPlan)
+        ? this.serializePaymentPlan(
+            invoice.paymentPlan,
+            invoice.clientId,
+            invoice.client?.companyName ?? null,
+          )
         : null,
     };
   }
@@ -639,26 +643,37 @@ export class InvoicesService {
     };
   }
 
-  private serializePaymentPlan(plan: {
-    id: string;
-    invoiceId: string;
-    totalAmount: Prisma.Decimal;
-    status: string;
-    createdAt: Date;
-    instalments: {
+  private serializePaymentPlan(
+    plan: {
       id: string;
-      instalmentNumber: number;
-      amount: Prisma.Decimal;
-      dueDate: Date;
+      invoiceId: string;
+      totalAmount: Prisma.Decimal;
       status: string;
-      paidAt: Date | null;
-      paymentId: string | null;
-    }[];
-  }) {
+      createdAt: Date;
+      instalments: {
+        id: string;
+        instalmentNumber: number;
+        amount: Prisma.Decimal;
+        dueDate: Date;
+        status: string;
+        paidAt: Date | null;
+        paymentId: string | null;
+      }[];
+    },
+    clientId: string,
+    clientName: string | null,
+  ) {
+    const paidTotal = plan.instalments
+      .filter((i) => i.status === 'PAID')
+      .reduce((s, i) => s + Number(i.amount), 0);
+
     return {
       id: plan.id,
       invoiceId: plan.invoiceId,
+      clientId,
+      clientName,
       totalAmount: Number(plan.totalAmount),
+      remainingAmount: Number((Number(plan.totalAmount) - paidTotal).toFixed(2)),
       status: plan.status,
       createdAt: plan.createdAt.toISOString(),
       instalments: plan.instalments.map((item) => ({

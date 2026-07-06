@@ -92,26 +92,11 @@ export class PaymentPlansService {
             })),
           },
         },
-        include: { instalments: { orderBy: { instalmentNumber: 'asc' } } },
+        include: {
+          instalments: { orderBy: { instalmentNumber: 'asc' } },
+          invoice: { include: { client: { select: { id: true, companyName: true } } } },
+        },
       });
-
-      // Create one Bill per instalment so it shows up in bills management
-      await Promise.all(
-        created.instalments.map((item) =>
-          tx.bill.create({
-            data: {
-              vendorName: `Instalment ${item.instalmentNumber} — ${invoice.invoiceNumber}`,
-              category: 'Payment Plan',
-              amount: item.amount,
-              currency: invoice.currency,
-              dueDate: item.dueDate,
-              instalmentId: item.id,
-              createdBy: userId,
-              notes: `Auto-created for payment plan instalment ${item.instalmentNumber}`,
-            },
-          }),
-        ),
-      );
 
       return created;
     });
@@ -125,6 +110,7 @@ export class PaymentPlansService {
       where: { invoiceId },
       include: {
         instalments: { orderBy: { instalmentNumber: 'asc' } },
+        invoice: { include: { client: { select: { id: true, companyName: true } } } },
       },
     });
     if (!plan) return null;
@@ -224,7 +210,12 @@ export class PaymentPlansService {
   }
 
   private serialize(
-    plan: Prisma.PaymentPlanGetPayload<{ include: { instalments: true } }>,
+    plan: Prisma.PaymentPlanGetPayload<{
+      include: {
+        instalments: true;
+        invoice: { include: { client: { select: { id: true; companyName: true } } } };
+      };
+    }>,
   ) {
     const paidTotal = plan.instalments
       .filter((i) => i.status === InstalmentStatus.PAID)
@@ -233,6 +224,8 @@ export class PaymentPlansService {
     return {
       id: plan.id,
       invoiceId: plan.invoiceId,
+      clientId: plan.invoice.clientId,
+      clientName: plan.invoice.client?.companyName ?? null,
       totalAmount: Number(plan.totalAmount),
       remainingAmount: Number(
         (Number(plan.totalAmount) - paidTotal).toFixed(2),

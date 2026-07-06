@@ -212,7 +212,7 @@ export default function InvoicesPage(): JSX.Element {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-cdy-white">
-                        {invoice.client?.companyName ?? invoice.clientId}
+                        {invoice.client?.companyName ?? invoice.client?.contactName ?? invoice.clientId}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-cdy-white">
                         {formatCurrency(invoice.total, invoice.currency)}

@@ -54,11 +54,15 @@ const PROTECTED_PREFIXES = [
   '/marketing', '/software', '/branding', '/influencer', '/sales', '/ceo',
 ];
 
-const ROUTE_PERMISSIONS: Array<{
-  pattern: RegExp;
-  feature: string;
-  action: 'read' | 'write';
-}> = [
+// A rule with `module` grants access if the user has ANY read or write permission
+// under that module prefix (e.g. module:'hr' matches hr.employees, hr.attendance, …).
+// A rule with `feature + action` requires that exact permission.
+type RouteRule =
+  | { pattern: RegExp; module: string; feature?: never; action?: never }
+  | { pattern: RegExp; feature: string; action: 'read' | 'write'; module?: never };
+
+const ROUTE_PERMISSIONS: RouteRule[] = [
+  // ── CRM ──────────────────────────────────────────────────────────────
   { pattern: /^\/crm\/pipeline/, feature: 'crm.pipeline', action: 'read' },
   { pattern: /^\/crm\/leads/, feature: 'crm.leads', action: 'read' },
   { pattern: /^\/crm\/proposals/, feature: 'crm.proposals', action: 'read' },
@@ -66,7 +70,9 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/crm\/reports/, feature: 'crm.reports', action: 'read' },
   { pattern: /^\/crm\/settings/, feature: 'crm.reports', action: 'read' },
   { pattern: /^\/crm\/audit/, feature: 'crm.reports', action: 'read' },
-  { pattern: /^\/crm/, feature: 'crm.pipeline', action: 'read' },
+  { pattern: /^\/crm/, module: 'crm' },                         // any crm.* permission
+
+  // ── HR ───────────────────────────────────────────────────────────────
   { pattern: /^\/hr\/performance\/my/, feature: 'hr.attendance', action: 'read' },
   { pattern: /^\/hr\/performance\/[^/]+$/, feature: 'hr.attendance', action: 'read' },
   { pattern: /^\/hr\/performance$/, feature: 'hr.performance', action: 'read' },
@@ -79,7 +85,9 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/hr\/attendance\/my/, feature: 'hr.attendance', action: 'write' },
   { pattern: /^\/hr\/attendance/, feature: 'hr.attendance', action: 'read' },
   { pattern: /^\/hr\/settings/, feature: 'hr.settings', action: 'read' },
-  { pattern: /^\/hr/, feature: 'hr.employees', action: 'read' },
+  { pattern: /^\/hr/, module: 'hr' },                           // any hr.* permission
+
+  // ── Projects ─────────────────────────────────────────────────────────
   { pattern: /^\/projects\/workload/, feature: 'projects.reports', action: 'read' },
   { pattern: /^\/projects\/reports/, feature: 'projects.reports', action: 'read' },
   { pattern: /^\/projects\/my/, feature: 'projects.own', action: 'read' },
@@ -88,7 +96,9 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/projects\/[^/]+\/approvals/, feature: 'projects.approvals', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/status-report/, feature: 'projects.all', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/milestones/, feature: 'projects.all', action: 'read' },
-  { pattern: /^\/projects/, feature: 'projects.all', action: 'read' },
+  { pattern: /^\/projects/, module: 'projects' },               // any projects.* permission
+
+  // ── Finance ──────────────────────────────────────────────────────────
   { pattern: /^\/finance\/invoices/, feature: 'finance.invoices', action: 'read' },
   { pattern: /^\/finance\/payments/, feature: 'finance.payments', action: 'read' },
   { pattern: /^\/finance\/expenses/, feature: 'finance.expenses', action: 'read' },
@@ -104,19 +114,23 @@ const ROUTE_PERMISSIONS: Array<{
   { pattern: /^\/finance\/reconciliation/, feature: 'finance.reconciliation', action: 'read' },
   { pattern: /^\/finance\/audit/, feature: 'finance.audit', action: 'read' },
   { pattern: /^\/finance\/settings/, feature: 'finance.settings', action: 'read' },
-  { pattern: /^\/finance/, feature: 'finance.dashboard', action: 'read' },
+  { pattern: /^\/finance/, module: 'finance' },                 // any finance.* permission
+
+  // ── IT ───────────────────────────────────────────────────────────────
   { pattern: /^\/it\/users\/new/, feature: 'it.users', action: 'write' },
   { pattern: /^\/it\/roles\/new/, feature: 'it.roles', action: 'write' },
-  { pattern: /^\/it/, feature: 'it.users', action: 'read' },
+  { pattern: /^\/it/, module: 'it' },                           // any it.* permission
+
+  // ── Other modules ─────────────────────────────────────────────────────
   { pattern: /^\/marketing\/[^/]+/, feature: 'marketing.content', action: 'read' },
-  { pattern: /^\/marketing/, feature: 'marketing.content', action: 'read' },
+  { pattern: /^\/marketing/, module: 'marketing' },
   { pattern: /^\/software\/[^/]+/, feature: 'software.projects', action: 'read' },
-  { pattern: /^\/software/, feature: 'software.projects', action: 'read' },
+  { pattern: /^\/software/, module: 'software' },
   { pattern: /^\/branding\/[^/]+/, feature: 'branding.projects', action: 'read' },
-  { pattern: /^\/branding/, feature: 'branding.projects', action: 'read' },
-  { pattern: /^\/influencer/, feature: 'influencer.campaigns', action: 'read' },
+  { pattern: /^\/branding/, module: 'branding' },
+  { pattern: /^\/influencer/, module: 'influencer' },
   { pattern: /^\/sales\/my/, feature: 'sales.reporting', action: 'read' },
-  { pattern: /^\/sales/, feature: 'sales.campaigns', action: 'read' },
+  { pattern: /^\/sales/, module: 'sales' },
   { pattern: /^\/ceo/, feature: 'ceo.dashboard', action: 'read' },
 ];
 
@@ -177,9 +191,18 @@ export function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
-  const permission = payload.permissions[routeRule.feature];
-  const allowed =
-    routeRule.action === 'read' ? permission?.canRead : permission?.canWrite;
+  let allowed: boolean;
+  if (routeRule.module) {
+    // Module-level catch-all: grant access if the user has ANY read or write
+    // permission under this module (e.g. hr.attendance satisfies module:'hr')
+    const prefix = routeRule.module + '.';
+    allowed = Object.entries(payload.permissions).some(
+      ([key, val]) => key.startsWith(prefix) && (val.canRead || val.canWrite),
+    );
+  } else {
+    const perm = payload.permissions[routeRule.feature];
+    allowed = routeRule.action === 'read' ? (perm?.canRead ?? false) : (perm?.canWrite ?? false);
+  }
 
   if (!allowed) {
     const homeModule = payload.homeModule ?? '/finance';
