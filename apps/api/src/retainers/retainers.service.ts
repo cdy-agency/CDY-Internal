@@ -360,7 +360,7 @@ export class RetainersService {
   async getMRRSummary() {
     const activeRetainers = await this.prisma.retainerContract.findMany({
       where: { status: RetainerStatus.ACTIVE },
-      include: { taxRate: true },
+      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
     });
 
     const mrrByCurrency = activeRetainers.reduce<Record<string, number>>(
