@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import { RetainerStatus, type RetainerRecord } from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
+import { StartRetainerModal } from '@/components/finance/retainers/StartRetainerModal';
 
 function StatusBadge({ status }: { status: RetainerStatus }): JSX.Element {
   const map: Record<RetainerStatus, { label: string; className: string }> = {
