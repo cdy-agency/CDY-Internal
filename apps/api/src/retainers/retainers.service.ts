@@ -414,11 +414,16 @@ export class RetainersService {
   private serializeRetainer(
     retainer: Prisma.RetainerContractGetPayload<{
       include: { taxRate: true };
-    }> & { venture?: { id: string; name: string } | null },
+    }> & {
+      venture?: { id: string; name: string } | null;
+      client?: { id: string; companyName: string | null } | null;
+    },
   ) {
     return {
       id: retainer.id,
+
       clientId: retainer.clientId,
+      clientName: retainer.client?.companyName ?? null,
       ventureId: retainer.ventureId ?? null,
       ventureName: retainer.venture?.name ?? null,
       serviceName: retainer.serviceName,
