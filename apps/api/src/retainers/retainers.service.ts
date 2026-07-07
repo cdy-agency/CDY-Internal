@@ -360,7 +360,7 @@ export class RetainersService {
   async getMRRSummary() {
     const activeRetainers = await this.prisma.retainerContract.findMany({
       where: { status: RetainerStatus.ACTIVE },
-      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
+      include: { taxRate: true, },
     });
 
     const mrrByCurrency = activeRetainers.reduce<Record<string, number>>(
@@ -383,7 +383,7 @@ export class RetainersService {
         status: RetainerStatus.ACTIVE,
         endDate: { lte: thirtyDaysFromNow, not: null },
       },
-      include: { taxRate: true },
+      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
     });
 
     const ninetyDaysAgo = subDays(new Date(), 90);
@@ -393,7 +393,7 @@ export class RetainersService {
         endedAt: { gte: ninetyDaysAgo },
       },
       orderBy: { endedAt: 'desc' },
-      include: { taxRate: true },
+      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
     });
 
     const pausedCount = await this.prisma.retainerContract.count({
