@@ -36,6 +36,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [amendOpen, setAmendOpen] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -112,10 +113,15 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                       <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
                     </>
                   )}
-                  {retainer.status === RetainerStatus.PAUSED && (
+                  {retainer.status === RetainerStatus.PAUSED || retainer.status === RetainerStatus.ENDED && (
                     <Button variant="outline" size="sm" onClick={resume} disabled={actionLoading}>
                       {actionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Resume'}
                     </Button>
+                  )}
+                  {retainer.status === RetainerStatus.DRAFT && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setStartOpen(true)}>Start Contract</Button>
+                    </>
                   )}
                 </div>
               </PermissionGate>
@@ -125,6 +131,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
       )}
       <AmendRetainerModal open={amendOpen} onClose={() => setAmendOpen(false)} retainer={retainer} />
       <ExtendRetainerDrawer open={extendOpen} onClose={() => setExtendOpen(false)} retainer={retainer} />
+      <StartRetainerModal open={startOpen} onClose={() => setStartOpen(false)} retainer={retainer} />
     </Fragment>
   );
 }

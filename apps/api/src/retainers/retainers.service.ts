@@ -166,6 +166,26 @@ export class RetainersService {
     return this.serializeRetainer(updated);
   }
 
+  async start(id: string) {
+    const retainer = await this.prisma.retainerContract.findUnique({
+      where: { id },
+    });
+    if (!retainer) throw new NotFoundException();
+    if (retainer.status !== RetainerStatus.DRAFT) {
+      throw new BadRequestException('Only draft retainers can be started');
+    }
+
+    const updated = await this.prisma.retainerContract.update({
+      where: { id },
+      data: {
+        status: RetainerStatus.ACTIVE,
+      },
+      include: { taxRate: true },
+    });
+
+    return this.serializeRetainer(updated);
+  }
+
   async resume(id: string) {
     const retainer = await this.prisma.retainerContract.findUnique({
       where: { id },

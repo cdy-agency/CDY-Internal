@@ -135,6 +135,15 @@ export class RetainersController {
     return { data, message: 'Retainer extended', statusCode: HttpStatus.OK };
   }
 
+  @Post(':id/start')
+  @RequirePermission('finance.retainers', 'write')
+  @ApiOperation({ summary: 'Start retainer contract' })
+  async start(@Param('id') id: string) {
+    const data = await this.retainersService.start(id);
+    return { data, message: 'Retainer started', statusCode: HttpStatus.OK };
+  }
+  
+
   @Get(':id/extensions')
   @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'List extension history for a retainer' })
