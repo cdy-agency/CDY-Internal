@@ -2,10 +2,12 @@ import {
   Controller,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { DeliverablesService } from './deliverables.service';
 import { CreateDeliverableDto } from './dto/create-deliverable.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -49,5 +51,13 @@ export class DeliverablesController {
   async markMissed(@Param('id') id: string) {
     const data = await this.deliverablesService.markMissed(id);
     return { data, message: 'Deliverable marked missed', statusCode: 200 };
+  }
+
+  @Delete('deliverables/:id')
+  @RequirePermission('influencer.campaigns', 'write')
+  @ApiOperation({ summary: 'Soft-delete deliverable' })
+  async remove(@Param('id') id: string) {
+    const data = await this.deliverablesService.remove(id);
+    return { data, message: 'Deliverable deleted', statusCode: 200 };
   }
 }

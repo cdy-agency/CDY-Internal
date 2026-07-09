@@ -123,6 +123,34 @@ export class SprintsService {
     });
   }
 
+  async remove(sprintId: string): Promise<{ message: string }> {
+    const sprint = await this.prisma.devSprint.findUnique({
+      where: { id: sprintId },
+    });
+    if (!sprint) throw new NotFoundException('Sprint not found');
+
+    if (sprint.status === SprintStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Cannot delete an active sprint. Complete or skip it first.',
+      );
+    }
+
+    await this.prisma.devSprint.delete({ where: { id: sprintId } });
+
+    return { message: 'Sprint deleted' };
+  }
+
+  async removeItem(itemId: string): Promise<{ message: string }> {
+    const item = await this.prisma.sprintItem.findUnique({
+      where: { id: itemId },
+    });
+    if (!item) throw new NotFoundException('Sprint item not found');
+
+    await this.prisma.sprintItem.delete({ where: { id: itemId } });
+
+    return { message: 'Sprint item deleted' };
+  }
+
   async getSprintProgress(sprintId: string) {
     const items = await this.prisma.sprintItem.findMany({
       where: { sprintId },

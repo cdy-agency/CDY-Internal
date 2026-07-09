@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Request,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
 import { BrandingProjectsService } from './branding-projects.service';
 import { CreateBrandingProjectDto } from './dto/create-branding-project.dto';
@@ -59,5 +61,24 @@ export class BrandingProjectsController {
   async markDelivered(@Param('id') id: string, @Request() req: { user: { sub: string } }) {
     const data = await this.service.markDelivered(id, req.user.sub);
     return { data, message: 'Project marked delivered', statusCode: 200 };
+  }
+
+  @Delete(':id')
+  @RequirePermission('branding.projects', 'write')
+  @ApiOperation({ summary: 'Soft-delete branding project' })
+  async remove(@Param('id') id: string) {
+    const data = await this.service.remove(id);
+    return { data, message: data.message, statusCode: 200 };
+  }
+
+  @Delete(':id/scope/:scopeItemId')
+  @RequirePermission('branding.projects', 'write')
+  @ApiOperation({ summary: 'Soft-delete branding scope item' })
+  async removeScopeItem(
+    @Param('id') id: string,
+    @Param('scopeItemId') scopeItemId: string,
+  ) {
+    const data = await this.service.removeScopeItem(id, scopeItemId);
+    return { data, message: data.message, statusCode: 200 };
   }
 }

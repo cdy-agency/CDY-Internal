@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SprintsService } from './sprints.service';
 import {
   CreateDevSprintDto,
@@ -84,5 +85,21 @@ export class SprintsController {
   ) {
     const data = await this.sprintsService.updateItemStatus(itemId, dto.status);
     return { data, message: 'Item status updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':sprintId')
+  @RequirePermission('software.delivery', 'write')
+  @ApiOperation({ summary: 'Soft-delete sprint' })
+  async remove(@Param('sprintId') sprintId: string) {
+    const data = await this.sprintsService.remove(sprintId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':sprintId/items/:itemId')
+  @RequirePermission('software.delivery', 'write')
+  @ApiOperation({ summary: 'Soft-delete sprint item' })
+  async removeItem(@Param('itemId') itemId: string) {
+    const data = await this.sprintsService.removeItem(itemId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -41,5 +42,17 @@ export class OnboardingController {
       user.sub,
     );
     return { data, message: 'Item marked complete', statusCode: HttpStatus.OK };
+  }
+
+  @Delete()
+  @RequirePermission('hr.employees', 'write')
+  @ApiOperation({ summary: 'Soft-delete employee onboarding checklist' })
+  async remove(@Param('id') id: string) {
+    const data = await this.onboardingService.remove(id);
+    return {
+      data,
+      message: 'Onboarding checklist deleted',
+      statusCode: HttpStatus.OK,
+    };
   }
 }

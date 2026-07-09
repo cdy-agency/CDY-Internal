@@ -100,4 +100,12 @@ export class TaxController {
     const data = await this.taxService.findAllRemittances();
     return { data, message: 'Remittances retrieved', statusCode: HttpStatus.OK };
   }
+
+  @Delete('remittances/:id')
+  @RequirePermission('finance.tax', 'write')
+  @ApiOperation({ summary: 'Soft-delete tax remittance' })
+  async removeRemittance(@Param('id') id: string) {
+    const data = await this.taxService.removeRemittance(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
+  }
 }

@@ -8,7 +8,6 @@ import {
 import {
   CreditNote,
   CreditNoteStatus,
-  Invoice,
   InvoiceStatus,
   Prisma,
 } from '@prisma/client';
@@ -196,6 +195,37 @@ export class CreditNotesService {
         total: Number(creditNote.invoice.total),
       },
     };
+  }
+
+  async remove(
+    id: string,
+    auditCtx: AuditContext,
+  ): Promise<{ message: string }> {
+    const creditNote = await this.prisma.creditNote.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!creditNote) {
+      throw new NotFoundException('Credit note not found');
+    }
+
+    if (creditNote.status === CreditNoteStatus.REFUND_PAID) {
+      throw new BadRequestException(
+        'Credit notes with a paid refund cannot be deleted',
+      );
+    }
+
+    await this.prisma.creditNote.delete({ where: { id } });
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'credit_note.deleted',
+      entityType: 'CreditNote',
+      entityId: id,
+      previousValue: this.serialize(creditNote),
+    });
+
+    return { message: 'Credit note deleted' };
   }
 
   async generatePdf(id: string): Promise<{ buffer: Buffer; number: string }> {

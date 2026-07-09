@@ -62,4 +62,15 @@ export class DeliverablesService {
       data: { status: DeliverableStatus.MISSED, updatedAt: new Date() },
     });
   }
+
+  async remove(id: string) {
+    const deliverable = await this.prisma.deliverable.findUnique({
+      where: { id },
+    });
+    if (!deliverable) {
+      throw new NotFoundException('Deliverable not found');
+    }
+    await this.prisma.deliverable.delete({ where: { id } });
+    return { message: 'Deliverable deleted' };
+  }
 }

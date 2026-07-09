@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Delete, Get, HttpStatus, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
 import { ProjectReportsService } from './project-reports.service';
@@ -24,4 +24,11 @@ export class ProjectReportsController {
     };
   }
 
+  @Delete(':id')
+  @RequirePermission('projects.reports', 'write')
+  @ApiOperation({ summary: 'Soft-delete project report' })
+  async remove(@Param('id') id: string) {
+    const data = await this.projectReportsService.remove(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
+  }
 }

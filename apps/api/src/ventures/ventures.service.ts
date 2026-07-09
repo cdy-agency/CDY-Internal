@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVentureDto } from './dto/create-venture.dto';
@@ -78,6 +82,17 @@ export class VenturesService {
       where: { id },
       data: { isActive: false },
     });
+  }
+
+  async remove(id: string) {
+    const venture = await this.findOne(id);
+    if (venture.isActive) {
+      throw new BadRequestException(
+        'Venture must be deactivated before it can be deleted',
+      );
+    }
+    await this.prisma.venture.delete({ where: { id } });
+    return { message: 'Venture deleted' };
   }
 
   async getSummary(

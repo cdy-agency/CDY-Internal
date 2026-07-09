@@ -185,4 +185,15 @@ export class CampaignsService {
 
     return { totals, byAgent };
   }
+
+  async remove(id: string) {
+    const campaign = await this.prisma.salesCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+    await this.prisma.salesCampaign.delete({ where: { id } });
+    return { message: 'Campaign deleted' };
+  }
 }

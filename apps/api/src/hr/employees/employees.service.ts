@@ -315,6 +315,42 @@ export class EmployeesService {
     return this.serializeEmployee(updated);
   }
 
+  async remove(id: string, auditCtx?: AuditContext) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    const activeReports = await this.prisma.employee.count({
+      where: { managerId: id },
+    });
+    if (activeReports > 0) {
+      throw new BadRequestException(
+        'Cannot delete an employee who is still the manager of active direct reports. Reassign those reports first.',
+      );
+    }
+
+    await this.prisma.employee.delete({ where: { id } });
+
+    if (auditCtx) {
+      this.hrAuditService.log({
+        userId: auditCtx.userId,
+        userEmail: auditCtx.userEmail,
+        action: 'employee.deleted',
+        entityType: 'Employee',
+        entityId: id,
+        previousValue: {
+          employeeCode: employee.employeeCode,
+          email: employee.email,
+        },
+        ipAddress: auditCtx.ipAddress,
+      });
+    }
+
+    await this.hrSummaryService.invalidateSummaryCache();
+    return { message: 'Employee deleted' };
+  }
+
   async updateSalary(
     employeeId: string,
     dto: UpdateSalaryDto,

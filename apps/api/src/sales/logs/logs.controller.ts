@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -8,6 +9,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { LogsService } from './logs.service';
 import { CreateDailyLogDto } from './dto/create-log.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -61,5 +63,13 @@ export class LogsController {
     const employeeId = req.user.employeeId ?? req.user.sub;
     const data = await this.logsService.getMyLogs(employeeId, campaignId);
     return { data, message: 'OK', statusCode: 200 };
+  }
+
+  @Delete('logs/:logId')
+  @RequirePermission('sales.reporting', 'write')
+  @ApiOperation({ summary: 'Soft-delete daily activity log' })
+  async remove(@Param('logId') logId: string) {
+    const data = await this.logsService.remove(logId);
+    return { data, message: 'Log deleted', statusCode: 200 };
   }
 }

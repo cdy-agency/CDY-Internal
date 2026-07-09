@@ -97,4 +97,13 @@ export class QaService {
       data: { status: QaStatus.COMPLETED, completedAt: new Date() },
     });
   }
+
+  async removeBug(bugId: string): Promise<{ message: string }> {
+    const bug = await this.prisma.bug.findUnique({ where: { id: bugId } });
+    if (!bug) throw new NotFoundException('Bug not found');
+
+    await this.prisma.bug.delete({ where: { id: bugId } });
+
+    return { message: 'Bug deleted' };
+  }
 }

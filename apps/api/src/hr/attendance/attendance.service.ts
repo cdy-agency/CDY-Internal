@@ -190,6 +190,16 @@ export class AttendanceService {
     });
   }
 
+  async remove(id: string) {
+    const record = await this.prisma.attendanceRecord.findUnique({
+      where: { id },
+    });
+    if (!record) throw new NotFoundException('Attendance record not found');
+
+    await this.prisma.attendanceRecord.delete({ where: { id } });
+    return { message: 'Attendance record deleted' };
+  }
+
   async getEmployeeByUserId(userId: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { userId },

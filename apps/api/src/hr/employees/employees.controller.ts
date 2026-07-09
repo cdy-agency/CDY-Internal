@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -163,5 +164,20 @@ export class EmployeesController {
       buildAuditContext(user, req),
     );
     return { data, message: 'Employee terminated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('hr.employees', 'write')
+  @ApiOperation({ summary: 'Soft-delete employee' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.employeesService.remove(
+      id,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Employee deleted', statusCode: HttpStatus.OK };
   }
 }

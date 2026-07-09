@@ -322,6 +322,34 @@ export class BudgetService {
     );
   }
 
+  async removeBudget(projectId: string): Promise<{ message: string }> {
+    const budget = await this.prisma.projectBudget.findUnique({
+      where: { projectId },
+    });
+
+    if (!budget) {
+      throw new NotFoundException(`No budget found for project ${projectId}`);
+    }
+
+    await this.prisma.projectBudget.delete({ where: { projectId } });
+
+    return { message: 'Project budget deleted' };
+  }
+
+  async removeIncreaseRequest(id: string): Promise<{ message: string }> {
+    const request = await this.prisma.budgetIncreaseRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Budget increase request not found');
+    }
+
+    await this.prisma.budgetIncreaseRequest.delete({ where: { id } });
+
+    return { message: 'Budget increase request deleted' };
+  }
+
   private serializeBudget(budget: {
     id: string;
     projectId: string;

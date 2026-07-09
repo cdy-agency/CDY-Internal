@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Patch,
   Param,
@@ -63,6 +64,20 @@ export class NotificationsController {
     return {
       data,
       message: 'Notification marked read',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Soft-delete notification' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.notificationsService.remove(id, user.sub);
+    return {
+      data,
+      message: data.message,
       statusCode: HttpStatus.OK,
     };
   }

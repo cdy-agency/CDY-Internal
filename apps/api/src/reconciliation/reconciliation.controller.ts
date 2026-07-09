@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -112,6 +113,18 @@ export class ReconciliationController {
     return {
       data,
       message: 'Reconciliation completed',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Delete(':id')
+  @RequirePermission('finance.reconciliation', 'write')
+  @ApiOperation({ summary: 'Soft-delete bank statement' })
+  async remove(@Param('id') id: string) {
+    const data = await this.reconciliationService.remove(id);
+    return {
+      data,
+      message: data.message,
       statusCode: HttpStatus.OK,
     };
   }

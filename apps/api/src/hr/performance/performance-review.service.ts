@@ -354,6 +354,29 @@ export class PerformanceReviewService {
     return this.serializeReview(updated);
   }
 
+  async remove(id: string, auditCtx?: AuditContext) {
+    const review = await this.prisma.performanceReview.findUnique({
+      where: { id },
+    });
+    if (!review) throw new NotFoundException('Performance review not found');
+
+    await this.prisma.performanceReview.delete({ where: { id } });
+
+    if (auditCtx) {
+      this.hrAuditService.log({
+        userId: auditCtx.userId,
+        userEmail: auditCtx.userEmail,
+        action: 'review.deleted',
+        entityType: 'PerformanceReview',
+        entityId: id,
+        previousValue: { period: review.period, status: review.status },
+        ipAddress: auditCtx.ipAddress,
+      });
+    }
+
+    return { message: 'Performance review deleted' };
+  }
+
   private serializeReview(
     review: Prisma.PerformanceReviewGetPayload<{
       include: {

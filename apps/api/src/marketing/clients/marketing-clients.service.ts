@@ -95,4 +95,10 @@ export class MarketingClientsService {
       },
     });
   }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    await this.prisma.marketingClient.delete({ where: { id } });
+    return { message: 'Marketing client deleted' };
+  }
 }

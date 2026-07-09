@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -96,6 +97,25 @@ export class CreditNotesController {
     return {
       data,
       message: 'Credit note retrieved',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Delete('credit-notes/:id')
+  @RequirePermission('finance.credit_notes', 'write')
+  @ApiOperation({ summary: 'Soft-delete credit note' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.creditNotesService.remove(
+      id,
+      buildAuditContext(user, req),
+    );
+    return {
+      data,
+      message: data.message,
       statusCode: HttpStatus.OK,
     };
   }

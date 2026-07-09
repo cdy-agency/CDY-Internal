@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ProjectStatus,
   TaskStatus,
@@ -126,5 +126,16 @@ export class ProjectReportsService {
 
     await this.cache.set(cacheKey, result, 300);
     return result;
+  }
+
+  async remove(id: string) {
+    const report = await this.prisma.projectReport.findUnique({
+      where: { id },
+    });
+    if (!report) throw new NotFoundException('Project report not found');
+
+    await this.prisma.projectReport.delete({ where: { id } });
+
+    return { message: 'Project report deleted' };
   }
 }

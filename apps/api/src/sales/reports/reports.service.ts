@@ -125,4 +125,15 @@ export class ReportsService {
       weeklyReports: reports,
     };
   }
+
+  async remove(campaignId: string, reportId: string) {
+    const report = await this.prisma.weeklyReport.findFirst({
+      where: { id: reportId, campaignId },
+    });
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+    await this.prisma.weeklyReport.delete({ where: { id: reportId } });
+    return { message: 'Report deleted' };
+  }
 }

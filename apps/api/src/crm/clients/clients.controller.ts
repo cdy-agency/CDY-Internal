@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -96,5 +97,13 @@ export class ClientsController {
   ) {
     const data = await this.clientsService.update(id, dto, toActor(user));
     return { data, message: 'Client updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('crm.clients', 'write')
+  @ApiOperation({ summary: 'Soft-delete client' })
+  async remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const data = await this.clientsService.remove(id, toActor(user));
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

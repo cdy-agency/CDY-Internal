@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -150,5 +151,20 @@ export class RetainersController {
   async getExtensions(@Param('id') id: string) {
     const data = await this.retainersService.getExtensions(id);
     return { data, message: 'Extensions retrieved', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('finance.retainers', 'write')
+  @ApiOperation({ summary: 'Soft-delete retainer contract' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.retainersService.remove(
+      id,
+      buildAuditContext(user, req),
+    );
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

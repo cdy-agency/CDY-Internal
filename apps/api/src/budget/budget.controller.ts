@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
@@ -98,5 +99,21 @@ export class BudgetController {
       user.sub,
     );
     return { data, message: 'Request reviewed', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('increase-requests/:id')
+  @RequirePermission('finance.budget', 'write')
+  @ApiOperation({ summary: 'Soft-delete budget increase request' })
+  async removeIncreaseRequest(@Param('id') id: string) {
+    const data = await this.budgetService.removeIncreaseRequest(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':projectId')
+  @RequirePermission('finance.budget', 'write')
+  @ApiOperation({ summary: 'Soft-delete project budget' })
+  async remove(@Param('projectId') projectId: string) {
+    const data = await this.budgetService.removeBudget(projectId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

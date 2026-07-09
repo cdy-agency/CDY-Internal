@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -40,5 +41,13 @@ export class DepartmentsController {
   async update(@Param('id') id: string, @Body() dto: CreateDepartmentDto) {
     const data = await this.departmentsService.update(id, dto);
     return { data, message: 'Department updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('hr.employees', 'write')
+  @ApiOperation({ summary: 'Soft-delete department' })
+  async remove(@Param('id') id: string) {
+    const data = await this.departmentsService.remove(id);
+    return { data, message: 'Department deleted', statusCode: HttpStatus.OK };
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 
@@ -17,5 +17,16 @@ export class SuppliersService {
       where: { isActive: true },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async remove(id: string) {
+    const supplier = await this.prisma.brandingSupplier.findUnique({
+      where: { id },
+    });
+    if (!supplier) throw new NotFoundException('Supplier not found');
+
+    await this.prisma.brandingSupplier.delete({ where: { id } });
+
+    return { message: 'Supplier deleted' };
   }
 }

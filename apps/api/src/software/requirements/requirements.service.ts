@@ -68,4 +68,13 @@ export class RequirementsService {
       data: { status: DocStatus.REVISED },
     });
   }
+
+  async remove(id: string): Promise<{ message: string }> {
+    const doc = await this.prisma.requirementDoc.findUnique({ where: { id } });
+    if (!doc) throw new NotFoundException('Requirement document not found');
+
+    await this.prisma.requirementDoc.delete({ where: { id } });
+
+    return { message: 'Requirement document deleted' };
+  }
 }

@@ -191,6 +191,17 @@ export class SoftwareProjectsService {
     return updated;
   }
 
+  async remove(id: string): Promise<{ message: string }> {
+    const project = await this.prisma.softwareProject.findUnique({
+      where: { id },
+    });
+    if (!project) throw new NotFoundException('Software project not found');
+
+    await this.prisma.softwareProject.delete({ where: { id } });
+
+    return { message: 'Software project deleted' };
+  }
+
   private async validatePhaseCompletion(project: Awaited<ReturnType<SoftwareProjectsService['findOne']>>) {
     switch (project.phase) {
       case SoftwarePhase.REQUIREMENTS: {

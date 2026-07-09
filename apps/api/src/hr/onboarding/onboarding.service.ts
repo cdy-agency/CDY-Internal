@@ -107,6 +107,18 @@ export class OnboardingService {
     return this.serializeItem(updated);
   }
 
+  async remove(employeeId: string) {
+    const checklist = await this.prisma.onboardingChecklist.findUnique({
+      where: { employeeId },
+    });
+    if (!checklist) throw new NotFoundException('Onboarding checklist not found');
+
+    await this.prisma.onboardingChecklist.delete({
+      where: { id: checklist.id },
+    });
+    return { message: 'Onboarding checklist deleted' };
+  }
+
   private serializeChecklist(
     checklist: {
       id: string;

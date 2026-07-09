@@ -202,4 +202,15 @@ export class CampaignsService {
       data: { ...data, updatedAt: new Date() },
     });
   }
+
+  async remove(id: string) {
+    const campaign = await this.prisma.influencerCampaign.findUnique({
+      where: { id },
+    });
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+    await this.prisma.influencerCampaign.delete({ where: { id } });
+    return { message: 'Campaign deleted' };
+  }
 }

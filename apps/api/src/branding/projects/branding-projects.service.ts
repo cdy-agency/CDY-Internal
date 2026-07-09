@@ -172,6 +172,34 @@ export class BrandingProjectsService {
     });
   }
 
+  async remove(id: string) {
+    const project = await this.prisma.brandingProject.findUnique({
+      where: { id },
+    });
+    if (!project) throw new NotFoundException('Branding project not found');
+
+    await this.prisma.brandingProject.delete({ where: { id } });
+
+    return { message: 'Branding project deleted' };
+  }
+
+  async removeScopeItem(projectId: string, scopeItemId: string) {
+    const scopeItem = await this.prisma.brandingScopeItem.findUnique({
+      where: { id: scopeItemId },
+    });
+    if (!scopeItem || scopeItem.brandingProjectId !== projectId) {
+      throw new NotFoundException('Scope item not found');
+    }
+
+    if (scopeItem.status === ScopeStatus.DELIVERED) {
+      throw new BadRequestException('Cannot delete a delivered scope item');
+    }
+
+    await this.prisma.brandingScopeItem.delete({ where: { id: scopeItemId } });
+
+    return { message: 'Scope item deleted' };
+  }
+
   async markDelivered(id: string, userId: string) {
     const project = await this.findOne(id);
 

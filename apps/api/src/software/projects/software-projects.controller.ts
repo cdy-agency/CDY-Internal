@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SoftwareProjectsService } from './software-projects.service';
 import {
   CreateSoftwareProjectDto,
@@ -79,6 +80,18 @@ export class SoftwareProjectsController {
     return {
       data,
       message: 'Phase advanced',
+      statusCode: HttpStatus.OK,
+    };
+  }
+
+  @Delete(':id')
+  @RequirePermission('software.projects', 'write')
+  @ApiOperation({ summary: 'Soft-delete software project' })
+  async remove(@Param('id') id: string) {
+    const data = await this.softwareProjectsService.remove(id);
+    return {
+      data,
+      message: data.message,
       statusCode: HttpStatus.OK,
     };
   }

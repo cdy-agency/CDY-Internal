@@ -284,6 +284,18 @@ export class ReconciliationService {
     };
   }
 
+  async remove(id: string): Promise<{ message: string }> {
+    const statement = await this.prisma.bankStatement.findUnique({
+      where: { id },
+    });
+
+    if (!statement) throw new NotFoundException('Statement not found');
+
+    await this.prisma.bankStatement.delete({ where: { id } });
+
+    return { message: 'Bank statement deleted' };
+  }
+
   private async autoMatch(statementId: string) {
     const transactions = await this.prisma.bankTransaction.findMany({
       where: {

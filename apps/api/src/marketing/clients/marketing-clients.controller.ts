@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { MarketingClientsService } from './marketing-clients.service';
 import {
   CreateMarketingClientDto,
@@ -56,5 +57,13 @@ export class MarketingClientsController {
   ) {
     const data = await this.marketingClientsService.update(id, dto);
     return { data, message: 'Marketing client updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('marketing.clients', 'write')
+  @ApiOperation({ summary: 'Soft-delete marketing client' })
+  async remove(@Param('id') id: string) {
+    const data = await this.marketingClientsService.remove(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

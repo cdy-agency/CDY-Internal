@@ -211,6 +211,17 @@ export class DeliverableApprovalService {
     }));
   }
 
+  async remove(projectId: string, approvalId: string) {
+    const approval = await this.prisma.deliverableApproval.findFirst({
+      where: { id: approvalId, projectId },
+    });
+    if (!approval) throw new NotFoundException('Approval not found');
+
+    await this.prisma.deliverableApproval.delete({ where: { id: approvalId } });
+
+    return { message: 'Approval deleted' };
+  }
+
   private serializeApproval(
     approval: {
       id: string;

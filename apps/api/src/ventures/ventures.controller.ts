@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -91,5 +92,13 @@ export class VenturesController {
   async deactivate(@Param('id') id: string) {
     const data = await this.venturesService.deactivate(id);
     return { data, message: 'Venture deactivated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('ventures.manage', 'write')
+  @ApiOperation({ summary: 'Soft-delete a venture' })
+  async remove(@Param('id') id: string) {
+    const data = await this.venturesService.remove(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { QaService } from './qa.service';
 import { CreateBugDto, UpdateBugStatusDto } from './dto/create-bug.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -65,5 +66,13 @@ export class QaController {
   async complete(@Param('id') softwareProjectId: string) {
     const data = await this.qaService.complete(softwareProjectId);
     return { data, message: 'QA phase completed', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('bugs/:bugId')
+  @RequirePermission('software.delivery', 'write')
+  @ApiOperation({ summary: 'Soft-delete bug' })
+  async removeBug(@Param('bugId') bugId: string) {
+    const data = await this.qaService.removeBug(bugId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

@@ -66,6 +66,20 @@ export class TargetsService {
     });
   }
 
+  async deleteTarget(id: string): Promise<{ message: string }> {
+    const existing = await this.prisma.salesTarget.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Target not found');
+    }
+
+    await this.prisma.salesTarget.delete({ where: { id } });
+
+    return { message: 'Target deleted' };
+  }
+
   async getTarget(agentId: string, month: string) {
     return this.prisma.salesTarget.findUnique({
       where: { agentId_month: { agentId, month } },

@@ -396,6 +396,30 @@ export class PayrollService {
     return this.serializeRun(locked);
   }
 
+  async removeRun(runId: string, userId: string): Promise<{ message: string }> {
+    const run = await this.prisma.payrollRun.findUnique({
+      where: { id: runId },
+    });
+    if (!run) throw new NotFoundException('Payroll run not found');
+
+    if (run.status === PayrollStatus.LOCKED) {
+      throw new BadRequestException('Locked payroll runs cannot be deleted');
+    }
+
+    await this.prisma.payrollRun.delete({ where: { id: runId } });
+
+    this.auditService.log({
+      userId,
+      userEmail: '',
+      action: 'payroll.run_deleted',
+      entityType: 'PayrollRun',
+      entityId: runId,
+      previousValue: { month: run.month, status: run.status },
+    });
+
+    return { message: 'Payroll run deleted' };
+  }
+
   async markItemPaid(runId: string, itemId: string, userId: string) {
     const run = await this.prisma.payrollRun.findUnique({ where: { id: runId } });
     if (!run) throw new NotFoundException('Payroll run not found');

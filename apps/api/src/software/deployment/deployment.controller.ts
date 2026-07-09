@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DeploymentService } from './deployment.service';
 import {
   CreateDeploymentDto,
@@ -79,5 +80,13 @@ export class DeploymentController {
   async resolveMaintenanceIssue(@Param('logId') logId: string) {
     const data = await this.deploymentService.resolveMaintenanceIssue(logId);
     return { data, message: 'Issue resolved', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('maintenance/:logId')
+  @RequirePermission('software.delivery', 'write')
+  @ApiOperation({ summary: 'Soft-delete maintenance log' })
+  async removeMaintenanceLog(@Param('logId') logId: string) {
+    const data = await this.deploymentService.removeMaintenanceLog(logId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

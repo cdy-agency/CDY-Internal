@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -100,6 +101,14 @@ export class PayrollController {
   async lockRun(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const data = await this.payrollService.lockRun(id, user.sub);
     return { data, message: 'Payroll run locked', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('runs/:id')
+  @RequirePermission('finance.payroll', 'write')
+  @ApiOperation({ summary: 'Soft-delete payroll run' })
+  async removeRun(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const data = await this.payrollService.removeRun(id, user.sub);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 
   @Patch('runs/:id/items/:itemId/mark-paid')

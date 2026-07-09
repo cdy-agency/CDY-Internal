@@ -357,6 +357,36 @@ export class RetainersService {
     }));
   }
 
+  async remove(id: string, auditCtx: AuditContext): Promise<{ message: string }> {
+    const retainer = await this.prisma.retainerContract.findUnique({
+      where: { id },
+    });
+    if (!retainer) throw new NotFoundException('Retainer not found');
+
+    if (retainer.status === RetainerStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Active retainers must be paused or ended before they can be deleted',
+      );
+    }
+
+    await this.prisma.retainerContract.delete({ where: { id } });
+
+    this.auditService.log({
+      ...auditCtx,
+      action: 'retainer.deleted',
+      entityType: 'RetainerContract',
+      entityId: id,
+      previousValue: {
+        clientId: retainer.clientId,
+        serviceName: retainer.serviceName,
+        status: retainer.status,
+        amount: Number(retainer.amount),
+      },
+    });
+
+    return { message: 'Retainer deleted' };
+  }
+
   async getMRRSummary() {
     const activeRetainers = await this.prisma.retainerContract.findMany({
       where: { status: RetainerStatus.ACTIVE },

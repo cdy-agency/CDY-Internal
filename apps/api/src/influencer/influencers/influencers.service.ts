@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInfluencerDto } from './dto/create-influencer.dto';
 
@@ -80,5 +80,16 @@ export class InfluencersService {
       where: { id },
       data: { isActive: false },
     });
+  }
+
+  async remove(id: string) {
+    const influencer = await this.prisma.influencer.findUnique({
+      where: { id },
+    });
+    if (!influencer) {
+      throw new NotFoundException('Influencer not found');
+    }
+    await this.prisma.influencer.delete({ where: { id } });
+    return { message: 'Influencer deleted' };
   }
 }

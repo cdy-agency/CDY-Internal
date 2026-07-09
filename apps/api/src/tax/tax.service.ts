@@ -234,6 +234,19 @@ export class TaxService {
     return payments.map((p) => this.serializeTaxPayment(p));
   }
 
+  async removeRemittance(id: string): Promise<{ message: string }> {
+    const payment = await this.prisma.taxPayment.findUnique({
+      where: { id },
+    });
+    if (!payment) {
+      throw new NotFoundException('Tax remittance not found');
+    }
+
+    await this.prisma.taxPayment.delete({ where: { id } });
+
+    return { message: 'Tax remittance deleted' };
+  }
+
   private serializeRate(rate: TaxRate) {
     return {
       id: rate.id,

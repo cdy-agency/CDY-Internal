@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -79,5 +80,13 @@ export class TargetsController {
   ) {
     const data = await this.targetsService.updateTarget(id, dto, user.sub);
     return { data, message: 'Target updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('crm.reports', 'write')
+  @ApiOperation({ summary: 'Soft-delete a sales target' })
+  async deleteTarget(@Param('id') id: string) {
+    const data = await this.targetsService.deleteTarget(id);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

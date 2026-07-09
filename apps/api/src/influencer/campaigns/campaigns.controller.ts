@@ -3,10 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -48,5 +50,13 @@ export class CampaignsController {
   async complete(@Param('id') id: string, @Req() req: Express.Request & { user: { sub: string } }) {
     const data = await this.campaignsService.complete(id, req.user.sub);
     return { data, message: 'Campaign completed', statusCode: 200 };
+  }
+
+  @Delete(':id')
+  @RequirePermission('influencer.campaigns', 'write')
+  @ApiOperation({ summary: 'Soft-delete influencer campaign' })
+  async remove(@Param('id') id: string) {
+    const data = await this.campaignsService.remove(id);
+    return { data, message: 'Campaign deleted', statusCode: 200 };
   }
 }

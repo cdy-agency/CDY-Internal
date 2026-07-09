@@ -121,6 +121,24 @@ export class NotificationsService {
     return this.serialize(updated);
   }
 
+  async remove(id: string, userId: string): Promise<{ message: string }> {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    if (notification.userId !== userId) {
+      throw new ForbiddenException('Cannot delete another user notification');
+    }
+
+    await this.prisma.notification.delete({ where: { id } });
+
+    return { message: 'Notification deleted' };
+  }
+
   async markAllRead(userId: string): Promise<{ updated: number }> {
     const result = await this.prisma.notification.updateMany({
       where: { userId, readAt: null },

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -121,5 +122,23 @@ export class ProposalsController {
       toActor(user),
     );
     return { data, message: 'Proposal sent', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('crm.proposals', 'write')
+  @ApiOperation({ summary: 'Soft-delete proposal' })
+  async remove(
+    @Param('leadId') leadId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const data = await this.proposalsService.remove(
+      leadId,
+      id,
+      user.sub,
+      user.roleKey,
+      toActor(user),
+    );
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

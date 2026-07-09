@@ -113,4 +113,15 @@ export class DeploymentService {
       data: { status: MaintenanceStatus.RESOLVED, resolvedAt: new Date() },
     });
   }
+
+  async removeMaintenanceLog(logId: string): Promise<{ message: string }> {
+    const log = await this.prisma.maintenanceLog.findUnique({
+      where: { id: logId },
+    });
+    if (!log) throw new NotFoundException('Maintenance log not found');
+
+    await this.prisma.maintenanceLog.delete({ where: { id: logId } });
+
+    return { message: 'Maintenance log deleted' };
+  }
 }

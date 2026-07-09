@@ -3,11 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RequirementsService } from './requirements.service';
 import { CreateRequirementDocDto } from './dto/create-requirement-doc.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -67,5 +68,13 @@ export class RequirementsController {
   async markRevised(@Param('docId') docId: string) {
     const data = await this.requirementsService.markRevised(docId);
     return { data, message: 'Marked for revision', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':docId')
+  @RequirePermission('software.delivery', 'write')
+  @ApiOperation({ summary: 'Soft-delete requirement document' })
+  async remove(@Param('docId') docId: string) {
+    const data = await this.requirementsService.remove(docId);
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { InfluencersService } from './influencers.service';
 import { CreateInfluencerDto } from './dto/create-influencer.dto';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
@@ -56,5 +58,13 @@ export class InfluencersController {
   async deactivate(@Param('id') id: string) {
     const data = await this.influencersService.deactivate(id);
     return { data, message: 'Influencer deactivated', statusCode: 200 };
+  }
+
+  @Delete(':id')
+  @RequirePermission('influencer.database', 'write')
+  @ApiOperation({ summary: 'Soft-delete influencer' })
+  async remove(@Param('id') id: string) {
+    const data = await this.influencersService.remove(id);
+    return { data, message: 'Influencer deleted', statusCode: 200 };
   }
 }

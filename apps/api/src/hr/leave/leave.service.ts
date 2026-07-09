@@ -309,4 +309,37 @@ export class LeaveService {
   ) {
     return this.prisma.leaveType.update({ where: { id }, data });
   }
+
+  async deleteLeaveType(id: string) {
+    const leaveType = await this.prisma.leaveType.findUnique({
+      where: { id },
+    });
+    if (!leaveType) throw new NotFoundException('Leave type not found');
+
+    await this.prisma.leaveType.delete({ where: { id } });
+    return { message: 'Leave type deleted' };
+  }
+
+  async deleteRequest(id: string, auditCtx?: AuditContext) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+    });
+    if (!request) throw new NotFoundException('Leave request not found');
+
+    await this.prisma.leaveRequest.delete({ where: { id } });
+
+    if (auditCtx) {
+      this.hrAuditService.log({
+        userId: auditCtx.userId,
+        userEmail: auditCtx.userEmail,
+        action: 'leave.deleted',
+        entityType: 'LeaveRequest',
+        entityId: id,
+        previousValue: { status: request.status },
+        ipAddress: auditCtx.ipAddress,
+      });
+    }
+
+    return { message: 'Leave request deleted' };
+  }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -153,5 +154,20 @@ export class PerformanceReviewController {
       employeeId,
     );
     return { data, message: 'Review acknowledged', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('hr.performance', 'write')
+  @ApiOperation({ summary: 'Soft-delete performance review' })
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.performanceReviewService.remove(
+      id,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Review deleted', statusCode: HttpStatus.OK };
   }
 }

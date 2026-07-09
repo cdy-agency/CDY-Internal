@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -48,5 +49,19 @@ export class ApprovalsController {
       user.sub,
     );
     return { data, message: 'Decision recorded', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':approvalId')
+  @RequirePermission('projects.approvals', 'write')
+  @ApiOperation({ summary: 'Soft-delete deliverable approval' })
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    const data = await this.deliverableApprovalService.remove(
+      projectId,
+      approvalId,
+    );
+    return { data, message: data.message, statusCode: HttpStatus.OK };
   }
 }

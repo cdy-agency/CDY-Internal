@@ -287,6 +287,44 @@ export class ProposalsService {
     );
   }
 
+  async remove(
+    leadId: string,
+    proposalId: string,
+    userId: string,
+    roleKey: string,
+    actor: CrmActor,
+  ): Promise<{ message: string }> {
+    await this.leadsService.findOne(leadId, userId, roleKey);
+
+    const proposal = await this.prisma.proposal.findFirst({
+      where: { id: proposalId, leadId },
+    });
+
+    if (!proposal) {
+      throw new NotFoundException('Proposal not found');
+    }
+
+    await this.prisma.proposal.delete({ where: { id: proposalId } });
+
+    this.crmAuditService.log({
+      userId: actor.userId,
+      userEmail: actor.userEmail,
+      action: 'proposal.deleted',
+      entityType: 'Proposal',
+      entityId: proposalId,
+      previousValue: {
+        leadId,
+        title: proposal.title,
+        estimatedValue: Number(proposal.estimatedValue),
+      },
+      ipAddress: actor.ipAddress,
+    });
+
+    await this.leadsService.invalidateSummaryCache();
+
+    return { message: 'Proposal deleted' };
+  }
+
   private async autoMoveLeadStage(
     leadId: string,
     userId: string,

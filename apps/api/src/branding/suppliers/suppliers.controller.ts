@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Request } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
 import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
@@ -22,5 +23,13 @@ export class SuppliersController {
   ) {
     const data = await this.service.create(dto, req.user.sub);
     return { data, message: 'Supplier created', statusCode: 201 };
+  }
+
+  @Delete(':id')
+  @RequirePermission('branding.projects', 'write')
+  @ApiOperation({ summary: 'Soft-delete branding supplier' })
+  async remove(@Param('id') id: string) {
+    const data = await this.service.remove(id);
+    return { data, message: data.message, statusCode: 200 };
   }
 }

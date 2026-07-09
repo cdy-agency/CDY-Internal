@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -87,6 +88,14 @@ export class LeaveController {
   ) {
     const data = await this.leaveService.updateLeaveType(id, dto);
     return { data, message: 'Leave type updated', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('leave-types/:id')
+  @RequirePermission('hr.settings', 'write')
+  @ApiOperation({ summary: 'Soft-delete leave type' })
+  async removeLeaveType(@Param('id') id: string) {
+    const data = await this.leaveService.deleteLeaveType(id);
+    return { data, message: 'Leave type deleted', statusCode: HttpStatus.OK };
   }
 
   @Post('leave')
@@ -178,5 +187,21 @@ export class LeaveController {
     const data = await this.leaveService.cancelRequest(id, employee.id);
     await this.hrSummaryService.invalidateSummaryCache();
     return { data, message: 'Request cancelled', statusCode: HttpStatus.OK };
+  }
+
+  @Delete('leave/:id')
+  @RequirePermission('hr.attendance', 'write')
+  @ApiOperation({ summary: 'Soft-delete leave request' })
+  async removeRequest(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.leaveService.deleteRequest(
+      id,
+      buildAuditContext(user, req),
+    );
+    await this.hrSummaryService.invalidateSummaryCache();
+    return { data, message: 'Leave request deleted', statusCode: HttpStatus.OK };
   }
 }

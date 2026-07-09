@@ -107,4 +107,15 @@ export class LogsService {
       orderBy: { date: 'desc' },
     });
   }
+
+  async remove(logId: string) {
+    const log = await this.prisma.dailyActivityLog.findUnique({
+      where: { id: logId },
+    });
+    if (!log) {
+      throw new NotFoundException('Log not found');
+    }
+    await this.prisma.dailyActivityLog.delete({ where: { id: logId } });
+    return { message: 'Log deleted' };
+  }
 }

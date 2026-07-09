@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -8,6 +9,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { SalesCampaignStatus } from '@prisma/client';
 import { CampaignsService } from './campaigns.service';
 import { CreateSalesCampaignDto } from './dto/create-campaign.dto';
@@ -66,5 +68,13 @@ export class CampaignsController {
   async getStats(@Param('id') id: string) {
     const data = await this.campaignsService.getCampaignStats(id);
     return { data, message: 'OK', statusCode: 200 };
+  }
+
+  @Delete(':id')
+  @RequirePermission('sales.campaigns', 'write')
+  @ApiOperation({ summary: 'Soft-delete sales campaign' })
+  async remove(@Param('id') id: string) {
+    const data = await this.campaignsService.remove(id);
+    return { data, message: 'Campaign deleted', statusCode: 200 };
   }
 }

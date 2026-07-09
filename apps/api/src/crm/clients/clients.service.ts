@@ -368,4 +368,32 @@ export class ClientsService {
 
     return [buildCsvRow(headers), ...rows].join('\n');
   }
+
+  async remove(id: string, actor: CrmActor): Promise<{ message: string }> {
+    const existing = await this.prisma.client.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Client not found');
+    }
+
+    await this.prisma.client.delete({ where: { id } });
+
+    this.crmAuditService.log({
+      userId: actor.userId,
+      userEmail: actor.userEmail,
+      action: 'client.deleted',
+      entityType: 'Client',
+      entityId: id,
+      previousValue: {
+        companyName: existing.companyName,
+        contactName: existing.contactName,
+        email: existing.email,
+      },
+      ipAddress: actor.ipAddress,
+    });
+
+    return { message: 'Client deleted' };
+  }
 }

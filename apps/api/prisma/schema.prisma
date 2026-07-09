@@ -20,20 +20,21 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  role             Role              @relation(fields: [roleId], references: [id])
+  role             Role               @relation(fields: [roleId], references: [id])
   invoices         Invoice[]
   payments         Payment[]
   expenses         Expense[]
-  commissionRules  CommissionRule[]  @relation("AgentCommissionRules")
+  commissionRules  CommissionRule[]   @relation("AgentCommissionRules")
   commissions      CommissionRecord[] @relation("AgentCommissions")
   notifications    Notification[]
   creditNotes      CreditNote[]
   salary           EmployeeSalary?
   employee         Employee?
-  payrollLineItems PayrollLineItem[] @relation("EmployeePayroll")
+  payrollLineItems PayrollLineItem[]  @relation("EmployeePayroll")
   directIncomes    DirectIncome[]
 
   @@index([roleId])
+  @@index([deletedAt])
 }
 
 model SystemFeature {
@@ -52,19 +53,21 @@ model SystemFeature {
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  key         String   @unique
+  id          String    @id @default(cuid())
+  key         String    @unique
   name        String
-  homeModule  String   @default("/finance")
+  homeModule  String    @default("/finance")
   description String?
-  isDefault   Boolean  @default(false)
-  isSystem    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isDefault   Boolean   @default(false)
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   permissions RolePermission[]
   users       User[]
 
+  @@index([deletedAt])
   @@map("roles")
 }
 
@@ -105,35 +108,35 @@ model ItAuditLog {
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
-  clientId      String
-  projectId     String?
-  status        InvoiceStatus @default(DRAFT)
-  lineItems     Json
-  subtotal      Decimal       @db.Decimal(12, 2)
-  taxRate       Decimal       @db.Decimal(5, 2) @default(0)
-  taxAmount     Decimal       @db.Decimal(12, 2) @default(0)
-  total         Decimal       @db.Decimal(12, 2)
-  currency      String        @default("USD")
-  dueDate       DateTime
-  sentAt        DateTime?
-  paidAt        DateTime?
-  writtenOffAt     DateTime?
-  writtenOffBy     String?
-  writeOffReason   String?
-  writeOffCategory WriteOffCategory?
-  creditTermsDays      Int           @default(30)
-  notes                String?
-  serviceType          String        @default("general")
-  taxRateId            String?
-  retainerContractId   String?
-  createdBy            String
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  deletedAt            DateTime?
+  id                 String            @id @default(cuid())
+  invoiceNumber      String            @unique
+  clientId           String
+  projectId          String?
+  status             InvoiceStatus     @default(DRAFT)
+  lineItems          Json
+  subtotal           Decimal           @db.Decimal(12, 2)
+  taxRate            Decimal           @default(0) @db.Decimal(5, 2)
+  taxAmount          Decimal           @default(0) @db.Decimal(12, 2)
+  total              Decimal           @db.Decimal(12, 2)
+  currency           String            @default("USD")
+  dueDate            DateTime
+  sentAt             DateTime?
+  paidAt             DateTime?
+  writtenOffAt       DateTime?
+  writtenOffBy       String?
+  writeOffReason     String?
+  writeOffCategory   WriteOffCategory?
+  creditTermsDays    Int               @default(30)
+  notes              String?
+  serviceType        String            @default("general")
+  taxRateId          String?
+  retainerContractId String?
+  createdBy          String
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
 
-  ventureId            String?
+  ventureId String?
 
   payments         Payment[]
   reminders        InvoiceReminder[]
@@ -154,6 +157,7 @@ model Invoice {
   @@index([taxRateId])
   @@index([retainerContractId])
   @@index([ventureId])
+  @@index([deletedAt])
 }
 
 enum InvoiceStatus {
@@ -205,6 +209,7 @@ model Payment {
 
   @@index([invoiceId])
   @@index([paidAt])
+  @@index([deletedAt])
 }
 
 enum PaymentMethod {
@@ -218,27 +223,27 @@ enum PaymentMethod {
 }
 
 model Expense {
-  id         String          @id @default(cuid())
-  vendorName String
-  category   ExpenseCategory
-  amount     Decimal         @db.Decimal(12, 2)
-  currency   String          @default("RWF")
-  date       DateTime
+  id                  String          @id @default(cuid())
+  vendorName          String
+  category            ExpenseCategory
+  amount              Decimal         @db.Decimal(12, 2)
+  currency            String          @default("RWF")
+  date                DateTime
   projectId           String?
   ventureId           String?
-  ventureSharePercent Decimal?  @db.Decimal(5, 2)
-  internalHourlyCost  Decimal?  @db.Decimal(10, 2)
+  ventureSharePercent Decimal?        @db.Decimal(5, 2)
+  internalHourlyCost  Decimal?        @db.Decimal(10, 2)
   receiptUrl          String?
   uploadPath          String?
   notes               String?
-  isPayrollExpense    Boolean   @default(false)
+  isPayrollExpense    Boolean         @default(false)
   payrollRunId        String?
-  paymentMethod         PaymentMethod?
-  paymentReference      String?
+  paymentMethod       PaymentMethod?
+  paymentReference    String?
   createdBy           String
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  deletedAt  DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  deletedAt           DateTime?
 
   creator    User        @relation(fields: [createdBy], references: [id])
   venture    Venture?    @relation(fields: [ventureId], references: [id])
@@ -249,6 +254,7 @@ model Expense {
   @@index([projectId])
   @@index([ventureId])
   @@index([payrollRunId])
+  @@index([deletedAt])
 }
 
 enum ExpenseCategory {
@@ -274,10 +280,10 @@ model Bill {
   paidAt        DateTime?
   attachmentUrl String?
   notes         String?
-  instalmentId  String?   @unique
+  instalmentId  String?    @unique
   createdBy     String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
 
   instalment PaymentPlanItem? @relation(fields: [instalmentId], references: [id])
@@ -285,6 +291,7 @@ model Bill {
   @@index([status])
   @@index([dueDate])
   @@index([instalmentId])
+  @@index([deletedAt])
 }
 
 enum BillStatus {
@@ -310,12 +317,14 @@ model CommissionRule {
   createdBy     String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   agent User @relation("AgentCommissionRules", fields: [agentId], references: [id])
 
   @@index([agentId])
   @@index([effectiveFrom])
   @@index([agentId, serviceType])
+  @@index([deletedAt])
 }
 
 model CommissionRecord {
@@ -337,6 +346,7 @@ model CommissionRecord {
   rejectionReason  String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
 
   agent User @relation("AgentCommissions", fields: [agentId], references: [id])
 
@@ -344,6 +354,7 @@ model CommissionRecord {
   @@index([month])
   @@index([status])
   @@index([month, status])
+  @@index([deletedAt])
 }
 
 enum NotificationType {
@@ -369,12 +380,14 @@ model Notification {
   link      String?
   readAt    DateTime?
   createdAt DateTime         @default(now())
+  deletedAt DateTime?
 
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([readAt])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model FinanceAuditLog {
@@ -408,6 +421,7 @@ model CashFlowAdjustment {
   deletedAt DateTime?
 
   @@index([date])
+  @@index([deletedAt])
 }
 
 enum CreditNoteReason {
@@ -446,6 +460,7 @@ model CreditNote {
 
   @@index([invoiceId])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 enum PaymentPlanStatus {
@@ -468,13 +483,17 @@ model PaymentPlan {
   createdBy   String
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
 
   invoice     Invoice           @relation(fields: [invoiceId], references: [id])
   instalments PaymentPlanItem[]
+
+  @@index([deletedAt])
 }
 
 model PaymentPlanItem {
   id               String           @id @default(cuid())
+  deletedAt        DateTime?
   paymentPlanId    String
   instalmentNumber Int
   amount           Decimal          @db.Decimal(12, 2)
@@ -489,6 +508,7 @@ model PaymentPlanItem {
   @@index([paymentPlanId])
   @@index([dueDate])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum ReconciliationStatus {
@@ -506,6 +526,7 @@ enum TransactionMatchStatus {
 
 model BankStatement {
   id               String               @id @default(cuid())
+  deletedAt        DateTime?
   periodFrom       DateTime
   periodTo         DateTime
   importedAt       DateTime             @default(now())
@@ -521,6 +542,7 @@ model BankStatement {
   transactions BankTransaction[]
 
   @@index([periodFrom])
+  @@index([deletedAt])
 }
 
 model BankTransaction {
@@ -557,6 +579,7 @@ model TaxRate {
   createdBy     String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   invoices  Invoice[]
   retainers RetainerContract[]
@@ -564,23 +587,26 @@ model TaxRate {
   @@index([country])
   @@index([serviceType])
   @@index([isActive])
+  @@index([deletedAt])
 }
 
 model TaxPayment {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   authorityName String
-  amount        Decimal  @db.Decimal(12, 2)
-  currency      String   @default("RWF")
+  amount        Decimal   @db.Decimal(12, 2)
+  currency      String    @default("RWF")
   paidAt        DateTime
   reference     String?
   periodFrom    DateTime
   periodTo      DateTime
   notes         String?
   createdBy     String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
 
   @@index([paidAt])
   @@index([periodFrom])
+  @@index([deletedAt])
 }
 
 enum RetainerStatus {
@@ -615,30 +641,32 @@ model RetainerContract {
   createdBy         String
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
 
-  taxRate         TaxRate?           @relation(fields: [taxRateId], references: [id])
-  invoices        Invoice[]          @relation("RetainerInvoices")
+  taxRate         TaxRate?            @relation(fields: [taxRateId], references: [id])
+  invoices        Invoice[]           @relation("RetainerInvoices")
   marketingClient MarketingClient?
-  client          Client             @relation(fields: [clientId], references: [id])
-  venture         Venture?           @relation(fields: [ventureId], references: [id])
+  client          Client              @relation(fields: [clientId], references: [id])
+  venture         Venture?            @relation(fields: [ventureId], references: [id])
   extensions      RetainerExtension[]
 
   @@index([status])
   @@index([nextBillingDate])
   @@index([clientId])
   @@index([ventureId])
+  @@index([deletedAt])
 }
 
 model RetainerExtension {
-  id                  String           @id @default(cuid())
-  retainerContractId  String
-  previousEndDate     DateTime?
-  newEndDate          DateTime?
-  previousAmount      Decimal          @db.Decimal(12, 2)
-  newAmount           Decimal          @db.Decimal(12, 2)
-  reason              String?
-  extendedBy          String
-  extendedAt          DateTime         @default(now())
+  id                 String    @id @default(cuid())
+  retainerContractId String
+  previousEndDate    DateTime?
+  newEndDate         DateTime?
+  previousAmount     Decimal   @db.Decimal(12, 2)
+  newAmount          Decimal   @db.Decimal(12, 2)
+  reason             String?
+  extendedBy         String
+  extendedAt         DateTime  @default(now())
 
   retainerContract RetainerContract @relation(fields: [retainerContractId], references: [id])
 
@@ -664,11 +692,13 @@ model ProjectBudget {
   createdBy         String
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
   increaseRequests BudgetIncreaseRequest[]
 
   @@index([projectId])
   @@index([clientId])
+  @@index([deletedAt])
 }
 
 model BudgetIncreaseRequest {
@@ -684,11 +714,13 @@ model BudgetIncreaseRequest {
   rejectionReason String?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
 
   budget ProjectBudget @relation(fields: [projectId], references: [projectId])
 
   @@index([projectId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum PayrollStatus {
@@ -710,45 +742,47 @@ model PayrollRun {
   processedBy     String?
   lockedAt        DateTime?
   lockedBy        String?
-  totalGross      Decimal       @db.Decimal(12, 2) @default(0)
-  totalDeductions Decimal       @db.Decimal(12, 2) @default(0)
-  totalNet        Decimal       @db.Decimal(12, 2) @default(0)
+  totalGross      Decimal       @default(0) @db.Decimal(12, 2)
+  totalDeductions Decimal       @default(0) @db.Decimal(12, 2)
+  totalNet        Decimal       @default(0) @db.Decimal(12, 2)
   currency        String        @default("USD")
   notes           String?
   createdBy       String
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
 
   lineItems PayrollLineItem[]
   expenses  Expense[]
 
   @@index([status])
   @@index([month])
+  @@index([deletedAt])
 }
 
 model PayrollLineItem {
-  id               String   @id @default(cuid())
+  id               String                       @id @default(cuid())
   payrollRunId     String
   employeeId       String
   employeeName     String
   employeeEmail    String
-  baseSalary       Decimal  @db.Decimal(12, 2)
-  commission       Decimal  @db.Decimal(12, 2) @default(0)
-  bonus            Decimal  @db.Decimal(12, 2) @default(0)
-  grossPay         Decimal  @db.Decimal(12, 2)
-  taxDeduction     Decimal  @db.Decimal(12, 2) @default(0)
-  otherDeductions  Decimal  @db.Decimal(12, 2) @default(0)
-  netPay           Decimal  @db.Decimal(12, 2)
-  payslipSent      Boolean                        @default(false)
+  baseSalary       Decimal                      @db.Decimal(12, 2)
+  commission       Decimal                      @default(0) @db.Decimal(12, 2)
+  bonus            Decimal                      @default(0) @db.Decimal(12, 2)
+  grossPay         Decimal                      @db.Decimal(12, 2)
+  taxDeduction     Decimal                      @default(0) @db.Decimal(12, 2)
+  otherDeductions  Decimal                      @default(0) @db.Decimal(12, 2)
+  netPay           Decimal                      @db.Decimal(12, 2)
+  payslipSent      Boolean                      @default(false)
   payslipUrl       String?
   notes            String?
   adjustedBy       String?
   adjustmentReason String?
-  paymentStatus    PayrollLineItemPaymentStatus    @default(PENDING)
+  paymentStatus    PayrollLineItemPaymentStatus @default(PENDING)
   paidAt           DateTime?
   paidBy           String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
 
   payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id])
   employee   User?      @relation("EmployeePayroll", fields: [employeeId], references: [id])
@@ -796,6 +830,7 @@ model BalanceSheetEntry {
 
   @@index([type])
   @@index([asOfDate])
+  @@index([deletedAt])
 }
 
 model FinanceSetting {
@@ -807,25 +842,27 @@ model FinanceSetting {
 }
 
 model Venture {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
   description String?
-  color       String   @default("6366F1")
-  isActive    Boolean  @default(true)
+  color       String    @default("6366F1")
+  isActive    Boolean   @default(true)
   createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  incomeEntries    VentureIncome[]
-  expenseEntries   VentureExpense[]
-  invoices         Invoice[]
-  expenses         Expense[]
-  clients          Client[]
-  directIncome     DirectIncome[]
+  incomeEntries     VentureIncome[]
+  expenseEntries    VentureExpense[]
+  invoices          Invoice[]
+  expenses          Expense[]
+  clients           Client[]
+  directIncome      DirectIncome[]
   retainerContracts RetainerContract[]
-  leads            Lead[]
+  leads             Lead[]
 
   @@index([isActive])
+  @@index([deletedAt])
 }
 
 model VentureIncome {
@@ -848,6 +885,7 @@ model VentureIncome {
   @@index([ventureId])
   @@index([date])
   @@index([category])
+  @@index([deletedAt])
 }
 
 model VentureExpense {
@@ -877,6 +915,7 @@ model VentureExpense {
   @@index([category])
   @@index([isShared])
   @@index([expenseId])
+  @@index([deletedAt])
 }
 
 model DirectIncome {
@@ -904,6 +943,7 @@ model DirectIncome {
   @@index([ventureId])
   @@index([date])
   @@index([paymentMethod])
+  @@index([deletedAt])
 }
 
 model Client {
@@ -928,9 +968,9 @@ model Client {
   deletedAt   DateTime?
 
   // Primary service this client is using
-  primaryService       ClientService?
-  serviceValue         Decimal?       @db.Decimal(12, 2)
-  serviceCurrency      String?        @default("RWF")
+  primaryService  ClientService?
+  serviceValue    Decimal?       @db.Decimal(12, 2)
+  serviceCurrency String?        @default("RWF")
 
   // Links to auto-created service records in the respective modules
   softwareProjectId    String?
@@ -939,11 +979,11 @@ model Client {
   influencerCampaignId String?
   salesCampaignId      String?
 
-  ventureId           String?
-  venture             Venture?             @relation(fields: [ventureId], references: [id])
+  ventureId String?
+  venture   Venture? @relation(fields: [ventureId], references: [id])
 
   leads               Lead[]
-  invoices            Invoice[]           @relation("ClientInvoices")
+  invoices            Invoice[]            @relation("ClientInvoices")
   projects            Project[]
   retainerContracts   RetainerContract[]
   marketingClients    MarketingClient[]
@@ -959,6 +999,7 @@ model Client {
   @@index([source])
   @@index([primaryService])
   @@index([ventureId])
+  @@index([deletedAt])
 }
 
 enum ClientType {
@@ -1017,6 +1058,7 @@ model Lead {
   @@index([createdAt])
   @@index([source])
   @@index([ventureId])
+  @@index([deletedAt])
 }
 
 enum LeadSource {
@@ -1051,11 +1093,13 @@ model LeadActivity {
   performedBy    String
   performedAt    DateTime     @default(now())
   createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([performedAt])
+  @@index([deletedAt])
 }
 
 enum ActivityType {
@@ -1083,11 +1127,13 @@ model Proposal {
   createdBy       String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum ProposalStatus {
@@ -1112,19 +1158,21 @@ model PipelineStageHistory {
 }
 
 model SalesTarget {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   agentId       String
   month         String
-  revenueTarget Decimal  @db.Decimal(12, 2)
+  revenueTarget Decimal   @db.Decimal(12, 2)
   dealsTarget   Int
-  currency      String   @default("USD")
+  currency      String    @default("USD")
   setBy         String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   @@unique([agentId, month])
   @@index([agentId])
   @@index([month])
+  @@index([deletedAt])
 }
 
 model CrmNotificationPreference {
@@ -1162,28 +1210,33 @@ model CrmAuditLog {
 }
 
 model SavedFilter {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   name      String
   filters   Json
   module    String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 
   @@index([userId, module])
+  @@index([deletedAt])
 }
 
 // ─── HR Module ─────────────────────────────────────────────────
 
 model Department {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
   description String?
   headId      String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   employees Employee[]
+
+  @@index([deletedAt])
 }
 
 model Employee {
@@ -1216,10 +1269,10 @@ model Employee {
   updatedAt             DateTime       @updatedAt
   deletedAt             DateTime?
 
-  user          User               @relation(fields: [userId], references: [id])
-  department    Department?        @relation(fields: [departmentId], references: [id])
-  manager       Employee?          @relation("ManagerEmployee", fields: [managerId], references: [id])
-  managedEmployees Employee[]      @relation("ManagerEmployee")
+  user               User                 @relation(fields: [userId], references: [id])
+  department         Department?          @relation(fields: [departmentId], references: [id])
+  manager            Employee?            @relation("ManagerEmployee", fields: [managerId], references: [id])
+  managedEmployees   Employee[]           @relation("ManagerEmployee")
   leaveBalances      LeaveBalance[]
   leaveRequests      LeaveRequest[]
   attendance         AttendanceRecord[]
@@ -1230,6 +1283,7 @@ model Employee {
   @@index([departmentId])
   @@index([status])
   @@index([managerId])
+  @@index([deletedAt])
 }
 
 enum EmploymentType {
@@ -1248,18 +1302,21 @@ enum EmployeeStatus {
 }
 
 model LeaveType {
-  id               String   @id @default(cuid())
-  name             String   @unique
-  code             String   @unique
-  defaultDaysPerYear Int      @default(0)
-  isPaid           Boolean  @default(true)
-  requiresApproval Boolean  @default(true)
-  requiresDocument Boolean  @default(false)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
+  id                 String    @id @default(cuid())
+  name               String    @unique
+  code               String    @unique
+  defaultDaysPerYear Int       @default(0)
+  isPaid             Boolean   @default(true)
+  requiresApproval   Boolean   @default(true)
+  requiresDocument   Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  deletedAt          DateTime?
 
   leaveBalances LeaveBalance[]
   leaveRequests LeaveRequest[]
+
+  @@index([deletedAt])
 }
 
 model LeaveBalance {
@@ -1268,10 +1325,10 @@ model LeaveBalance {
   leaveTypeId String
   year        Int
   entitled    Decimal  @db.Decimal(6, 2)
-  used        Decimal  @db.Decimal(6, 2) @default(0)
-  pending     Decimal  @db.Decimal(6, 2) @default(0)
+  used        Decimal  @default(0) @db.Decimal(6, 2)
+  pending     Decimal  @default(0) @db.Decimal(6, 2)
   remaining   Decimal  @db.Decimal(6, 2)
-  carryOver   Decimal  @db.Decimal(6, 2) @default(0)
+  carryOver   Decimal  @default(0) @db.Decimal(6, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1299,6 +1356,7 @@ model LeaveRequest {
   cancelledAt     DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
 
   employee  Employee  @relation(fields: [employeeId], references: [id])
   leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
@@ -1306,6 +1364,7 @@ model LeaveRequest {
   @@index([employeeId])
   @@index([status])
   @@index([startDate])
+  @@index([deletedAt])
 }
 
 enum LeaveStatus {
@@ -1327,6 +1386,7 @@ model AttendanceRecord {
   recordedBy   String?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
 
   employee Employee @relation(fields: [employeeId], references: [id])
 
@@ -1334,6 +1394,7 @@ model AttendanceRecord {
   @@index([employeeId])
   @@index([date])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum AttendanceStatus {
@@ -1356,12 +1417,12 @@ model HrSetting {
 // ─── Performance Review (Sprint 14) ─────────────────────────────
 
 model PerformanceReview {
-  id              String       @id @default(cuid())
-  employeeId      String
-  reviewerId      String
-  period          String
-  reviewDate      DateTime
-  status          ReviewStatus @default(DRAFT)
+  id         String       @id @default(cuid())
+  employeeId String
+  reviewerId String
+  period     String
+  reviewDate DateTime
+  status     ReviewStatus @default(DRAFT)
 
   goalsSet        Json?
   selfAssessment  String?
@@ -1374,8 +1435,9 @@ model PerformanceReview {
   acknowledgedAt  DateTime?
   nextReviewDate  DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   employee Employee @relation(fields: [employeeId], references: [id])
 
@@ -1383,6 +1445,7 @@ model PerformanceReview {
   @@index([period])
   @@index([status])
   @@index([reviewerId])
+  @@index([deletedAt])
 }
 
 enum ReviewStatus {
@@ -1421,9 +1484,12 @@ model OnboardingChecklist {
   completedAt DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
 
   employee Employee         @relation(fields: [employeeId], references: [id])
   items    OnboardingItem[]
+
+  @@index([deletedAt])
 }
 
 model OnboardingItem {
@@ -1471,34 +1537,34 @@ model HrAuditLog {
 // ─── Projects Module (Sprint 15) ────────────────────────────────
 
 model Project {
-  id              String          @id @default(cuid())
-  projectCode     String          @unique
-  name            String
-  description     String?
-  clientId        String?
-  serviceType     String
-  status          ProjectStatus   @default(ACTIVE)
-  priority        ProjectPriority @default(MEDIUM)
-  managerId       String
-  startDate       DateTime
-  endDate         DateTime?
-  totalCost       Decimal?        @db.Decimal(12, 2)
-  currency        String          @default("USD")
-  invoiceId       String?
-  completedAt     DateTime?
-  archivedAt      DateTime?
-  notes           String?
-  createdBy       String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
+  id          String          @id @default(cuid())
+  projectCode String          @unique
+  name        String
+  description String?
+  clientId    String?
+  serviceType String
+  status      ProjectStatus   @default(ACTIVE)
+  priority    ProjectPriority @default(MEDIUM)
+  managerId   String
+  startDate   DateTime
+  endDate     DateTime?
+  totalCost   Decimal?        @db.Decimal(12, 2)
+  currency    String          @default("USD")
+  invoiceId   String?
+  completedAt DateTime?
+  archivedAt  DateTime?
+  notes       String?
+  createdBy   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
 
-  client      Client?         @relation(fields: [clientId], references: [id])
-  milestones  Milestone[]
-  tasks       Task[]
-  members     ProjectMember[]
-  files       ProjectFile[]
-  activities  ProjectActivity[]
+  client     Client?           @relation(fields: [clientId], references: [id])
+  milestones Milestone[]
+  tasks      Task[]
+  members    ProjectMember[]
+  files      ProjectFile[]
+  activities ProjectActivity[]
 
   @@index([status])
   @@index([clientId])
@@ -1507,6 +1573,7 @@ model Project {
   @@index([status, createdAt])
   @@index([clientId, status])
   @@index([managerId, status])
+  @@index([deletedAt])
 }
 
 enum ProjectStatus {
@@ -1526,6 +1593,7 @@ enum ProjectPriority {
 
 model ProjectMember {
   id         String     @id @default(cuid())
+  deletedAt  DateTime?
   projectId  String
   employeeId String
   role       MemberRole @default(MEMBER)
@@ -1536,6 +1604,7 @@ model ProjectMember {
   @@unique([projectId, employeeId])
   @@index([projectId])
   @@index([employeeId])
+  @@index([deletedAt])
 }
 
 enum MemberRole {
@@ -1554,6 +1623,7 @@ model Milestone {
   order       Int             @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks   Task[]
@@ -1561,6 +1631,7 @@ model Milestone {
   @@index([projectId])
   @@index([status])
   @@index([projectId, status])
+  @@index([deletedAt])
 }
 
 enum MilestoneStatus {
@@ -1592,10 +1663,10 @@ model Task {
   updatedAt        DateTime        @updatedAt
   deletedAt        DateTime?
 
-  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  milestone     Milestone?          @relation(fields: [milestoneId], references: [id])
-  subTasks      Task[]              @relation("SubTasks")
-  parentTask    Task?               @relation("SubTasks", fields: [parentTaskId], references: [id])
+  project       Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone     Milestone?            @relation(fields: [milestoneId], references: [id])
+  subTasks      Task[]                @relation("SubTasks")
+  parentTask    Task?                 @relation("SubTasks", fields: [parentTaskId], references: [id])
   statusHistory TaskStatusHistory[]
   comments      TaskComment[]
   approvals     DeliverableApproval[]
@@ -1609,6 +1680,7 @@ model Task {
   @@index([projectId, assigneeId, status])
   @@index([assigneeId, dueDate])
   @@index([milestoneId, status])
+  @@index([deletedAt])
 }
 
 enum TaskStatus {
@@ -1659,11 +1731,12 @@ model TaskComment {
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+  @@index([deletedAt])
 }
 
-
 model ProjectFile {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
+  deletedAt  DateTime?
   projectId  String
   taskId     String?
   name       String
@@ -1671,12 +1744,13 @@ model ProjectFile {
   size       Int
   mimeType   String
   uploadedBy String
-  uploadedAt DateTime @default(now())
+  uploadedAt DateTime  @default(now())
 
   project Project @relation(fields: [projectId], references: [id])
 
   @@index([projectId])
   @@index([taskId])
+  @@index([deletedAt])
 }
 
 // ─── Sprint 16: Approvals, Activity, Profitability ─────────────
@@ -1696,12 +1770,14 @@ model DeliverableApproval {
   approvedBy   String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@index([projectId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model ProjectActivity {
@@ -1740,42 +1816,45 @@ enum ActivityEventType {
   APPROVAL_REJECTED
 }
 
-
 // ─── Sprint 17: Project Reports ─────────────────────────────────
 
 model ProjectReport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
+  deletedAt   DateTime?
   projectId   String
   type        String
-  generatedAt DateTime @default(now())
+  generatedAt DateTime  @default(now())
   generatedBy String
   data        Json
 
   @@index([projectId])
   @@index([type])
+  @@index([deletedAt])
 }
 
 // ─── Sprint 18: Marketing Services ──────────────────────────────
 
 model MarketingClient {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   clientId      String?
   projectId     String?
-  retainerId    String   @unique
+  retainerId    String    @unique
   platforms     String[]
-  postsPerMonth Int      @default(12)
-  isActive      Boolean  @default(true)
+  postsPerMonth Int       @default(12)
+  isActive      Boolean   @default(true)
   notes         String?
   createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   contentItems ContentItem[]
-  client       Client?           @relation(fields: [clientId], references: [id])
-  retainer     RetainerContract  @relation(fields: [retainerId], references: [id])
+  client       Client?          @relation(fields: [clientId], references: [id])
+  retainer     RetainerContract @relation(fields: [retainerId], references: [id])
 
   @@index([clientId])
   @@index([isActive])
+  @@index([deletedAt])
 }
 
 model ContentItem {
@@ -1805,6 +1884,7 @@ model ContentItem {
   @@index([platform])
   @@index([marketingClientId, status])
   @@index([marketingClientId, scheduledDate])
+  @@index([deletedAt])
 }
 
 enum ContentType {
@@ -1848,6 +1928,7 @@ model SoftwareProject {
   createdBy         String
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  deletedAt         DateTime?
 
   client          Client           @relation(fields: [clientId], references: [id])
   requirements    RequirementDoc[]
@@ -1861,6 +1942,7 @@ model SoftwareProject {
   @@index([phase])
   @@index([isActive])
   @@index([clientId, isActive])
+  @@index([deletedAt])
 }
 
 enum SoftwareProjectType {
@@ -1882,23 +1964,25 @@ enum SoftwarePhase {
 }
 
 model RequirementDoc {
-  id                String          @id @default(cuid())
+  id                String    @id @default(cuid())
   softwareProjectId String
   title             String
   content           String
-  version           Int             @default(1)
+  version           Int       @default(1)
   fileUrl           String?
-  status            DocStatus       @default(DRAFT)
+  status            DocStatus @default(DRAFT)
   sentToClientAt    DateTime?
   clientSignedAt    DateTime?
   notes             String?
   createdBy         String
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
   softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
 
   @@index([softwareProjectId])
+  @@index([deletedAt])
 }
 
 enum DocStatus {
@@ -1945,12 +2029,14 @@ model DevSprint {
   createdBy         String
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
 
   softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
   items           SprintItem[]
 
   @@index([softwareProjectId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum SprintStatus {
@@ -1971,11 +2057,13 @@ model SprintItem {
   completedAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
 
   sprint DevSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
 
   @@index([sprintId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum ItemStatus {
@@ -1986,16 +2074,16 @@ enum ItemStatus {
 }
 
 model QaPhase {
-  id                String   @id @default(cuid())
-  softwareProjectId String   @unique
-  isSkipped         Boolean  @default(false)
-  status            QaStatus @default(IN_PROGRESS)
+  id                String    @id @default(cuid())
+  softwareProjectId String    @unique
+  isSkipped         Boolean   @default(false)
+  status            QaStatus  @default(IN_PROGRESS)
   startedAt         DateTime?
   completedAt       DateTime?
   notes             String?
   createdBy         String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
   bugs            Bug[]
@@ -2019,12 +2107,14 @@ model Bug {
   createdBy   String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
 
   qaPhase QaPhase @relation(fields: [qaPhaseId], references: [id], onDelete: Cascade)
 
   @@index([qaPhaseId])
   @@index([status])
   @@index([severity])
+  @@index([deletedAt])
 }
 
 enum BugSeverity {
@@ -2069,11 +2159,13 @@ model MaintenanceLog {
   createdBy         String
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
 
   softwareProject SoftwareProject @relation(fields: [softwareProjectId], references: [id])
 
   @@index([softwareProjectId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum MaintenanceType {
@@ -2104,12 +2196,14 @@ model BrandingProject {
   createdBy   String
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
   client     Client              @relation(fields: [clientId], references: [id])
   scopeItems BrandingScopeItem[]
 
   @@index([clientId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum BrandingStatus {
@@ -2121,17 +2215,18 @@ enum BrandingStatus {
 
 // ─── Branding Scope Item ──────────────────────────────────────
 model BrandingScopeItem {
-  id                String       @id @default(cuid())
+  id                String      @id @default(cuid())
   brandingProjectId String
   title             String
   description       String?
   supplierId        String?
-  status            ScopeStatus  @default(IN_PROGRESS)
+  status            ScopeStatus @default(IN_PROGRESS)
   deliveredAt       DateTime?
   notes             String?
-  order             Int          @default(0)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  order             Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
 
   brandingProject BrandingProject    @relation(fields: [brandingProjectId], references: [id], onDelete: Cascade)
   supplier        BrandingSupplier?  @relation(fields: [supplierId], references: [id])
@@ -2140,6 +2235,7 @@ model BrandingScopeItem {
   @@index([brandingProjectId])
   @@index([status])
   @@index([brandingProjectId, status])
+  @@index([deletedAt])
 }
 
 enum ScopeStatus {
@@ -2153,6 +2249,7 @@ enum ScopeStatus {
 // ─── Design Submission ────────────────────────────────────────
 model DesignSubmission {
   id             String           @id @default(cuid())
+  deletedAt      DateTime?
   scopeItemId    String
   version        Int
   fileUrl        String?
@@ -2167,6 +2264,7 @@ model DesignSubmission {
   scopeItem BrandingScopeItem @relation(fields: [scopeItemId], references: [id], onDelete: Cascade)
 
   @@index([scopeItemId])
+  @@index([deletedAt])
 }
 
 enum SubmissionStatus {
@@ -2187,14 +2285,17 @@ model BrandingSupplier {
   createdBy   String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   scopeItems BrandingScopeItem[]
+
+  @@index([deletedAt])
 }
 
 // ─── Sprint 21: Influencer Marketing ─────────────────────────
 
 model Influencer {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
   handle         String
   platform       String
@@ -2205,15 +2306,17 @@ model Influencer {
   location       String?
   category       String?
   notes          String?
-  isActive       Boolean  @default(true)
+  isActive       Boolean   @default(true)
   createdBy      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   assignments CampaignInfluencer[]
 
   @@index([platform])
   @@index([isActive])
+  @@index([deletedAt])
 }
 
 model InfluencerCampaign {
@@ -2235,12 +2338,14 @@ model InfluencerCampaign {
   createdBy   String
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
   client      Client               @relation(fields: [clientId], references: [id])
   influencers CampaignInfluencer[]
 
   @@index([clientId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum CampaignStatus {
@@ -2252,6 +2357,7 @@ enum CampaignStatus {
 
 model CampaignInfluencer {
   id           String    @id @default(cuid())
+  deletedAt    DateTime?
   campaignId   String
   influencerId String
   agreedFee    Decimal?  @db.Decimal(10, 2)
@@ -2271,6 +2377,7 @@ model CampaignInfluencer {
   @@unique([campaignId, influencerId])
   @@index([campaignId])
   @@index([influencerId])
+  @@index([deletedAt])
 }
 
 model Deliverable {
@@ -2287,12 +2394,14 @@ model Deliverable {
   notes                String?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
+  deletedAt            DateTime?
 
   campaignInfluencer CampaignInfluencer @relation(fields: [campaignInfluencerId], references: [id], onDelete: Cascade)
 
   @@index([campaignInfluencerId])
   @@index([status])
   @@index([campaignInfluencerId, status])
+  @@index([deletedAt])
 }
 
 enum DeliverableStatus {
@@ -2325,6 +2434,7 @@ model SalesCampaign {
   createdBy      String
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?
 
   client        Client             @relation(fields: [clientId], references: [id])
   agents        SalesAgent[]
@@ -2333,6 +2443,7 @@ model SalesCampaign {
 
   @@index([clientId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 enum SalesCampaignStatus {
@@ -2343,15 +2454,16 @@ enum SalesCampaignStatus {
 }
 
 model SalesAgent {
-  id           String   @id @default(cuid())
-  campaignId   String
-  employeeId   String
-  territory    String?
-  visitTarget  Int?
-  leadTarget   Int?
-  salesTarget  Int?
-  joinedAt     DateTime @default(now())
-  isActive     Boolean  @default(true)
+  id          String    @id @default(cuid())
+  deletedAt   DateTime?
+  campaignId  String
+  employeeId  String
+  territory   String?
+  visitTarget Int?
+  leadTarget  Int?
+  salesTarget Int?
+  joinedAt    DateTime  @default(now())
+  isActive    Boolean   @default(true)
 
   campaign  SalesCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   dailyLogs DailyActivityLog[]
@@ -2359,22 +2471,24 @@ model SalesAgent {
   @@unique([campaignId, employeeId])
   @@index([campaignId])
   @@index([employeeId])
+  @@index([deletedAt])
 }
 
 model DailyActivityLog {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   campaignId  String
   agentId     String
   employeeId  String
   date        DateTime
-  visitsCount Int      @default(0)
-  leadsCount  Int      @default(0)
-  salesCount  Int      @default(0)
-  salesAmount Decimal? @db.Decimal(12, 2)
+  visitsCount Int       @default(0)
+  leadsCount  Int       @default(0)
+  salesCount  Int       @default(0)
+  salesAmount Decimal?  @db.Decimal(12, 2)
   notes       String?
   challenges  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   campaign SalesCampaign @relation(fields: [campaignId], references: [id])
   agent    SalesAgent    @relation(fields: [agentId], references: [id])
@@ -2384,10 +2498,12 @@ model DailyActivityLog {
   @@index([agentId])
   @@index([date])
   @@index([campaignId, date])
+  @@index([deletedAt])
 }
 
 model WeeklyReport {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
+  deletedAt        DateTime?
   campaignId       String
   weekStart        DateTime
   weekEnd          DateTime
@@ -2395,18 +2511,19 @@ model WeeklyReport {
   totalVisits      Int
   totalLeads       Int
   totalSales       Int
-  totalSalesAmount Decimal? @db.Decimal(12, 2)
+  totalSalesAmount Decimal?  @db.Decimal(12, 2)
   activeAgents     Int
   highlights       String?
   challenges       String?
   nextWeekPlan     String?
-  generatedAt      DateTime @default(now())
+  generatedAt      DateTime  @default(now())
   generatedBy      String
 
   campaign SalesCampaign @relation(fields: [campaignId], references: [id])
 
   @@unique([campaignId, weekNumber])
   @@index([campaignId])
+  @@index([deletedAt])
 }
 
 // ─── Sprint 25: Monitoring ─────────────────────────────────────
@@ -2431,7 +2548,7 @@ model CronLog {
 model ReserveAccount {
   id        String   @id @default(cuid())
   name      String   @default("CDY Company Reserve")
-  balance   Decimal  @db.Decimal(12, 2) @default(0)
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
   currency  String   @default("RWF")
   notes     String?
   createdAt DateTime @default(now())

@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -109,5 +111,14 @@ export class AttendanceController {
     );
     await this.hrSummaryService.invalidateSummaryCache();
     return { data, message: 'Entry recorded', statusCode: HttpStatus.OK };
+  }
+
+  @Delete(':id')
+  @RequirePermission('hr.attendance', 'write')
+  @ApiOperation({ summary: 'Soft-delete attendance record' })
+  async remove(@Param('id') id: string) {
+    const data = await this.attendanceService.remove(id);
+    await this.hrSummaryService.invalidateSummaryCache();
+    return { data, message: 'Attendance record deleted', statusCode: HttpStatus.OK };
   }
 }
