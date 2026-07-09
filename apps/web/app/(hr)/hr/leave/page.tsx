@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { LeaveStatus } from '@cdy/shared';
+import type { LeaveRequestRecord } from '@cdy/shared';
 import { useLeaveRequests, useReviewLeaveRequest } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function statusColor(status: LeaveStatus): string {
   const map: Record<LeaveStatus, string> = {
@@ -28,6 +33,9 @@ export default function LeaveManagementPage(): JSX.Element {
   const reviewLeave = useReviewLeaveRequest();
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<LeaveRequestRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
 
   const now = new Date();
   const monthStart = startOfMonth(now);
@@ -68,6 +76,21 @@ export default function LeaveManagementPage(): JSX.Element {
       setRejectReason('');
     } catch {
       /* interceptor */
+    }
+  }
+
+  async function handleDeleteLeaveRequest(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/hr/leave/${deleteTarget.id}`);
+      toast.success('Leave request deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'leave'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -212,6 +235,7 @@ export default function LeaveManagementPage(): JSX.Element {
                       </span>
                     </td>
                     <td className="py-2">
+                      <div className="flex items-center gap-2">
                       {req.status === LeaveStatus.PENDING && (
                         <div className="flex gap-1">
                           {rejectId === req.id ? (
@@ -267,6 +291,17 @@ export default function LeaveManagementPage(): JSX.Element {
                           )}
                         </div>
                       )}
+                      <PermissionGate feature="hr.attendance" action="write">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(req)}
+                          className="text-cdy-muted hover:text-cdy-red"
+                          aria-label="Delete leave request"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -275,6 +310,20 @@ export default function LeaveManagementPage(): JSX.Element {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete leave request?"
+        description={
+          deleteTarget
+            ? `This will remove the ${deleteTarget.leaveType.name} request for ${deleteTarget.employee.firstName} ${deleteTarget.employee.lastName}.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteLeaveRequest()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -46,6 +46,21 @@ export function useMarkNotificationRead() {
   });
 }
 
+export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/notifications/${id}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['notifications', 'unread-count'],
+      });
+    },
+  });
+}
+
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { ReviewStatus } from '@cdy/shared';
 import {
   usePerformanceReview,
@@ -13,9 +15,12 @@ import {
   useCompletePerformanceReview,
   useAcknowledgePerformanceReview,
 } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 function statusColor(status: ReviewStatus): string {
@@ -72,12 +77,16 @@ function ReadOnlyField({
 
 export default function PerformanceReviewDetailPage(): JSX.Element {
   const params = useParams();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const id = params.id as string;
   const { data: review, isLoading } = usePerformanceReview(id);
   const { data: myProfile } = useMyEmployeeProfile();
   const submitSelf = useSubmitSelfAssessment();
   const completeReview = useCompletePerformanceReview();
   const acknowledge = useAcknowledgePerformanceReview();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [selfForm, setSelfForm] = useState({
     selfAssessment: '',
@@ -173,18 +182,45 @@ export default function PerformanceReviewDetailPage(): JSX.Element {
     }
   }
 
+  async function handleDelete(): Promise<void> {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/hr/performance/${id}`);
+      toast.success('Performance review deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'performance'] });
+      router.push(isEmployee ? '/hr/performance/my' : '/hr/performance');
+    } catch {
+      /* interceptor already toasts */
+      setIsDeleting(false);
+      setDeleteOpen(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-cdy-white">
           Performance Review — {review.period}
         </h2>
-        <Link
-          href={isEmployee ? '/hr/performance/my' : '/hr/performance'}
-          className="text-sm text-cdy-muted hover:text-cdy-white"
-        >
-          ← Back
-        </Link>
+        <div className="flex items-center gap-3">
+          <PermissionGate feature="hr.performance" action="write">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-cdy-red hover:text-cdy-red"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </PermissionGate>
+          <Link
+            href={isEmployee ? '/hr/performance/my' : '/hr/performance'}
+            className="text-sm text-cdy-muted hover:text-cdy-white"
+          >
+            ← Back
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-6">
@@ -423,6 +459,20 @@ export default function PerformanceReviewDetailPage(): JSX.Element {
             </dl>
           </div>
         )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete performance review?"
+        description={`This will remove the ${review.period} review${
+          review.employee
+            ? ` for ${review.employee.firstName} ${review.employee.lastName}`
+            : ''
+        }.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

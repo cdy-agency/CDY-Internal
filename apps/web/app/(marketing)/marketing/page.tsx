@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { useAllMarketingSummary, useMarketingClients } from '@/hooks/useMarketing';
 import { AddMarketingClientDrawer } from '@/components/marketing/AddMarketingClientDrawer';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PermissionGate } from '@/components/PermissionGate';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import {
@@ -103,13 +107,14 @@ export default function MarketingOverviewPage(): JSX.Element {
                 <th className="px-4 py-3 font-medium text-right">Published</th>
                 <th className="px-4 py-3 font-medium text-right">Rate</th>
                 <th className="px-4 py-3 font-medium">Invoice</th>
+                <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody>
               {summaries.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-8 text-center text-cdy-muted"
                   >
                     No marketing clients yet
@@ -143,11 +148,29 @@ function ClientRow({
   row: MarketingAllClientsSummaryItem;
   clients?: { id: string; platforms: string[] }[];
 }): JSX.Element {
+  const queryClient = useQueryClient();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const clientPlatforms =
     clients?.find((c) => c.id === row.marketingClientId)?.platforms ?? [];
   const rateColor = deliveryRateColor(row.deliveryRate);
 
+  async function handleDelete(): Promise<void> {
+    setDeleting(true);
+    try {
+      await api.delete(`/marketing/clients/${row.marketingClientId}`);
+      toast.success('Marketing client deleted');
+      await queryClient.invalidateQueries({ queryKey: ['marketing'] });
+      setDeleteOpen(false);
+    } catch {
+      /* interceptor handles toast */
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
+    <>
     <tr className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy-light/50">
       <td className="px-4 py-3">
         <Link
@@ -188,6 +211,28 @@ function ClientRow({
           <span className="text-xs text-cdy-muted">—</span>
         )}
       </td>
+      <td className="px-4 py-3">
+        <PermissionGate feature="marketing.clients" action="write">
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            aria-label="Delete marketing client"
+            className="text-cdy-muted hover:text-cdy-red"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </PermissionGate>
+      </td>
     </tr>
+    <ConfirmDialog
+      open={deleteOpen}
+      title="Delete marketing client?"
+      description={`This will permanently remove ${row.clientName} from marketing. This cannot be undone.`}
+      confirmLabel="Delete"
+      isLoading={deleting}
+      onConfirm={() => void handleDelete()}
+      onCancel={() => setDeleteOpen(false)}
+    />
+    </>
   );
 }

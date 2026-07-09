@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -10,8 +11,13 @@ import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTabl
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import type { AxiosError } from 'axios';
+import type {
+  BudgetIncreaseRequestRecord,
+  ProjectBudgetStatus,
+} from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
 
 function ProgressBar({
@@ -56,6 +62,12 @@ export default function BudgetListPage(): JSX.Element {
   const [clientId, setClientId] = useState('');
   const [approvedBudget, setApprovedBudget] = useState('');
   const [saving, setSaving] = useState(false);
+  const [budgetToDelete, setBudgetToDelete] =
+    useState<ProjectBudgetStatus | null>(null);
+  const [deletingBudget, setDeletingBudget] = useState(false);
+  const [requestToDelete, setRequestToDelete] =
+    useState<BudgetIncreaseRequestRecord | null>(null);
+  const [deletingRequest, setDeletingRequest] = useState(false);
 
   async function createBudget(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -78,6 +90,36 @@ export default function BudgetListPage(): JSX.Element {
     }
   }
 
+  async function handleDeleteBudget(): Promise<void> {
+    if (!budgetToDelete) return;
+    setDeletingBudget(true);
+    try {
+      await api.delete(`/budget/${budgetToDelete.projectId}`);
+      toast.success('Project budget deleted');
+      await queryClient.invalidateQueries({ queryKey: ['budget'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeletingBudget(false);
+      setBudgetToDelete(null);
+    }
+  }
+
+  async function handleDeleteRequest(): Promise<void> {
+    if (!requestToDelete) return;
+    setDeletingRequest(true);
+    try {
+      await api.delete(`/budget/increase-requests/${requestToDelete.id}`);
+      toast.success('Budget increase request deleted');
+      await queryClient.invalidateQueries({ queryKey: ['budget'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeletingRequest(false);
+      setRequestToDelete(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <nav className="text-sm text-cdy-muted">
@@ -95,7 +137,32 @@ export default function BudgetListPage(): JSX.Element {
 
       {pending && pending.length > 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200">
-          {pending.length} budget increase request{pending.length > 1 ? 's' : ''} pending review
+          <p className="mb-2">
+            {pending.length} budget increase request{pending.length > 1 ? 's' : ''} pending review
+          </p>
+          <ul className="space-y-1">
+            {pending.map((req) => (
+              <li
+                key={req.id}
+                className="flex items-center justify-between gap-4"
+              >
+                <span>
+                  {req.projectName ?? req.projectId}: {formatCurrency(req.requestedBudget)}
+                </span>
+                <PermissionGate feature="finance.budget" action="write">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                    onClick={() => setRequestToDelete(req)}
+                    aria-label="Delete budget increase request"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </PermissionGate>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -176,9 +243,22 @@ export default function BudgetListPage(): JSX.Element {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/finance/budget/${b.projectId}`}>View</Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/finance/budget/${b.projectId}`}>View</Link>
+                        </Button>
+                        <PermissionGate feature="finance.budget" action="write">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                            onClick={() => setBudgetToDelete(b)}
+                            aria-label="Delete project budget"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </PermissionGate>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -187,6 +267,34 @@ export default function BudgetListPage(): JSX.Element {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(budgetToDelete)}
+        title="Delete project budget?"
+        description={
+          budgetToDelete
+            ? `This will permanently delete the budget for ${budgetToDelete.projectName}. This action cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deletingBudget}
+        onConfirm={handleDeleteBudget}
+        onCancel={() => setBudgetToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(requestToDelete)}
+        title="Delete budget increase request?"
+        description={
+          requestToDelete
+            ? `This will permanently delete the pending increase request for ${requestToDelete.projectName ?? requestToDelete.projectId}. This action cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deletingRequest}
+        onConfirm={handleDeleteRequest}
+        onCancel={() => setRequestToDelete(null)}
+      />
     </div>
   );
 }

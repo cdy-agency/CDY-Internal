@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -24,6 +24,7 @@ import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectInco
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PermissionGate } from '@/components/PermissionGate';
 import { FeatureReadGate } from '@/components/FeatureReadGate';
 import { ExpenseCategoryBadge } from '@/components/finance/expenses/ExpenseCategoryBadge';
@@ -63,6 +64,7 @@ interface PaginatedResult<T> {
 
 export default function VentureDetailPage(): JSX.Element {
   const params = useParams();
+  const router = useRouter();
   const ventureId = params.id as string;
   const queryClient = useQueryClient();
 
@@ -75,6 +77,8 @@ export default function VentureDetailPage(): JSX.Element {
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editName, setEditName] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: venture, isLoading: ventureLoading } = useVenture(ventureId);
   const { data: summary, isLoading: summaryLoading } = useVentureSummary(ventureId, { from, to });
@@ -107,6 +111,21 @@ export default function VentureDetailPage(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['ventures'] });
     } catch {
       /* handled by interceptor */
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    setDeleting(true);
+    try {
+      await api.delete(`/ventures/${ventureId}`);
+      toast.success('Venture deleted');
+      await queryClient.invalidateQueries({ queryKey: ['ventures'] });
+      router.push('/finance/ventures');
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   }
 
@@ -173,6 +192,9 @@ export default function VentureDetailPage(): JSX.Element {
                   {venture.isActive && (
                     <Button variant="outline" size="sm" onClick={handleDeactivate}>Deactivate</Button>
                   )}
+                  <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="h-4 w-4" /> Delete
+                  </Button>
                 </div>
               </PermissionGate>
             </div>
@@ -567,6 +589,20 @@ export default function VentureDetailPage(): JSX.Element {
             />
           </>
         )}
+
+        <ConfirmDialog
+          open={deleteOpen}
+          title="Delete venture?"
+          description={
+            venture
+              ? `This will permanently remove "${venture.name}" and cannot be undone.`
+              : undefined
+          }
+          confirmLabel="Delete"
+          isLoading={deleting}
+          onConfirm={() => void handleDelete()}
+          onCancel={() => setDeleteOpen(false)}
+        />
       </div>
     </FeatureReadGate>
   );

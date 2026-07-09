@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, ExternalLink, Plus, Users } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, ExternalLink, Plus, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { PermissionGate } from '@/components/PermissionGate';
+import api from '@/lib/api';
 import {
   useSalesCampaign,
   useCampaignLogs,
@@ -392,12 +397,47 @@ export default function SalesCampaignDetailPage() {
   const { data: logs } = useCampaignLogs(id);
   const { data: reports } = useCampaignReports(id);
   const complete = useCompleteSalesCampaign(id);
+  const qc = useQueryClient();
 
   const [deployOpen, setDeployOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [viewReport, setViewReport] = useState<WeeklyReportRecord | null>(null);
   const [completeConfirm, setCompleteConfirm] = useState(false);
   const [agentFilter, setAgentFilter] = useState('');
+  const [logToDelete, setLogToDelete] = useState<DailyActivityLogRecord | null>(null);
+  const [isDeletingLog, setIsDeletingLog] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<WeeklyReportRecord | null>(null);
+  const [isDeletingReport, setIsDeletingReport] = useState(false);
+
+  async function handleDeleteLog() {
+    if (!logToDelete) return;
+    setIsDeletingLog(true);
+    try {
+      await api.delete(`/sales/logs/${logToDelete.id}`);
+      toast.success('Log deleted');
+      void qc.invalidateQueries({ queryKey: ['sales', 'campaigns', id, 'logs'] });
+    } catch {
+      /* interceptor handles error toast */
+    } finally {
+      setIsDeletingLog(false);
+      setLogToDelete(null);
+    }
+  }
+
+  async function handleDeleteReport() {
+    if (!reportToDelete) return;
+    setIsDeletingReport(true);
+    try {
+      await api.delete(`/sales/campaigns/${id}/reports/${reportToDelete.id}`);
+      toast.success('Report deleted');
+      void qc.invalidateQueries({ queryKey: ['sales', 'campaigns', id, 'reports'] });
+    } catch {
+      /* interceptor handles error toast */
+    } finally {
+      setIsDeletingReport(false);
+      setReportToDelete(null);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -550,6 +590,7 @@ export default function SalesCampaignDetailPage() {
                   <th className="px-4 py-3 text-right">Sales</th>
                   <th className="px-4 py-3 text-right">Amount</th>
                   <th className="px-4 py-3">Notes</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -566,6 +607,18 @@ export default function SalesCampaignDetailPage() {
                       {log.salesAmount ? `RWF${Number(log.salesAmount).toLocaleString()}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-cdy-muted max-w-xs truncate">{log.notes ?? ''}</td>
+                    <td className="px-4 py-3 text-right">
+                      <PermissionGate feature="sales.reporting" action="write">
+                        <button
+                          type="button"
+                          onClick={() => setLogToDelete(log)}
+                          className="text-cdy-muted hover:text-cdy-red"
+                          aria-label="Delete log"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -597,11 +650,23 @@ export default function SalesCampaignDetailPage() {
                     {r.totalVisits}v · {r.totalLeads}l · {r.totalSales}s · {r.activeAgents} agents
                   </p>
                 </div>
-                <Button size="sm" variant="ghost"
-                  className="border border-cdy-navy-border text-cdy-muted hover:text-cdy-white"
-                  onClick={() => setViewReport(r)}>
-                  View
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost"
+                    className="border border-cdy-navy-border text-cdy-muted hover:text-cdy-white"
+                    onClick={() => setViewReport(r)}>
+                    View
+                  </Button>
+                  <PermissionGate feature="sales.reporting" action="write">
+                    <button
+                      type="button"
+                      onClick={() => setReportToDelete(r)}
+                      className="text-cdy-muted hover:text-cdy-red"
+                      aria-label="Delete report"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </PermissionGate>
+                </div>
               </div>
             ))}
           </div>
@@ -639,6 +704,26 @@ export default function SalesCampaignDetailPage() {
         campaignId={id}
         onClose={() => setReportOpen(false)}
         existingWeeks={existingWeeks}
+      />
+
+      <ConfirmDialog
+        open={!!logToDelete}
+        title="Delete log?"
+        description="This will permanently remove this daily activity log. This cannot be undone."
+        confirmLabel="Delete"
+        isLoading={isDeletingLog}
+        onConfirm={() => void handleDeleteLog()}
+        onCancel={() => setLogToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!reportToDelete}
+        title="Delete report?"
+        description={`This will permanently remove Week ${reportToDelete?.weekNumber ?? ''}'s report. This cannot be undone.`}
+        confirmLabel="Delete"
+        isLoading={isDeletingReport}
+        onConfirm={() => void handleDeleteReport()}
+        onCancel={() => setReportToDelete(null)}
       />
     </div>
   );

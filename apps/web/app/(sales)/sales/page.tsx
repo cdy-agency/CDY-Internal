@@ -2,14 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, TrendingUp } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Plus, TrendingUp, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useSalesCampaigns, useCreateSalesCampaign } from '@/hooks/useSales';
 import { PermissionGate } from '@/components/PermissionGate';
-import type { SalesCampaignStatus } from '@cdy/shared';
+import api from '@/lib/api';
+import type { SalesCampaignStatus, SalesCampaignListItem } from '@cdy/shared';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: 'Active', className: 'bg-green-900/30 text-green-400 border border-green-800' },
@@ -204,6 +208,24 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
 export default function SalesCampaignsPage() {
   const { data: campaigns, isLoading } = useSalesCampaigns();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const qc = useQueryClient();
+  const [campaignToDelete, setCampaignToDelete] = useState<SalesCampaignListItem | null>(null);
+  const [isDeletingCampaign, setIsDeletingCampaign] = useState(false);
+
+  async function handleDeleteCampaign() {
+    if (!campaignToDelete) return;
+    setIsDeletingCampaign(true);
+    try {
+      await api.delete(`/sales/campaigns/${campaignToDelete.id}`);
+      toast.success('Campaign deleted');
+      void qc.invalidateQueries({ queryKey: ['sales', 'campaigns'] });
+    } catch {
+      /* interceptor handles error toast */
+    } finally {
+      setIsDeletingCampaign(false);
+      setCampaignToDelete(null);
+    }
+  }
 
   const active = campaigns?.filter((c) => c.status === 'ACTIVE') ?? [];
   const totalAgents = campaigns?.reduce((s, c) => s + c._count.agents, 0) ?? 0;
@@ -266,6 +288,7 @@ export default function SalesCampaignsPage() {
                   <th className="px-6 py-3 text-right">Agents</th>
                   <th className="px-6 py-3 text-right">Logs</th>
                   <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,6 +313,18 @@ export default function SalesCampaignsPage() {
                           {cfg.label}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <PermissionGate feature="sales.campaigns" action="write">
+                          <button
+                            type="button"
+                            onClick={() => setCampaignToDelete(c)}
+                            className="text-cdy-muted hover:text-cdy-red"
+                            aria-label="Delete campaign"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </PermissionGate>
+                      </td>
                     </tr>
                   );
                 })}
@@ -300,6 +335,16 @@ export default function SalesCampaignsPage() {
       </div>
 
       <NewCampaignDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      <ConfirmDialog
+        open={!!campaignToDelete}
+        title="Delete campaign?"
+        description={`This will permanently remove "${campaignToDelete?.name}". This cannot be undone.`}
+        confirmLabel="Delete"
+        isLoading={isDeletingCampaign}
+        onConfirm={() => void handleDeleteCampaign()}
+        onCancel={() => setCampaignToDelete(null)}
+      />
     </div>
   );
 }

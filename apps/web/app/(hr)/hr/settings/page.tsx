@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
+import type { LeaveTypeRecord } from '@cdy/shared';
 import {
   useHrSettings,
   useUpdateHrSetting,
@@ -9,10 +12,12 @@ import {
   useCreateLeaveType,
   useUpdateLeaveType,
 } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 type Tab = 'general' | 'leave-types';
@@ -26,6 +31,9 @@ export default function HrSettingsPage(): JSX.Element {
   const { data: leaveTypes } = useLeaveTypes();
   const createLeaveType = useCreateLeaveType();
   const updateLeaveType = useUpdateLeaveType();
+  const queryClient = useQueryClient();
+  const [deleteLeaveType, setDeleteLeaveType] = useState<LeaveTypeRecord | null>(null);
+  const [isDeletingLeaveType, setIsDeletingLeaveType] = useState(false);
 
   const [form, setForm] = useState({
     working_hours_per_day: '8',
@@ -128,6 +136,21 @@ export default function HrSettingsPage(): JSX.Element {
       });
     } catch {
       /* interceptor */
+    }
+  }
+
+  async function handleDeleteLeaveType(): Promise<void> {
+    if (!deleteLeaveType) return;
+    setIsDeletingLeaveType(true);
+    try {
+      await api.delete(`/hr/leave-types/${deleteLeaveType.id}`);
+      toast.success('Leave type deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'leave-types'] });
+      setDeleteLeaveType(null);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeletingLeaveType(false);
     }
   }
 
@@ -289,19 +312,29 @@ export default function HrSettingsPage(): JSX.Element {
                       </p>
                     </div>
                     <PermissionGate feature="hr.settings" action="write">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={updateLeaveType.isPending}
-                        onClick={() =>
-                          void updateLeaveType.mutateAsync({
-                            id: lt.id,
-                            payload: { isActive: false },
-                          })
-                        }
-                      >
-                        Deactivate
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={updateLeaveType.isPending}
+                          onClick={() =>
+                            void updateLeaveType.mutateAsync({
+                              id: lt.id,
+                              payload: { isActive: false },
+                            })
+                          }
+                        >
+                          Deactivate
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteLeaveType(lt)}
+                          className="text-cdy-muted hover:text-cdy-red"
+                          aria-label="Delete leave type"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </PermissionGate>
                   </div>
                 ))}
@@ -403,6 +436,20 @@ export default function HrSettingsPage(): JSX.Element {
           </PermissionGate>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteLeaveType !== null}
+        title="Delete leave type?"
+        description={
+          deleteLeaveType
+            ? `This will remove "${deleteLeaveType.name}" (${deleteLeaveType.code}).`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeletingLeaveType}
+        onConfirm={() => void handleDeleteLeaveType()}
+        onCancel={() => setDeleteLeaveType(null)}
+      />
     </div>
   );
 }

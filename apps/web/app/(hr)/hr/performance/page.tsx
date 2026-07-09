@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { ReviewStatus, EmployeeStatus } from '@cdy/shared';
+import type { PerformanceReviewRecord } from '@cdy/shared';
 import {
   usePendingPerformanceReviews,
   usePerformanceReviews,
@@ -12,10 +15,12 @@ import {
   useCreatePerformanceReview,
   useMyEmployeeProfile,
 } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'] as const;
@@ -58,8 +63,13 @@ export default function PerformanceReviewsPage(): JSX.Element {
   });
   const { data: myProfile } = useMyEmployeeProfile();
   const createReview = useCreatePerformanceReview();
+  const queryClient = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PerformanceReviewRecord | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState({
     employeeId: '',
     quarter: 'Q1' as Quarter,
@@ -120,6 +130,21 @@ export default function PerformanceReviewsPage(): JSX.Element {
     }
   }
 
+  async function handleDeleteReview(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/hr/performance/${deleteTarget.id}`);
+      toast.success('Performance review deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'performance'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -175,13 +200,25 @@ export default function PerformanceReviewsPage(): JSX.Element {
                       </span>
                     </td>
                     <td className="py-2">
-                      <Link href={`/hr/performance/${review.id}`}>
-                        <Button size="sm" variant="outline">
-                          {review.status === ReviewStatus.MANAGER_REVIEW
-                            ? 'Complete'
-                            : 'View'}
-                        </Button>
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/hr/performance/${review.id}`}>
+                          <Button size="sm" variant="outline">
+                            {review.status === ReviewStatus.MANAGER_REVIEW
+                              ? 'Complete'
+                              : 'View'}
+                          </Button>
+                        </Link>
+                        <PermissionGate feature="hr.performance" action="write">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(review)}
+                            className="text-cdy-muted hover:text-cdy-red"
+                            aria-label="Delete performance review"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </PermissionGate>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -379,6 +416,24 @@ export default function PerformanceReviewsPage(): JSX.Element {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete performance review?"
+        description={
+          deleteTarget
+            ? `This will remove the ${deleteTarget.period} review${
+                deleteTarget.employee
+                  ? ` for ${deleteTarget.employee.firstName} ${deleteTarget.employee.lastName}`
+                  : ''
+              }.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteReview()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import {
   ApprovalDecision,
   ApprovalStatus,
@@ -15,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PermissionGate } from '@/components/PermissionGate';
 import { cn } from '@/lib/utils';
 
@@ -39,11 +43,14 @@ export function ProjectApprovalsPanel({
 }: ProjectApprovalsPanelProps): JSX.Element {
   const { data: approvals, isLoading } = useProjectApprovals(projectId);
   const recordDecision = useRecordApprovalDecision();
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | 'ALL'>(
     'ALL',
   );
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filtered =
     statusFilter === 'ALL'
@@ -60,6 +67,23 @@ export function ProjectApprovalsPanel({
       toast.success('Deliverable approved');
     } catch {
       /* interceptor */
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/projects/${projectId}/approvals/${deleteId}`);
+      toast.success('Approval deleted');
+      await queryClient.invalidateQueries({
+        queryKey: ['projects', projectId, 'approvals'],
+      });
+      setDeleteId(null);
+    } catch {
+      /* interceptor handles toast */
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -117,7 +141,8 @@ export function ProjectApprovalsPanel({
                 <th className="pb-3 pr-4 font-medium">Title</th>
                 <th className="pb-3 pr-4 font-medium">Task</th>
                 <th className="pb-3 pr-4 font-medium">Requested</th>
-                <th className="pb-3 font-medium">Decision</th>
+                <th className="pb-3 pr-4 font-medium">Decision</th>
+                <th className="pb-3 font-medium" />
               </tr>
             </thead>
             <tbody>
@@ -184,6 +209,18 @@ export function ProjectApprovalsPanel({
                       '—'
                     )}
                   </td>
+                  <td className="py-3">
+                    <PermissionGate feature="projects.approvals" action="write">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteId(approval.id)}
+                        aria-label="Delete approval"
+                        className="text-cdy-muted hover:text-cdy-red"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </PermissionGate>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -226,6 +263,16 @@ export function ProjectApprovalsPanel({
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="Delete approval?"
+        description="This will permanently remove this deliverable approval record. This cannot be undone."
+        confirmLabel="Delete"
+        isLoading={deleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

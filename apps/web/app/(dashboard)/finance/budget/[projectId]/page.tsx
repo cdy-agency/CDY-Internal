@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
+import { Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -13,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import type { AxiosError } from 'axios';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -24,6 +26,8 @@ export default function BudgetDetailPage(): JSX.Element {
   const [requestedBudget, setRequestedBudget] = useState('');
   const [justification, setJustification] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deleteRequestOpen, setDeleteRequestOpen] = useState(false);
+  const [deletingRequest, setDeletingRequest] = useState(false);
 
   async function submitIncreaseRequest(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -44,6 +48,21 @@ export default function BudgetDetailPage(): JSX.Element {
       toast.error(axiosErr.response?.data?.message ?? 'Failed to submit request');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteRequest(): Promise<void> {
+    if (!budget?.pendingRequest) return;
+    setDeletingRequest(true);
+    try {
+      await api.delete(`/budget/increase-requests/${budget.pendingRequest.id}`);
+      toast.success('Budget increase request deleted');
+      await queryClient.invalidateQueries({ queryKey: ['budget'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeletingRequest(false);
+      setDeleteRequestOpen(false);
     }
   }
 
@@ -118,11 +137,26 @@ export default function BudgetDetailPage(): JSX.Element {
 
       {budget.pendingRequest && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4 text-sm">
-          <p className="font-medium text-amber-300">Budget increase request pending review</p>
-          <p className="mt-1 text-amber-100">
-            Requested: {fmt(budget.pendingRequest.requestedBudget)} · Submitted{' '}
-            {format(new Date(budget.pendingRequest.createdAt), 'MMM d, yyyy')}
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-amber-300">Budget increase request pending review</p>
+              <p className="mt-1 text-amber-100">
+                Requested: {fmt(budget.pendingRequest.requestedBudget)} · Submitted{' '}
+                {format(new Date(budget.pendingRequest.createdAt), 'MMM d, yyyy')}
+              </p>
+            </div>
+            <PermissionGate feature="finance.budget" action="write">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                onClick={() => setDeleteRequestOpen(true)}
+                aria-label="Delete budget increase request"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </PermissionGate>
+          </div>
         </div>
       )}
 
@@ -169,6 +203,16 @@ export default function BudgetDetailPage(): JSX.Element {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteRequestOpen}
+        title="Delete budget increase request?"
+        description="This will permanently delete this pending budget increase request. This action cannot be undone."
+        confirmLabel="Delete"
+        isLoading={deletingRequest}
+        onConfirm={handleDeleteRequest}
+        onCancel={() => setDeleteRequestOpen(false)}
+      />
     </div>
   );
 }

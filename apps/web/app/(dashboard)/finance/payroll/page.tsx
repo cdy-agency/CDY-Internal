@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Loader2, CheckSquare, Square } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, CheckSquare, Square, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { usePayrollRuns, usePayrollPreview } from '@/hooks/usePayroll';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { formatCurrency } from '@/lib/utils';
 import { currentMonthKey, shiftMonth, formatMonthKey } from '@/lib/reportDates';
@@ -35,6 +36,8 @@ export default function PayrollPage(): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<PayrollRun | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: runs, isLoading } = usePayrollRuns();
   const { data: preview } = usePayrollPreview(month);
@@ -93,6 +96,21 @@ export default function PayrollPage(): JSX.Element {
       /* interceptor handles toast */
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleDeleteRun(): Promise<void> {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/payroll/runs/${deleteTarget.id}`);
+      toast.success('Payroll run deleted');
+      await queryClient.invalidateQueries({ queryKey: ['payroll'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor handles toast */
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -190,9 +208,21 @@ export default function PayrollPage(): JSX.Element {
                   {run.processedBy ? run.processedBy.slice(0, 8) + '…' : '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={`/finance/payroll/${run.id}`} className="text-cdy-red hover:underline">
-                    View
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/finance/payroll/${run.id}`} className="text-cdy-red hover:underline">
+                      View
+                    </Link>
+                    <PermissionGate feature="finance.payroll" action="write">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(run)}
+                        aria-label="Delete payroll run"
+                        className="text-cdy-muted hover:text-cdy-red"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </PermissionGate>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -310,6 +340,20 @@ export default function PayrollPage(): JSX.Element {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete payroll run?"
+        description={
+          deleteTarget
+            ? `This will permanently remove the ${formatMonthKey(deleteTarget.month)} payroll run. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deleting}
+        onConfirm={() => void handleDeleteRun()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

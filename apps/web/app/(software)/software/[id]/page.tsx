@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { format, differenceInMonths } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import {
   CheckCircle2,
   Circle,
@@ -11,8 +13,10 @@ import {
   Plus,
   ExternalLink,
   AlertTriangle,
+  Trash2,
   X,
 } from 'lucide-react';
+import api from '@/lib/api';
 import {
   useSoftwareProject,
   useAdvancePhase,
@@ -35,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ItemStatus, BugStatus } from '@cdy/shared';
 import type {
   SoftwareProjectDetail,
@@ -217,11 +222,29 @@ function RequirementsPanel({
 }): JSX.Element {
   const createDoc = useCreateRequirementDoc(projectId);
   const docAction = useRequirementDocAction(projectId);
+  const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [err, setErr] = useState('');
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [isDeletingDoc, setIsDeletingDoc] = useState(false);
+
+  async function handleDeleteDoc(): Promise<void> {
+    if (!deleteDocId) return;
+    setIsDeletingDoc(true);
+    try {
+      await api.delete(`/software/projects/${projectId}/requirements/${deleteDocId}`);
+      toast.success('Requirement document deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects', projectId] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingDoc(false);
+      setDeleteDocId(null);
+    }
+  }
 
   async function handleCreate(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -325,6 +348,14 @@ function RequirementsPanel({
                     </Button>
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setDeleteDocId(doc.id)}
+                  className="text-cdy-muted hover:text-red-400"
+                  aria-label="Delete requirement document"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             </PermissionGate>
           </div>
@@ -398,6 +429,16 @@ function RequirementsPanel({
           </Button>
         )}
       </PermissionGate>
+
+      <ConfirmDialog
+        open={deleteDocId !== null}
+        title="Delete requirement document?"
+        description="This will soft-delete the document. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingDoc}
+        onConfirm={() => void handleDeleteDoc()}
+        onCancel={() => setDeleteDocId(null)}
+      />
     </div>
   );
 }
@@ -549,7 +590,13 @@ function DesignPanel({
 
 // ─── Sprint board ─────────────────────────────────────────────
 
-function SprintBoard({ items }: { items: SprintItemRecord[] }): JSX.Element {
+function SprintBoard({
+  items,
+  onDeleteItem,
+}: {
+  items: SprintItemRecord[];
+  onDeleteItem: (itemId: string) => void;
+}): JSX.Element {
   const columns: Array<{ key: string; label: string }> = [
     { key: 'TODO', label: 'TODO' },
     { key: 'IN_PROGRESS', label: 'IN PROGRESS' },
@@ -568,9 +615,19 @@ function SprintBoard({ items }: { items: SprintItemRecord[] }): JSX.Element {
               .map((i) => (
                 <div
                   key={i.id}
-                  className="rounded border border-cdy-navy-border bg-cdy-navy px-2 py-1.5 text-cdy-white"
+                  className="flex items-center justify-between gap-1 rounded border border-cdy-navy-border bg-cdy-navy px-2 py-1.5 text-cdy-white"
                 >
-                  {i.title}
+                  <span>{i.title}</span>
+                  <PermissionGate feature="software.delivery" action="write">
+                    <button
+                      type="button"
+                      onClick={() => onDeleteItem(i.id)}
+                      className="shrink-0 text-cdy-muted hover:text-red-400"
+                      aria-label="Delete sprint item"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </PermissionGate>
                 </div>
               ))}
             {items.filter((i) => i.status === col.key).length === 0 && (
@@ -781,11 +838,50 @@ function DevelopmentPanel({
 }): JSX.Element {
   const sprintAction = useSprintAction(projectId);
   const updateItemStatus = useUpdateItemStatus(projectId);
+  const queryClient = useQueryClient();
   const [addSprintOpen, setAddSprintOpen] = useState(false);
   const [expandedSprint, setExpandedSprint] = useState<string | null>(
     sprints.find((s) => s.status === 'ACTIVE')?.id ?? null,
   );
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
+  const [deleteSprintId, setDeleteSprintId] = useState<string | null>(null);
+  const [isDeletingSprint, setIsDeletingSprint] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{ sprintId: string; itemId: string } | null>(
+    null,
+  );
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
+
+  async function handleDeleteSprint(): Promise<void> {
+    if (!deleteSprintId) return;
+    setIsDeletingSprint(true);
+    try {
+      await api.delete(`/software/projects/${projectId}/sprints/${deleteSprintId}`);
+      toast.success('Sprint deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects', projectId] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingSprint(false);
+      setDeleteSprintId(null);
+    }
+  }
+
+  async function handleDeleteItem(): Promise<void> {
+    if (!deleteItem) return;
+    setIsDeletingItem(true);
+    try {
+      await api.delete(
+        `/software/projects/${projectId}/sprints/${deleteItem.sprintId}/items/${deleteItem.itemId}`,
+      );
+      toast.success('Sprint item deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects', projectId] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingItem(false);
+      setDeleteItem(null);
+    }
+  }
 
   return (
     <div className="space-y-3">
@@ -848,7 +944,12 @@ function DevelopmentPanel({
                   {format(new Date(sprint.endDate), 'MMM d, yyyy')}
                 </p>
 
-                <SprintBoard items={sprint.items} />
+                <SprintBoard
+                  items={sprint.items}
+                  onDeleteItem={(itemId) =>
+                    setDeleteItem({ sprintId: sprint.id, itemId })
+                  }
+                />
 
                 <PermissionGate feature="software.delivery" action="write">
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -898,6 +999,14 @@ function DevelopmentPanel({
                         <Plus className="h-3 w-3" /> Add Item
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 border-cdy-navy-border text-xs text-cdy-muted hover:border-red-800 hover:text-red-400"
+                      onClick={() => setDeleteSprintId(sprint.id)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Delete Sprint
+                    </Button>
 
                     {sprint.items.length > 0 && sprint.status === 'ACTIVE' && (
                       <div className="flex flex-wrap gap-1">
@@ -953,6 +1062,26 @@ function DevelopmentPanel({
         open={addSprintOpen}
         onClose={() => setAddSprintOpen(false)}
         projectId={projectId}
+      />
+
+      <ConfirmDialog
+        open={deleteSprintId !== null}
+        title="Delete sprint?"
+        description="This will soft-delete the sprint and its items. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingSprint}
+        onConfirm={() => void handleDeleteSprint()}
+        onCancel={() => setDeleteSprintId(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteItem !== null}
+        title="Delete sprint item?"
+        description="This will soft-delete the sprint item. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingItem}
+        onConfirm={() => void handleDeleteItem()}
+        onCancel={() => setDeleteItem(null)}
       />
     </div>
   );
@@ -1096,8 +1225,26 @@ function QaPanel({
   const qa = project.qaPhase;
   const qaAction = useQaAction(projectId);
   const updateBugStatus = useUpdateBugStatus(projectId);
+  const queryClient = useQueryClient();
   const [logBugOpen, setLogBugOpen] = useState(false);
   const [qaError, setQaError] = useState('');
+  const [deleteBugId, setDeleteBugId] = useState<string | null>(null);
+  const [isDeletingBug, setIsDeletingBug] = useState(false);
+
+  async function handleDeleteBug(): Promise<void> {
+    if (!deleteBugId) return;
+    setIsDeletingBug(true);
+    try {
+      await api.delete(`/software/projects/${projectId}/qa/bugs/${deleteBugId}`);
+      toast.success('Bug deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects', projectId] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingBug(false);
+      setDeleteBugId(null);
+    }
+  }
 
   const openCritical =
     qa?.bugs.filter(
@@ -1194,22 +1341,32 @@ function QaPanel({
               )}
             </div>
             <PermissionGate feature="software.delivery" action="write">
-              {bug.status !== 'RESOLVED' && bug.status !== 'WONT_FIX' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-3 h-7 shrink-0 border-green-800 text-xs text-green-400"
-                  onClick={() =>
-                    void updateBugStatus.mutateAsync({
-                      bugId: bug.id,
-                      status: BugStatus.RESOLVED,
-                    })
-                  }
-                  disabled={updateBugStatus.isPending}
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                {bug.status !== 'RESOLVED' && bug.status !== 'WONT_FIX' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-green-800 text-xs text-green-400"
+                    onClick={() =>
+                      void updateBugStatus.mutateAsync({
+                        bugId: bug.id,
+                        status: BugStatus.RESOLVED,
+                      })
+                    }
+                    disabled={updateBugStatus.isPending}
+                  >
+                    Resolve
+                  </Button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDeleteBugId(bug.id)}
+                  className="text-cdy-muted hover:text-red-400"
+                  aria-label="Delete bug"
                 >
-                  Resolve
-                </Button>
-              )}
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </PermissionGate>
           </div>
         ))}
@@ -1242,6 +1399,16 @@ function QaPanel({
         open={logBugOpen}
         onClose={() => setLogBugOpen(false)}
         projectId={projectId}
+      />
+
+      <ConfirmDialog
+        open={deleteBugId !== null}
+        title="Delete bug?"
+        description="This will soft-delete the bug report. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingBug}
+        onConfirm={() => void handleDeleteBug()}
+        onCancel={() => setDeleteBugId(null)}
       />
     </div>
   );
@@ -1543,8 +1710,26 @@ function MaintenancePanel({
   project: SoftwareProjectDetail;
 }): JSX.Element {
   const resolveIssue = useResolveMaintenanceIssue(projectId);
+  const queryClient = useQueryClient();
   const [logIssueOpen, setLogIssueOpen] = useState(false);
+  const [deleteLogId, setDeleteLogId] = useState<string | null>(null);
+  const [isDeletingLog, setIsDeletingLog] = useState(false);
   const logs = project.maintenanceLogs;
+
+  async function handleDeleteLog(): Promise<void> {
+    if (!deleteLogId) return;
+    setIsDeletingLog(true);
+    try {
+      await api.delete(`/software/projects/${projectId}/maintenance/${deleteLogId}`);
+      toast.success('Maintenance log deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects', projectId] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingLog(false);
+      setDeleteLogId(null);
+    }
+  }
 
   const now = new Date();
   const deployedAt = project.deployedAt ? new Date(project.deployedAt) : null;
@@ -1607,17 +1792,27 @@ function MaintenancePanel({
               </p>
             </div>
             <PermissionGate feature="software.delivery" action="write">
-              {log.status !== 'RESOLVED' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-3 h-7 shrink-0 border-green-800 text-xs text-green-400"
-                  onClick={() => void resolveIssue.mutateAsync(log.id)}
-                  disabled={resolveIssue.isPending}
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                {log.status !== 'RESOLVED' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-green-800 text-xs text-green-400"
+                    onClick={() => void resolveIssue.mutateAsync(log.id)}
+                    disabled={resolveIssue.isPending}
+                  >
+                    Resolve
+                  </Button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDeleteLogId(log.id)}
+                  className="text-cdy-muted hover:text-red-400"
+                  aria-label="Delete maintenance log"
                 >
-                  Resolve
-                </Button>
-              )}
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </PermissionGate>
           </div>
         ))}
@@ -1627,6 +1822,16 @@ function MaintenancePanel({
         open={logIssueOpen}
         onClose={() => setLogIssueOpen(false)}
         projectId={projectId}
+      />
+
+      <ConfirmDialog
+        open={deleteLogId !== null}
+        title="Delete maintenance log?"
+        description="This will soft-delete the maintenance log entry. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingLog}
+        onConfirm={() => void handleDeleteLog()}
+        onCancel={() => setDeleteLogId(null)}
       />
     </div>
   );

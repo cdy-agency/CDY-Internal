@@ -2,13 +2,17 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useInfluencers, useInfluencer, useCreateInfluencer } from '@/hooks/useInfluencer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import api from '@/lib/api';
 import type { InfluencerDetail, InfluencerWithCount } from '@cdy/shared';
 
 // ─── Config ───────────────────────────────────────────────────
@@ -375,12 +379,30 @@ export default function InfluencerDatabasePage(): JSX.Element {
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InfluencerWithCount | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const qc = useQueryClient();
 
   const { data: influencers, isLoading } = useInfluencers({
     platform: platformFilter || undefined,
     category: categoryFilter || undefined,
     search: search || undefined,
   });
+
+  async function handleDelete(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/influencer/database/${deleteTarget.id}`);
+      toast.success('Influencer deleted');
+      void qc.invalidateQueries({ queryKey: ['influencer', 'database'] });
+    } catch {
+      // axios interceptor already toasts
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -448,13 +470,14 @@ export default function InfluencerDatabasePage(): JSX.Element {
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">Campaigns</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody>
               {influencers?.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-8 text-center text-cdy-muted"
                   >
                     No influencers found
@@ -490,6 +513,21 @@ export default function InfluencerDatabasePage(): JSX.Element {
                       Active
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    <PermissionGate feature="influencer.database" action="write">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(inf);
+                        }}
+                        className="text-cdy-muted hover:text-red-400"
+                        aria-label={`Delete ${inf.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </PermissionGate>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -505,6 +543,16 @@ export default function InfluencerDatabasePage(): JSX.Element {
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete influencer?"
+        description={`This will remove ${deleteTarget?.name ?? 'this influencer'} from the database.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

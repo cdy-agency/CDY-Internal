@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { AlertTriangle, CheckCircle2, ExternalLink, Plus, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { AlertTriangle, CheckCircle2, ExternalLink, Plus, Trash2, X } from 'lucide-react';
 import {
   useCampaign,
   useAssignInfluencer,
@@ -18,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import api from '@/lib/api';
 import type {
   CampaignInfluencerDetail,
   DeliverableRecord,
@@ -49,11 +53,28 @@ function DeliverableRow({
   const verify = useVerifyDeliverable(campaignId);
   const submit = useSubmitDeliverable(campaignId);
   const missed = useMissedDeliverable(campaignId);
+  const qc = useQueryClient();
   const [mode, setMode] = useState<'idle' | 'confirmVerify' | 'submitPopover'>('idle');
   const [postUrl, setPostUrl] = useState('');
   const [error, setError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const cfg = DELIVERABLE_CONFIG[d.status] ?? DELIVERABLE_CONFIG.PENDING;
+
+  async function handleDelete(): Promise<void> {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/influencer/deliverables/${d.id}`);
+      toast.success('Deliverable deleted');
+      void qc.invalidateQueries({ queryKey: ['influencer', 'campaigns', campaignId] });
+    } catch {
+      // axios interceptor already toasts
+    } finally {
+      setIsDeleting(false);
+      setDeleteOpen(false);
+    }
+  }
 
   async function handleVerify(): Promise<void> {
     setError('');
@@ -152,6 +173,18 @@ function DeliverableRow({
               </button>
             </PermissionGate>
           )}
+          {mode === 'idle' && (
+            <PermissionGate feature="influencer.campaigns" action="write">
+              <button
+                type="button"
+                className="text-cdy-muted hover:text-red-400"
+                onClick={() => setDeleteOpen(true)}
+                aria-label="Delete deliverable"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </PermissionGate>
+          )}
         </div>
       </div>
 
@@ -210,6 +243,16 @@ function DeliverableRow({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete deliverable?"
+        description={`This will remove "${d.description}" from this assignment.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

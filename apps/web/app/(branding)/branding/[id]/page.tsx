@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { Plus, ExternalLink, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Plus, ExternalLink, X, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 import {
   useBrandingProject,
   useAddScopeItem,
@@ -11,10 +13,12 @@ import {
   useSubmitDesign,
   useReviewSubmission,
 } from '@/hooks/useBranding';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type {
   BrandingProjectDetail,
   BrandingScopeItemDetail,
@@ -518,6 +522,23 @@ function ScopeItemCard({
   onSubmit: (item: BrandingScopeItemDetail) => void;
 }): JSX.Element {
   const cfg = SCOPE_STATUS_CONFIG[item.status] ?? SCOPE_STATUS_CONFIG.IN_PROGRESS;
+  const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDelete(): Promise<void> {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/branding/projects/${projectId}/scope/${item.id}`);
+      toast.success('Scope item deleted');
+      void qc.invalidateQueries({ queryKey: ['branding', 'projects', projectId] });
+      setConfirmOpen(false);
+    } catch {
+      // axios interceptor already surfaces the error toast
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
@@ -526,11 +547,23 @@ function ScopeItemCard({
           <span className="text-sm font-semibold text-cdy-muted">{index + 1}</span>
           <span className="font-medium text-cdy-white">{item.title}</span>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.color} ${cfg.bg}`}
-        >
-          {cfg.icon} {cfg.label}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.color} ${cfg.bg}`}
+          >
+            {cfg.icon} {cfg.label}
+          </span>
+          <PermissionGate feature="branding.projects" action="write">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              className="text-cdy-muted hover:text-red-400"
+              aria-label="Delete scope item"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </PermissionGate>
+        </div>
       </div>
 
       {item.supplier && (
@@ -573,6 +606,16 @@ function ScopeItemCard({
           </div>
         </PermissionGate>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete scope item?"
+        description={`This will remove "${item.title}" from the project.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
@@ -585,6 +628,23 @@ function SubmissionRow({
   projectId: string;
 }): JSX.Element {
   const icon = SUBMISSION_STATUS_ICON[submission.status] ?? '⏳';
+  const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDelete(): Promise<void> {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/branding/submissions/${submission.id}`);
+      toast.success('Submission deleted');
+      void qc.invalidateQueries({ queryKey: ['branding', 'projects', projectId] });
+      setConfirmOpen(false);
+    } catch {
+      // axios interceptor already surfaces the error toast
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <div className="rounded-md border border-cdy-navy-border bg-cdy-navy p-2.5 text-xs">
@@ -593,16 +653,28 @@ function SubmissionRow({
           {icon} v{submission.version} —{' '}
           {format(new Date(submission.submittedAt), 'MMM d')}
         </span>
-        {submission.fileUrl && (
-          <a
-            href={submission.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-cdy-red hover:underline"
-          >
-            View file <ExternalLink className="h-3 w-3" />
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          {submission.fileUrl && (
+            <a
+              href={submission.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-cdy-red hover:underline"
+            >
+              View file <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          <PermissionGate feature="branding.delivery" action="write">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              className="text-cdy-muted hover:text-red-400"
+              aria-label="Delete submission"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </PermissionGate>
+        </div>
       </div>
 
       {submission.status === 'REJECTED' && submission.clientFeedback && (
@@ -614,6 +686,16 @@ function SubmissionRow({
       {submission.status === 'PENDING' && (
         <InlineReview submission={submission} projectId={projectId} />
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete submission?"
+        description={`This will remove v${submission.version} of this submission.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
@@ -625,11 +707,32 @@ export default function BrandingProjectPage(): JSX.Element {
   const id = typeof params.id === 'string' ? params.id : '';
   const { data: project, isLoading, isError, error } = useBrandingProject(id);
 
+  const qc = useQueryClient();
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [deliverOpen, setDeliverOpen] = useState(false);
   const [submitItem, setSubmitItem] = useState<BrandingScopeItemDetail | null>(
     null,
   );
+  const [supplierToDelete, setSupplierToDelete] = useState<
+    { id: string; name: string } | null
+  >(null);
+  const [isDeletingSupplier, setIsDeletingSupplier] = useState(false);
+
+  async function handleDeleteSupplier(): Promise<void> {
+    if (!supplierToDelete) return;
+    setIsDeletingSupplier(true);
+    try {
+      await api.delete(`/branding/suppliers/${supplierToDelete.id}`);
+      toast.success('Supplier deleted');
+      void qc.invalidateQueries({ queryKey: ['branding', 'suppliers'] });
+      void qc.invalidateQueries({ queryKey: ['branding', 'projects', id] });
+      setSupplierToDelete(null);
+    } catch {
+      // axios interceptor already surfaces the error toast
+    } finally {
+      setIsDeletingSupplier(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -789,6 +892,20 @@ export default function BrandingProjectPage(): JSX.Element {
                     <td className="px-4 py-2 text-xs text-cdy-muted">
                       {supplier.email ?? '—'}
                     </td>
+                    <td className="px-4 py-2 text-right">
+                      <PermissionGate feature="branding.projects" action="write">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSupplierToDelete({ id: supplier.id, name: supplier.name })
+                          }
+                          className="text-cdy-muted hover:text-red-400"
+                          aria-label="Delete supplier"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </PermissionGate>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -815,6 +932,20 @@ export default function BrandingProjectPage(): JSX.Element {
         open={deliverOpen}
         onClose={() => setDeliverOpen(false)}
         project={project}
+      />
+
+      <ConfirmDialog
+        open={supplierToDelete !== null}
+        title="Delete supplier?"
+        description={
+          supplierToDelete
+            ? `This will remove "${supplierToDelete.name}" from suppliers.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeletingSupplier}
+        onConfirm={() => void handleDeleteSupplier()}
+        onCancel={() => setSupplierToDelete(null)}
       />
     </div>
   );

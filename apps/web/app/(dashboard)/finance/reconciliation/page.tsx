@@ -3,11 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { ImportStatementModal } from '@/components/finance/reconciliation/ImportStatementModal';
 import { useReconciliationList } from '@/hooks/useReconciliation';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
-import { ReconciliationStatus } from '@cdy/shared';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ReconciliationStatus, type BankStatementRecord } from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
 
 function StatusBadge({ status }: { status: ReconciliationStatus }): JSX.Element {
@@ -46,7 +51,25 @@ function StatusBadge({ status }: { status: ReconciliationStatus }): JSX.Element 
 
 export default function ReconciliationListPage(): JSX.Element {
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<BankStatementRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useReconciliationList();
+
+  async function handleDelete(): Promise<void> {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/reconciliation/${deleteTarget.id}`);
+      toast.success('Bank statement deleted');
+      await queryClient.invalidateQueries({ queryKey: ['reconciliation'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor handles toast */
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -129,13 +152,25 @@ export default function ReconciliationListPage(): JSX.Element {
                       <StatusBadge status={stmt.status} />
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/finance/reconciliation/${stmt.id}`}>
-                          {stmt.status === ReconciliationStatus.IN_PROGRESS
-                            ? 'Continue'
-                            : 'Review'}
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/finance/reconciliation/${stmt.id}`}>
+                            {stmt.status === ReconciliationStatus.IN_PROGRESS
+                              ? 'Continue'
+                              : 'Review'}
+                          </Link>
+                        </Button>
+                        <PermissionGate feature="finance.reconciliation" action="write">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteTarget(stmt)}
+                            aria-label="Delete bank statement"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -148,6 +183,20 @@ export default function ReconciliationListPage(): JSX.Element {
       <ImportStatementModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete bank statement?"
+        description={
+          deleteTarget
+            ? `This will permanently remove the reconciliation run for ${format(new Date(deleteTarget.periodFrom), 'MMM d')} – ${format(new Date(deleteTarget.periodTo), 'MMM d, yyyy')}. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

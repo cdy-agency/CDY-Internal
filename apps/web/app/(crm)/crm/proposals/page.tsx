@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { ProposalStatus } from '@cdy/shared';
 import {
   useProposals,
   useUpdateProposalStatus,
+  useDeleteProposal,
   useSalesAgents,
 } from '@/hooks/useCrm';
 import { usePermissions } from '@/context/PermissionContext';
@@ -15,6 +17,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const STATUS_OPTIONS: ProposalStatus[] = [
   ProposalStatus.DRAFT,
@@ -52,6 +55,11 @@ export default function ProposalsPage(): JSX.Element {
     title: string;
   } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{
+    leadId: string;
+    proposalId: string;
+    title: string;
+  } | null>(null);
 
   const { data: proposals, isLoading } = useProposals({
     status: statusFilter,
@@ -60,6 +68,21 @@ export default function ProposalsPage(): JSX.Element {
   });
   const { data: agents } = useSalesAgents();
   const updateStatus = useUpdateProposalStatus();
+  const deleteProposal = useDeleteProposal();
+
+  async function handleDeleteProposal(): Promise<void> {
+    if (!deleteTarget) return;
+    try {
+      await deleteProposal.mutateAsync({
+        leadId: deleteTarget.leadId,
+        proposalId: deleteTarget.proposalId,
+      });
+      toast.success('Proposal deleted');
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor */
+    }
+  }
 
   async function changeStatus(
     leadId: string,
@@ -242,6 +265,20 @@ export default function ProposalsPage(): JSX.Element {
                             </Button>
                           </>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setDeleteTarget({
+                              leadId: proposal.leadId,
+                              proposalId: proposal.id,
+                              title: proposal.title,
+                            })
+                          }
+                          aria-label="Delete proposal"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </PermissionGate>
                   </td>
@@ -285,6 +322,15 @@ export default function ProposalsPage(): JSX.Element {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete proposal?"
+        description="This action can be undone by an admin, but the record will be hidden immediately."
+        isLoading={deleteProposal.isPending}
+        onConfirm={() => void handleDeleteProposal()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

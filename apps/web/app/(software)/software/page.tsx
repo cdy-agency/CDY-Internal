@@ -3,12 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Plus, ExternalLink, X } from 'lucide-react';
+import { Plus, ExternalLink, X, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { useSoftwareProjects, useCreateSoftwareProject } from '@/hooks/useSoftware';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { ClientSearch } from '@/components/crm/ClientSearch';
 import type { SoftwareProjectListItem } from '@cdy/shared';
@@ -281,8 +285,26 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
 }
 
 export default function SoftwareOverviewPage(): JSX.Element {
+  const queryClient = useQueryClient();
   const { data: projects, isLoading, isError } = useSoftwareProjects();
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+
+  async function handleDeleteProject(): Promise<void> {
+    if (!deleteProjectId) return;
+    setIsDeletingProject(true);
+    try {
+      await api.delete(`/software/projects/${deleteProjectId}`);
+      toast.success('Software project deleted');
+      await queryClient.invalidateQueries({ queryKey: ['software', 'projects'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setIsDeletingProject(false);
+      setDeleteProjectId(null);
+    }
+  }
 
   const activeCount =
     projects?.filter((p) => p.isActive && p.phase !== 'COMPLETED').length ?? 0;
@@ -360,7 +382,11 @@ export default function SoftwareOverviewPage(): JSX.Element {
                 </tr>
               )}
               {projects.map((p) => (
-                <ProjectRow key={p.id} project={p} />
+                <ProjectRow
+                  key={p.id}
+                  project={p}
+                  onDeleteClick={() => setDeleteProjectId(p.id)}
+                />
               ))}
             </tbody>
           </table>
@@ -368,14 +394,26 @@ export default function SoftwareOverviewPage(): JSX.Element {
       )}
 
       <NewProjectDrawer open={addOpen} onClose={() => setAddOpen(false)} />
+
+      <ConfirmDialog
+        open={deleteProjectId !== null}
+        title="Delete software project?"
+        description="This will soft-delete the project. This action cannot be undone from here."
+        confirmLabel="Delete"
+        isLoading={isDeletingProject}
+        onConfirm={() => void handleDeleteProject()}
+        onCancel={() => setDeleteProjectId(null)}
+      />
     </div>
   );
 }
 
 function ProjectRow({
   project,
+  onDeleteClick,
 }: {
   project: SoftwareProjectListItem;
+  onDeleteClick: () => void;
 }): JSX.Element {
   return (
     <tr className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy-light/50">
@@ -398,13 +436,25 @@ function ProjectRow({
         {format(new Date(project.startDate), 'MMM d, yyyy')}
       </td>
       <td className="px-4 py-3">
-        <Link
-          href={`/software/${project.id}`}
-          className="flex items-center gap-1 text-xs text-cdy-red hover:underline"
-        >
-          View
-          <ExternalLink className="h-3 w-3" />
-        </Link>
+        <div className="flex items-center justify-end gap-3">
+          <Link
+            href={`/software/${project.id}`}
+            className="flex items-center gap-1 text-xs text-cdy-red hover:underline"
+          >
+            View
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+          <PermissionGate feature="software.projects" action="write">
+            <button
+              type="button"
+              onClick={onDeleteClick}
+              className="text-cdy-muted hover:text-red-400"
+              aria-label="Delete software project"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </PermissionGate>
+        </div>
       </td>
     </tr>
   );

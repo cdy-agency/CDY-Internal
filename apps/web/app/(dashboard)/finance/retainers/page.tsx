@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -13,6 +13,7 @@ import { AmendRetainerModal } from '@/components/finance/retainers/AmendRetainer
 import { ExtendRetainerDrawer } from '@/components/finance/retainers/ExtendRetainerDrawer';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import { RetainerStatus, type RetainerRecord } from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -40,6 +41,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   const [startOpen, setStartOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function pause(): Promise<void> {
     const reason = window.prompt('Reason for pausing:');
@@ -69,6 +71,16 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
       await api.post(`/retainers/${retainer.id}/end`, { reason });
       toast.success('Retainer ended');
       await queryClient.invalidateQueries({ queryKey: ['retainers'] });
+    } catch { /* */ } finally { setActionLoading(false); }
+  }
+
+  async function del(): Promise<void> {
+    setActionLoading(true);
+    try {
+      await api.delete(`/retainers/${retainer.id}`);
+      toast.success('Retainer deleted');
+      await queryClient.invalidateQueries({ queryKey: ['retainers'] });
+      setDeleteOpen(false);
     } catch { /* */ } finally { setActionLoading(false); }
   }
 
@@ -124,6 +136,15 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                       <Button variant="outline" size="sm" onClick={() => setStartOpen(true)}>Start Contract</Button>
                     </>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteOpen(true)}
+                    disabled={actionLoading}
+                    aria-label="Delete retainer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </PermissionGate>
             </div>
@@ -133,6 +154,15 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
       <AmendRetainerModal open={amendOpen} onClose={() => setAmendOpen(false)} retainer={retainer} />
       <ExtendRetainerDrawer open={extendOpen} onClose={() => setExtendOpen(false)} retainer={retainer} />
       <StartRetainerModal open={startOpen} onClose={() => setStartOpen(false)} retainer={retainer} />
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete retainer contract?"
+        description={`This will permanently remove the retainer for ${retainer.clientName ?? retainer.clientId} — ${retainer.serviceName}. This cannot be undone.`}
+        confirmLabel="Delete"
+        isLoading={actionLoading}
+        onConfirm={() => void del()}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </Fragment>
   );
 }

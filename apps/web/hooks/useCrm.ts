@@ -182,6 +182,18 @@ export function useCreateClient() {
   });
 }
 
+export function useDeleteClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/crm/clients/${id}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'clients'] });
+    },
+  });
+}
+
 export function useClient(id: string) {
   return useQuery({
     queryKey: ['crm', 'clients', id],
@@ -360,6 +372,24 @@ export function useUpdateProposalStatus() {
         { status, rejectionReason },
       );
       return res.data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm'] });
+    },
+  });
+}
+
+export function useDeleteProposal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      leadId,
+      proposalId,
+    }: {
+      leadId: string;
+      proposalId: string;
+    }) => {
+      await api.delete(`/crm/leads/${leadId}/proposals/${proposalId}`);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm'] });

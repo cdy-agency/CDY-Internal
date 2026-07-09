@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
-import { Bell, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Bell, Trash2, X } from 'lucide-react';
 import { NotificationType, type NotificationRecord } from '@cdy/shared';
 import {
   useNotifications,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
+  useDeleteNotification,
 } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 function notificationIcon(type: NotificationType): string {
@@ -47,6 +50,8 @@ export function NotificationDrawer({
   const { data, isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const deleteNotification = useDeleteNotification();
+  const [deleteTarget, setDeleteTarget] = useState<NotificationRecord | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +71,17 @@ export function NotificationDrawer({
     if (notification.link) {
       onClose();
       router.push(notification.link);
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    if (!deleteTarget) return;
+    try {
+      await deleteNotification.mutateAsync(deleteTarget.id);
+      toast.success('Notification deleted');
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor */
     }
   }
 
@@ -112,38 +128,59 @@ export function NotificationDrawer({
           {data?.notifications.map((notification) => {
             const unread = !notification.readAt;
             return (
-              <button
+              <div
                 key={notification.id}
-                type="button"
-                onClick={() => void handleClick(notification)}
                 className={cn(
-                  'w-full border-b border-cdy-navy-border px-4 py-4 text-left transition-colors hover:bg-cdy-navy',
+                  'flex items-stretch border-b border-cdy-navy-border transition-colors hover:bg-cdy-navy',
                   unread && 'border-l-2 border-l-cdy-red bg-cdy-navy-light',
                 )}
               >
-                <div className="flex gap-3">
-                  <span className="text-lg">
-                    {notificationIcon(notification.type)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-cdy-white">
-                      {notification.title}
-                    </p>
-                    <p className="mt-1 text-sm text-cdy-muted">
-                      {notification.body}
-                    </p>
-                    <p className="mt-2 text-xs text-cdy-muted">
-                      {formatDistanceToNow(new Date(notification.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </p>
+                <button
+                  type="button"
+                  onClick={() => void handleClick(notification)}
+                  className="flex-1 px-4 py-4 text-left"
+                >
+                  <div className="flex gap-3">
+                    <span className="text-lg">
+                      {notificationIcon(notification.type)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-cdy-white">
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 text-sm text-cdy-muted">
+                        {notification.body}
+                      </p>
+                      <p className="mt-2 text-xs text-cdy-muted">
+                        {formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(notification)}
+                  className="px-3 text-cdy-muted hover:text-cdy-red"
+                  aria-label="Delete notification"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             );
           })}
         </div>
       </aside>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete notification?"
+        description="This action can be undone by an admin, but the record will be hidden immediately."
+        isLoading={deleteNotification.isPending}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

@@ -1,9 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { AttendanceStatus } from '@cdy/shared';
+import type { AttendanceRecord } from '@cdy/shared';
 import { useAttendance } from '@/hooks/useHr';
+import api from '@/lib/api';
+import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 function statusBadge(status: AttendanceStatus): string {
@@ -21,6 +29,24 @@ function statusBadge(status: AttendanceStatus): string {
 export default function AttendanceOverviewPage(): JSX.Element {
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: records, isLoading } = useAttendance({ date: today });
+  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<AttendanceRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDeleteRecord(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/hr/attendance/${deleteTarget.id}`);
+      toast.success('Attendance record deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'attendance'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   const present = records?.filter(
     (r) => r.status === AttendanceStatus.PRESENT,
@@ -83,7 +109,8 @@ export default function AttendanceOverviewPage(): JSX.Element {
                   <th className="pb-2 pr-4 font-medium">Check in</th>
                   <th className="pb-2 pr-4 font-medium">Check out</th>
                   <th className="pb-2 pr-4 font-medium">Hours</th>
-                  <th className="pb-2 font-medium">Status</th>
+                  <th className="pb-2 pr-4 font-medium">Status</th>
+                  <th className="pb-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +159,18 @@ export default function AttendanceOverviewPage(): JSX.Element {
                         {rec.status.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="py-2">
+                      <PermissionGate feature="hr.attendance" action="write">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(rec)}
+                          className="text-cdy-muted hover:text-cdy-red"
+                          aria-label="Delete attendance record"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -139,6 +178,20 @@ export default function AttendanceOverviewPage(): JSX.Element {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete attendance record?"
+        description={
+          deleteTarget?.employee
+            ? `This will remove the record for ${deleteTarget.employee.firstName} ${deleteTarget.employee.lastName}.`
+            : 'This will remove this attendance record.'
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteRecord()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

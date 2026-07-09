@@ -3,16 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { useTaxReport } from '@/hooks/useTax';
 import { RecordRemittanceModal } from '@/components/finance/tax/RecordRemittanceModal';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { FeatureReadGate } from '@/components/FeatureReadGate';
 import { PermissionGate } from '@/components/PermissionGate';
+import type { TaxPaymentRecord } from '@cdy/shared';
 
 function monthRange(year: number, month: number): { from: string; to: string } {
   const d = new Date(year, month, 1);
@@ -28,8 +33,27 @@ export default function TaxReportPage(): JSX.Element {
   const [from, setFrom] = useState(defaultRange.from);
   const [to, setTo] = useState(defaultRange.to);
   const [remittanceOpen, setRemittanceOpen] = useState(false);
+  const [remittanceToDelete, setRemittanceToDelete] =
+    useState<TaxPaymentRecord | null>(null);
+  const [deletingRemittance, setDeletingRemittance] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: report, isLoading } = useTaxReport({ from, to });
+
+  async function handleDeleteRemittance(): Promise<void> {
+    if (!remittanceToDelete) return;
+    setDeletingRemittance(true);
+    try {
+      await api.delete(`/tax/remittances/${remittanceToDelete.id}`);
+      toast.success('Remittance deleted');
+      await queryClient.invalidateQueries({ queryKey: ['tax'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeletingRemittance(false);
+      setRemittanceToDelete(null);
+    }
+  }
 
   async function downloadPdf(): Promise<void> {
     try {
@@ -153,6 +177,7 @@ export default function TaxReportPage(): JSX.Element {
                     <th className="pb-2">Authority</th>
                     <th className="pb-2 text-right">Amount</th>
                     <th className="pb-2">Reference</th>
+                    <th className="pb-2">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,6 +191,19 @@ export default function TaxReportPage(): JSX.Element {
                         {formatCurrency(r.amount, r.currency)}
                       </td>
                       <td className="py-2 text-cdy-muted">{r.reference ?? '—'}</td>
+                      <td className="py-2">
+                        <PermissionGate feature="finance.tax" action="write">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                            onClick={() => setRemittanceToDelete(r)}
+                            aria-label="Delete remittance"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </PermissionGate>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,6 +214,20 @@ export default function TaxReportPage(): JSX.Element {
       )}
 
       <RecordRemittanceModal open={remittanceOpen} onClose={() => setRemittanceOpen(false)} />
+
+      <ConfirmDialog
+        open={Boolean(remittanceToDelete)}
+        title="Delete remittance?"
+        description={
+          remittanceToDelete
+            ? `This will permanently delete the ${formatCurrency(remittanceToDelete.amount, remittanceToDelete.currency)} remittance to ${remittanceToDelete.authorityName}. This action cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deletingRemittance}
+        onConfirm={handleDeleteRemittance}
+        onCancel={() => setRemittanceToDelete(null)}
+      />
     </div>
     </FeatureReadGate>
   );

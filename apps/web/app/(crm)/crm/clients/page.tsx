@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useClients, exportClientsCsv } from '@/hooks/useCrm';
+import toast from 'react-hot-toast';
+import { useClients, useDeleteClient, exportClientsCsv } from '@/hooks/useCrm';
 import { useVentures } from '@/hooks/useVentures';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, Trash2 } from 'lucide-react';
 import { PermissionGate } from '@/components/PermissionGate';
 import { AddClientDrawer } from '@/components/crm/clients/AddClientDrawer';
 import { ventureColorHex } from '@/lib/ventureUtils';
@@ -34,12 +36,16 @@ export default function ClientsListPage(): JSX.Element {
   const [ventureFilter, setVentureFilter] = useState('');
   const [exporting, setExporting] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(
+    null,
+  );
   const { data: clients, isLoading } = useClients(
     search || undefined,
     sourceFilter || undefined,
     ventureFilter || undefined,
   );
   const { data: ventures = [] } = useVentures();
+  const deleteClient = useDeleteClient();
 
   async function handleExport(): Promise<void> {
     setExporting(true);
@@ -47,6 +53,17 @@ export default function ClientsListPage(): JSX.Element {
       await exportClientsCsv(search || undefined);
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleDeleteClient(): Promise<void> {
+    if (!deleteTarget) return;
+    try {
+      await deleteClient.mutateAsync(deleteTarget.id);
+      toast.success('Client deleted');
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor */
     }
   }
 
@@ -164,12 +181,29 @@ export default function ClientsListPage(): JSX.Element {
                     {new Date(client.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/crm/clients/${client.id}`}
-                      className="text-cdy-red hover:underline"
-                    >
-                      View
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/crm/clients/${client.id}`}
+                        className="text-cdy-red hover:underline"
+                      >
+                        View
+                      </Link>
+                      <PermissionGate feature="crm.clients" action="write">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({
+                              id: client.id,
+                              name: client.companyName ?? client.contactName,
+                            })
+                          }
+                          className="text-cdy-muted hover:text-cdy-red"
+                          aria-label="Delete client"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                    </div>
                   </td>
                 </tr>
               );
@@ -188,6 +222,15 @@ export default function ClientsListPage(): JSX.Element {
       <AddClientDrawer
         open={addClientOpen}
         onClose={() => setAddClientOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete client?"
+        description="This action can be undone by an admin, but the record will be hidden immediately."
+        isLoading={deleteClient.isPending}
+        onConfirm={() => void handleDeleteClient()}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

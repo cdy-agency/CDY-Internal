@@ -2,12 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { LayoutGrid, List, Download, Plus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { LayoutGrid, List, Download, Plus, Trash2 } from 'lucide-react';
 import { EmployeeStatus } from '@cdy/shared';
+import type { EmployeeDirectoryRecord, EmployeeRecord } from '@cdy/shared';
 import { useEmployees, useDepartments, type EmployeeFilters } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'cards' | 'table';
@@ -35,9 +40,14 @@ export default function EmployeesPage(): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [filters, setFilters] = useState<EmployeeFilters>({});
   const [applied, setApplied] = useState<EmployeeFilters>({});
+  const [deleteTarget, setDeleteTarget] = useState<
+    EmployeeRecord | EmployeeDirectoryRecord | null
+  >(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: employees, isLoading } = useEmployees(applied);
   const { data: departments } = useDepartments();
+  const queryClient = useQueryClient();
 
   function applyFilters(): void {
     setApplied({ ...filters });
@@ -46,6 +56,21 @@ export default function EmployeesPage(): JSX.Element {
   function resetFilters(): void {
     setFilters({});
     setApplied({});
+  }
+
+  async function handleDeleteEmployee(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/hr/employees/${deleteTarget.id}`);
+      toast.success('Employee deleted');
+      void queryClient.invalidateQueries({ queryKey: ['hr', 'employees'] });
+      setDeleteTarget(null);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -151,33 +176,48 @@ export default function EmployeesPage(): JSX.Element {
       ) : viewMode === 'cards' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {employees?.map((emp) => (
-            <Link
+            <div
               key={emp.id}
-              href={`/hr/employees/${emp.id}`}
-              className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4 transition-colors hover:border-cdy-red/50"
+              className="relative rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4 transition-colors hover:border-cdy-red/50"
             >
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-cdy-red/20 text-lg font-semibold text-cdy-red">
-                {emp.firstName[0]}
-                {emp.lastName[0]}
-              </div>
-              <p className="font-medium text-cdy-white">
-                {emp.firstName} {emp.lastName}
-              </p>
-              <p className="text-sm text-cdy-muted">{emp.jobTitle}</p>
-              <p className="mt-1 text-xs text-cdy-muted">
-                {'departmentName' in emp
-                  ? (emp.departmentName ?? 'No department')
-                  : '—'}
-              </p>
-              <span
-                className={cn(
-                  'mt-2 inline-block rounded-full px-2 py-0.5 text-xs',
-                  statusBadge(emp.status),
-                )}
-              >
-                {emp.status.replace('_', ' ')}
-              </span>
-            </Link>
+              <PermissionGate feature="hr.employees" action="write">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteTarget(emp);
+                  }}
+                  className="absolute right-3 top-3 text-cdy-muted hover:text-cdy-red"
+                  aria-label="Delete employee"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </PermissionGate>
+              <Link href={`/hr/employees/${emp.id}`} className="block">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-cdy-red/20 text-lg font-semibold text-cdy-red">
+                  {emp.firstName[0]}
+                  {emp.lastName[0]}
+                </div>
+                <p className="font-medium text-cdy-white">
+                  {emp.firstName} {emp.lastName}
+                </p>
+                <p className="text-sm text-cdy-muted">{emp.jobTitle}</p>
+                <p className="mt-1 text-xs text-cdy-muted">
+                  {'departmentName' in emp
+                    ? (emp.departmentName ?? 'No department')
+                    : '—'}
+                </p>
+                <span
+                  className={cn(
+                    'mt-2 inline-block rounded-full px-2 py-0.5 text-xs',
+                    statusBadge(emp.status),
+                  )}
+                >
+                  {emp.status.replace('_', ' ')}
+                </span>
+              </Link>
+            </div>
           ))}
         </div>
       ) : (
@@ -191,6 +231,7 @@ export default function EmployeesPage(): JSX.Element {
                 <th className="px-4 py-3 font-medium">Department</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody>
@@ -227,12 +268,38 @@ export default function EmployeesPage(): JSX.Element {
                       {emp.status.replace('_', ' ')}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    <PermissionGate feature="hr.employees" action="write">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(emp)}
+                        className="text-cdy-muted hover:text-cdy-red"
+                        aria-label="Delete employee"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </PermissionGate>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete employee?"
+        description={
+          deleteTarget
+            ? `This will remove ${deleteTarget.firstName} ${deleteTarget.lastName} from the directory.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteEmployee()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

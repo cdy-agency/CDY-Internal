@@ -3,12 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { Plus, ExternalLink, X, Trash2 } from 'lucide-react';
 import { useBrandingProjects, useCreateBrandingProject } from '@/hooks/useBranding';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { ClientSearch } from '@/components/crm/ClientSearch';
 import type { BrandingProjectListItem, ScopeStatus } from '@cdy/shared';
@@ -278,6 +282,26 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
 export default function BrandingOverviewPage(): JSX.Element {
   const { data: projects, isLoading, isError } = useBrandingProjects();
   const [addOpen, setAddOpen] = useState(false);
+  const qc = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<BrandingProjectListItem | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDeleteProject(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/branding/projects/${deleteTarget.id}`);
+      toast.success('Branding project deleted');
+      void qc.invalidateQueries({ queryKey: ['branding', 'projects'] });
+      setDeleteTarget(null);
+    } catch {
+      // axios interceptor already surfaces the error toast
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   const activeCount =
     projects?.filter((p) => p.status === 'IN_PROGRESS').length ?? 0;
@@ -358,7 +382,11 @@ export default function BrandingOverviewPage(): JSX.Element {
                 </tr>
               )}
               {projects.map((p) => (
-                <ProjectRow key={p.id} project={p} />
+                <ProjectRow
+                  key={p.id}
+                  project={p}
+                  onDelete={setDeleteTarget}
+                />
               ))}
             </tbody>
           </table>
@@ -366,14 +394,30 @@ export default function BrandingOverviewPage(): JSX.Element {
       )}
 
       <NewProjectDrawer open={addOpen} onClose={() => setAddOpen(false)} />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete branding project?"
+        description={
+          deleteTarget
+            ? `This will remove "${deleteTarget.name}" and its scope items.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteProject()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
 
 function ProjectRow({
   project,
+  onDelete,
 }: {
   project: BrandingProjectListItem;
+  onDelete: (project: BrandingProjectListItem) => void;
 }): JSX.Element {
   return (
     <tr className="border-b border-cdy-navy-border/50 hover:bg-cdy-navy-light/50">
@@ -394,13 +438,25 @@ function ProjectRow({
         <StatusBadge status={project.status} />
       </td>
       <td className="px-4 py-3">
-        <Link
-          href={`/branding/${project.id}`}
-          className="flex items-center gap-1 text-xs text-cdy-red hover:underline"
-        >
-          View
-          <ExternalLink className="h-3 w-3" />
-        </Link>
+        <div className="flex items-center justify-end gap-3">
+          <Link
+            href={`/branding/${project.id}`}
+            className="flex items-center gap-1 text-xs text-cdy-red hover:underline"
+          >
+            View
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+          <PermissionGate feature="branding.projects" action="write">
+            <button
+              type="button"
+              onClick={() => onDelete(project)}
+              className="text-cdy-muted hover:text-red-400"
+              aria-label="Delete project"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </PermissionGate>
+        </div>
       </td>
     </tr>
   );

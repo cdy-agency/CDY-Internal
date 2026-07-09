@@ -33,13 +33,14 @@ import { PayInstalmentModal } from '@/components/finance/paymentPlans/PayInstalm
 import { NotFound } from '@/components/finance/NotFound';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import {
   InstalmentStatus,
   InvoiceStatus,
   PaymentPlanStatus,
 } from '@cdy/shared';
-import type { PaymentPlanInstalment } from '@cdy/shared';
+import type { CreditNoteRecord, PaymentPlanInstalment } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 import { PermissionGate } from '@/components/PermissionGate';
 
@@ -73,6 +74,9 @@ export default function InvoiceDetailPage(): JSX.Element {
   const [markSentLoading, setMarkSentLoading] = useState(false);
   const [cnPdfLoading, setCnPdfLoading] = useState<string | null>(null);
   const [cancelPlanLoading, setCancelPlanLoading] = useState(false);
+  const [creditNoteToDelete, setCreditNoteToDelete] =
+    useState<CreditNoteRecord | null>(null);
+  const [deletingCreditNote, setDeletingCreditNote] = useState(false);
 
   const is404 =
     isError && (error as AxiosError)?.response?.status === 404;
@@ -141,6 +145,22 @@ export default function InvoiceDetailPage(): JSX.Element {
       toast.error('Failed to download credit note PDF');
     } finally {
       setCnPdfLoading(null);
+    }
+  }
+
+  async function handleDeleteCreditNote(): Promise<void> {
+    if (!creditNoteToDelete || !invoice) return;
+    setDeletingCreditNote(true);
+    try {
+      await api.delete(`/credit-notes/${creditNoteToDelete.id}`);
+      toast.success('Credit note deleted');
+      await queryClient.invalidateQueries({ queryKey: ['invoice', invoice.id] });
+      await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      setDeletingCreditNote(false);
+      setCreditNoteToDelete(null);
     }
   }
 
@@ -475,20 +495,36 @@ export default function InvoiceDetailPage(): JSX.Element {
                       </td>
                       <td className="py-2 text-cdy-muted">{cn.status}</td>
                       <td className="py-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleCreditNotePdf(cn.id, cn.creditNoteNumber)
-                          }
-                          disabled={cnPdfLoading === cn.id}
-                        >
-                          {cnPdfLoading === cn.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            'View PDF'
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCreditNotePdf(cn.id, cn.creditNoteNumber)
+                            }
+                            disabled={cnPdfLoading === cn.id}
+                          >
+                            {cnPdfLoading === cn.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'View PDF'
+                            )}
+                          </Button>
+                          <PermissionGate
+                            feature="finance.credit_notes"
+                            action="write"
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                              onClick={() => setCreditNoteToDelete(cn)}
+                              aria-label="Delete credit note"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -752,6 +788,20 @@ export default function InvoiceDetailPage(): JSX.Element {
           invoiceId={invoice.id}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(creditNoteToDelete)}
+        title="Delete credit note?"
+        description={
+          creditNoteToDelete
+            ? `This will permanently delete credit note ${creditNoteToDelete.creditNoteNumber}. This action cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isLoading={deletingCreditNote}
+        onConfirm={handleDeleteCreditNote}
+        onCancel={() => setCreditNoteToDelete(null)}
+      />
     </div>
   );
 }

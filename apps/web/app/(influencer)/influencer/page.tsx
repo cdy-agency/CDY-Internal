@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Plus, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useCampaigns, useCreateCampaign } from '@/hooks/useInfluencer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { PermissionGate } from '@/components/PermissionGate';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { ClientSearch } from '@/components/crm/ClientSearch';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import api from '@/lib/api';
 import type { InfluencerCampaignListItem, ClientSearchResult } from '@cdy/shared';
 
 // ─── Config ───────────────────────────────────────────────────
@@ -266,8 +270,10 @@ function NewCampaignDrawer({
 
 function CampaignRow({
   campaign,
+  onDeleteClick,
 }: {
   campaign: InfluencerCampaignListItem;
+  onDeleteClick: (campaign: InfluencerCampaignListItem) => void;
 }): JSX.Element {
   const cfg = CAMPAIGN_STATUS_CONFIG[campaign.status] ?? CAMPAIGN_STATUS_CONFIG.ACTIVE;
   const totalDeliverables = campaign.influencers.flatMap((i) => i.deliverables).length;
@@ -322,12 +328,24 @@ function CampaignRow({
         </span>
       </td>
       <td className="px-4 py-3">
-        <Link
-          href={`/influencer/${campaign.id}`}
-          className="text-xs text-cdy-red hover:underline"
-        >
-          View →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/influencer/${campaign.id}`}
+            className="text-xs text-cdy-red hover:underline"
+          >
+            View →
+          </Link>
+          <PermissionGate feature="influencer.campaigns" action="write">
+            <button
+              type="button"
+              onClick={() => onDeleteClick(campaign)}
+              className="text-cdy-muted hover:text-red-400"
+              aria-label={`Delete ${campaign.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </PermissionGate>
+        </div>
       </td>
     </tr>
   );
@@ -338,6 +356,24 @@ function CampaignRow({
 export default function InfluencerOverviewPage(): JSX.Element {
   const { data: campaigns, isLoading, isError } = useCampaigns();
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<InfluencerCampaignListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const qc = useQueryClient();
+
+  async function handleDelete(): Promise<void> {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/influencer/campaigns/${deleteTarget.id}`);
+      toast.success('Campaign deleted');
+      void qc.invalidateQueries({ queryKey: ['influencer', 'campaigns'] });
+    } catch {
+      // axios interceptor already toasts
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
 
   const activeCount = campaigns?.filter((c) => c.status === 'ACTIVE').length ?? 0;
   const totalInfluencers =
@@ -417,7 +453,7 @@ export default function InfluencerOverviewPage(): JSX.Element {
                 </tr>
               )}
               {campaigns.map((c) => (
-                <CampaignRow key={c.id} campaign={c} />
+                <CampaignRow key={c.id} campaign={c} onDeleteClick={setDeleteTarget} />
               ))}
             </tbody>
           </table>
@@ -427,6 +463,16 @@ export default function InfluencerOverviewPage(): JSX.Element {
       <NewCampaignDrawer
         open={addOpen}
         onClose={() => setAddOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete campaign?"
+        description={`This will remove "${deleteTarget?.name ?? ''}" and its associated assignments.`}
+        confirmLabel="Delete"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

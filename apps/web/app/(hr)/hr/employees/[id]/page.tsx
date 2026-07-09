@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay } from 'date-fns';
 import { AttendanceStatus, ReviewStatus } from '@cdy/shared';
 import {
@@ -16,9 +19,11 @@ import {
   useMarkOnboardingItemComplete,
   currentMonthParam,
 } from '@/hooks/useHr';
+import api from '@/lib/api';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency, cn } from '@/lib/utils';
 
 type Tab =
@@ -65,6 +70,8 @@ export default function EmployeeProfilePage(): JSX.Element {
   const [salaryCurrency, setSalaryCurrency] = useState('RWF');
   const [effectiveFrom, setEffectiveFrom] = useState('');
   const [salaryReason, setSalaryReason] = useState('Annual review');
+  const [deleteOnboardingOpen, setDeleteOnboardingOpen] = useState(false);
+  const [isDeletingOnboarding, setIsDeletingOnboarding] = useState(false);
 
   const { data: employee, isLoading } = useEmployee(id);
   const { data: balances } = useEmployeeLeaveBalances(id);
@@ -74,6 +81,23 @@ export default function EmployeeProfilePage(): JSX.Element {
   const { data: onboarding } = useEmployeeOnboarding(id);
   const updateSalary = useUpdateEmployeeSalary();
   const markOnboardingComplete = useMarkOnboardingItemComplete();
+  const queryClient = useQueryClient();
+
+  async function handleDeleteOnboarding(): Promise<void> {
+    setIsDeletingOnboarding(true);
+    try {
+      await api.delete(`/hr/employees/${id}/onboarding`);
+      toast.success('Onboarding checklist deleted');
+      void queryClient.invalidateQueries({
+        queryKey: ['hr', 'employees', id, 'onboarding'],
+      });
+      setDeleteOnboardingOpen(false);
+    } catch {
+      /* interceptor already toasts */
+    } finally {
+      setIsDeletingOnboarding(false);
+    }
+  }
 
   if (isLoading) {
     return <p className="text-sm text-cdy-muted">Loading profile…</p>;
@@ -499,9 +523,22 @@ export default function EmployeeProfilePage(): JSX.Element {
         ) : (
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold text-cdy-white">
-              Onboarding Checklist — {employee.firstName} {employee.lastName}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-cdy-white">
+                Onboarding Checklist — {employee.firstName} {employee.lastName}
+              </h3>
+              <PermissionGate feature="hr.employees" action="write">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-cdy-red hover:text-cdy-red"
+                  onClick={() => setDeleteOnboardingOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Checklist
+                </Button>
+              </PermissionGate>
+            </div>
             <p className="mt-1 text-sm text-cdy-muted">
               Started: {format(new Date(onboarding.createdAt), 'MMM d, yyyy')} · Status:{' '}
               {onboarding.status.replace('_', ' ')}
@@ -589,6 +626,16 @@ export default function EmployeeProfilePage(): JSX.Element {
         </div>
         )
       )}
+
+      <ConfirmDialog
+        open={deleteOnboardingOpen}
+        title="Delete onboarding checklist?"
+        description={`This will remove the onboarding checklist for ${employee.firstName} ${employee.lastName}.`}
+        confirmLabel="Delete"
+        isLoading={isDeletingOnboarding}
+        onConfirm={() => void handleDeleteOnboarding()}
+        onCancel={() => setDeleteOnboardingOpen(false)}
+      />
     </div>
   );
 }
