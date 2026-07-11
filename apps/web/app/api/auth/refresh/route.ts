@@ -27,7 +27,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const result = await response.json();
     const { accessToken } = result.data as { accessToken: string };
 
-    const secure = process.env.COOKIES_SECURE === 'true';
+    const secure =
+      process.env.COOKIES_SECURE != null
+        ? process.env.COOKIES_SECURE === 'true'
+        : process.env.NODE_ENV === 'production';
     const nextResponse = NextResponse.json({ ok: true });
 
     nextResponse.cookies.set(AUTH_COOKIE_NAME, accessToken, {

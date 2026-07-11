@@ -45,7 +45,8 @@ function statusBadgeClass(status: ProposalStatus): string {
 }
 
 export default function ProposalsPage(): JSX.Element {
-  const { roleKey } = usePermissions();
+  const { canRead } = usePermissions();
+  const canViewAllAgents = canRead('crm.all');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | undefined>();
   const [assignedTo, setAssignedTo] = useState<string | undefined>();
   const [search, setSearch] = useState('');
@@ -139,7 +140,7 @@ export default function ProposalsPage(): JSX.Element {
             </button>
           ))}
         </div>
-        {roleKey !== 'SALES_AGENT' && (
+        {canViewAllAgents && (
           <select
             value={assignedTo ?? ''}
             onChange={(e) => setAssignedTo(e.target.value || undefined)}

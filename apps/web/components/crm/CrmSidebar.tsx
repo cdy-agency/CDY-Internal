@@ -37,7 +37,6 @@ const bottomNavItems = [
     href: '/crm/audit',
     icon: ClipboardList,
     feature: 'crm.reports',
-    roles: ['CEO', 'OPERATIONS_MANAGER'],
   },
 ];
 
@@ -53,13 +52,9 @@ export function CrmSidebar({ user, onLogout }: CrmSidebarProps): JSX.Element {
 
   const visibleItems = navItems.filter((item) => canRead(item.feature));
 
-  const visibleBottomItems = bottomNavItems.filter((item) => {
-    if (!canRead(item.feature)) return false;
-    if (item.roles && user) {
-      return item.roles.includes(user.roleKey);
-    }
-    return true;
-  });
+  const visibleBottomItems = bottomNavItems.filter((item) =>
+    canRead(item.feature),
+  );
 
   function isActive(href: string): boolean {
     return href === '/crm' ? pathname === '/crm' : pathname.startsWith(href);

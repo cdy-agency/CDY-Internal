@@ -64,6 +64,11 @@ export function middleware(request: NextRequest): NextResponse {
     if (!token) return NextResponse.redirect(new URL('/login', request.url));
     const payload = parseJwtPayload(token);
     if (!payload) return redirectToLogin(request);
+    // Legacy/slim tokens without a permission map can't prove access; force a
+    // fresh login that issues a full token instead of guessing a landing page.
+    if (payload.roleKey !== 'CEO' && !payload.permissions) {
+      return redirectToLogin(request);
+    }
     const landingPath = resolveLandingPath(payload.permissions, payload.roleKey, payload.homeModule);
     return NextResponse.redirect(new URL(landingPath, request.url));
   }
@@ -99,14 +104,16 @@ export function middleware(request: NextRequest): NextResponse {
     return redirectToLogin(request);
   }
 
-  // Permission checks require permissions in JWT; if absent (slim token), let API guards handle it
-  if (!payload.permissions) {
-    return NextResponse.next();
-  }
-
   // CEO bypasses all permission checks
   if (payload.roleKey === 'CEO') {
     return NextResponse.next();
+  }
+
+  // Fail closed: a token without embedded permissions (legacy/slim token)
+  // cannot prove access to anything. Force a fresh login, which issues a
+  // full token with the permission map.
+  if (!payload.permissions) {
+    return redirectToLogin(request);
   }
 
   if (!isRouteAllowed(pathname, payload.permissions, payload.roleKey)) {

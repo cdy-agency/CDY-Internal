@@ -35,7 +35,6 @@ interface NavItem {
   href: string;
   icon: typeof LayoutDashboard;
   feature: string;
-  salesAgentHref?: string;
 }
 
 const navItems: NavItem[] = [
@@ -61,7 +60,6 @@ const navItems: NavItem[] = [
     href: '/finance/commissions',
     icon: BadgeDollarSign,
     feature: 'finance.commissions',
-    salesAgentHref: '/finance/commissions/my',
   },
   {
     label: 'My Commissions',
@@ -88,19 +86,12 @@ interface FinanceSidebarProps {
 export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Element {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { canRead, roleKey } = usePermissions();
+  const { canRead } = usePermissions();
 
   function isActive(href: string): boolean {
     return href === '/finance'
       ? pathname === '/finance'
       : pathname.startsWith(href);
-  }
-
-  function resolveHref(item: NavItem): string {
-    if (item.salesAgentHref && roleKey === 'SALES_AGENT' && !canRead('finance.commissions')) {
-      return item.salesAgentHref;
-    }
-    return item.href;
   }
 
   const visibleItems = navItems.filter((item) => canRead(item.feature));
@@ -109,7 +100,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
     <nav className="flex-1 space-y-1 overflow-y-auto p-3">
       {visibleItems.map((item) => {
         const Icon = item.icon;
-        const href = resolveHref(item);
+        const href = item.href;
         const active = isActive(href);
         return (
           <Link

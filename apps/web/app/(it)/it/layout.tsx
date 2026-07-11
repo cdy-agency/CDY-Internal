@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { redirectToLoginAfterAuthFailure } from '@/lib/session';
+import { hasModuleAccess } from '@/lib/module-access';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
@@ -36,11 +37,17 @@ export default function ItLayout({
     api
       .get<ApiResponse<UserProfile>>('/auth/me')
       .then((res) => {
-        if (res.data.data.roleKey !== 'IT_ADMINISTRATOR') {
+        const profile = res.data.data;
+        // Feature-based gate: access requires an it.* permission (any role
+        // granted IT features qualifies), not a hardcoded role key.
+        const canAccessIt =
+          profile.roleKey === 'CEO' ||
+          hasModuleAccess(profile.permissions, 'it');
+        if (!canAccessIt) {
           router.push('/403');
           return;
         }
-        setUser(res.data.data);
+        setUser(profile);
       })
       .catch(() => void redirectToLoginAfterAuthFailure(router));
   }, [router]);

@@ -137,7 +137,7 @@ export default function CommissionsPage(): JSX.Element {
   const [approveAllLoading, setApproveAllLoading] = useState(false);
 
   const { data, isLoading } = useCommissions({ month, limit: 50 });
-  const { canWrite, roleKey } = usePermissions();
+  const { canRead, canWrite } = usePermissions();
 
   useEffect(() => {
     api
@@ -145,10 +145,12 @@ export default function CommissionsPage(): JSX.Element {
       .then((res) => {
         const profile = res.data.data;
         setUser(profile);
-        if (
-          profile.roleKey === 'SALES_AGENT' &&
-          !profile.permissions?.['finance.commissions']?.canRead
-        ) {
+        // Feature-based: users who can only see their own commissions are
+        // sent to the personal view (CEO implicitly has every feature).
+        const canReadAllCommissions =
+          profile.roleKey === 'CEO' ||
+          Boolean(profile.permissions?.['finance.commissions']?.canRead);
+        if (!canReadAllCommissions) {
           router.replace('/finance/commissions/my');
         }
       })
@@ -174,7 +176,9 @@ export default function CommissionsPage(): JSX.Element {
     }
   }
 
-  if (roleKey === 'SALES_AGENT' && !canWrite('finance.commissions')) {
+  if (!canRead('finance.commissions')) {
+    // No org-wide commissions access — show a loader while the effect above
+    // redirects to the personal commissions view.
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-cdy-muted" />

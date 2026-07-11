@@ -72,11 +72,7 @@ const MODULES = [
 
 export function ModuleSwitcher(): JSX.Element | null {
   const pathname = usePathname();
-  const { canRead, roleKey } = usePermissions();
-
-  if (roleKey === 'IT_ADMINISTRATOR') {
-    return null;
-  }
+  const { canRead } = usePermissions();
 
   const visible = MODULES.filter(
     (m) =>

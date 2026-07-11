@@ -484,8 +484,10 @@ function TeamView({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function CrmOverviewPage(): JSX.Element {
-  const { roleKey } = usePermissions();
-  const isAgent = roleKey === 'SALES_AGENT';
+  const { canRead } = usePermissions();
+  // Users without the crm.all feature only see their own records — show them
+  // the personal (agent) overview rather than the org-wide one.
+  const isAgent = !canRead('crm.all');
   const [month, setMonth] = useState(currentMonthParam());
   const monthDate = new Date(`${month}-01`);
   const isCurrentMonth = month === currentMonthParam();

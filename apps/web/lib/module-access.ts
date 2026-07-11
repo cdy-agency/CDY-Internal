@@ -99,11 +99,10 @@ export function resolveLandingPath(
   preferredPath?: string,
 ): string {
   if (roleKey === 'CEO') return preferredPath || '/ceo';
-  // No permission data available at all (e.g. a legacy/slim token issued
-  // before permissions were added to it) — trust the preferred path rather
-  // than assuming zero access. This is distinct from permissions being an
-  // empty object, which is a real "no access granted" signal.
-  if (!permissions) return preferredPath || '/finance';
+  // Fail closed: no permission data means we cannot prove access to anything.
+  // (Legacy/slim tokens without embedded permissions are forced back through
+  // login by the middleware, which reissues a full token.)
+  if (!permissions) return NO_ACCESS_PATH;
   if (preferredPath && isRouteAllowed(preferredPath, permissions, roleKey)) {
     return preferredPath;
   }
@@ -222,9 +221,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
 
 /**
  * Whether the given path is allowed for this user, per ROUTE_PERMISSIONS.
- * Fails open (returns true) when no rule matches a path or permission data
- * isn't available — those cases are either intentionally ungated here or
- * deferred to server-side API guards, matching the pre-existing design.
+ * Fails CLOSED when permission data isn't available: access must be provable
+ * from the permission map. Paths that match no rule are allowed — every
+ * protected module prefix has a catch-all rule, so an unmatched path is by
+ * definition outside the permission-gated module space (e.g. /login, /403).
  */
 export function isRouteAllowed(
   pathname: string,
@@ -232,7 +232,7 @@ export function isRouteAllowed(
   roleKey?: string,
 ): boolean {
   if (roleKey === 'CEO') return true;
-  if (!permissions) return true;
+  if (!permissions) return false;
 
   const rule = ROUTE_PERMISSIONS.find((r) => r.pattern.test(pathname));
   if (!rule) return true;
