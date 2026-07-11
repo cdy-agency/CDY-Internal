@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import { LeaveStatus } from '@cdy/shared';
 import {
   useMyLeaveBalances,
@@ -28,12 +29,21 @@ function statusColor(status: LeaveStatus): string {
   return map[status];
 }
 
+function isNoEmployeeRecordError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
+
 export default function MyLeavePage(): JSX.Element {
-  const { data: balances, isLoading: balancesLoading } = useMyLeaveBalances();
+  const {
+    data: balances,
+    isLoading: balancesLoading,
+    error: balancesError,
+  } = useMyLeaveBalances();
   const { data: requests, isLoading: requestsLoading } = useMyLeaveRequests();
   const { data: leaveTypes } = useLeaveTypes();
   const submitLeave = useSubmitLeaveRequest();
   const cancelLeave = useCancelLeaveRequest();
+  const noEmployeeRecord = isNoEmployeeRecordError(balancesError);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form, setForm] = useState({
@@ -87,6 +97,21 @@ export default function MyLeavePage(): JSX.Element {
     } catch {
       /* interceptor */
     }
+  }
+
+  if (noEmployeeRecord) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-lg font-semibold text-cdy-white">My Leave</h2>
+        <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-6 text-center">
+          <p className="text-sm text-cdy-muted">
+            Your account isn&apos;t linked to an employee profile yet, so
+            there&apos;s no leave balance to show. Contact HR to get this set
+            up before you can request leave.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

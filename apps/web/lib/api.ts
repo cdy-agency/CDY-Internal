@@ -3,6 +3,14 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /** Skip the interceptor's automatic error toast (e.g. for an expected,
+     * gracefully-handled 404 like "no employee profile linked yet"). */
+    skipErrorToast?: boolean;
+  }
+}
+
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
@@ -62,14 +70,18 @@ api.interceptors.response.use(
     }
 
     if (status === 403) {
-      toast.error("You don't have permission to do that");
+      if (!config?.skipErrorToast) {
+        toast.error("You don't have permission to do that");
+      }
       return Promise.reject(error);
     }
 
-    const message =
-      (error.response?.data as { message?: string })?.message ||
-      'Something went wrong';
-    toast.error(typeof message === 'string' ? message : 'Something went wrong');
+    if (!config?.skipErrorToast) {
+      const message =
+        (error.response?.data as { message?: string })?.message ||
+        'Something went wrong';
+      toast.error(typeof message === 'string' ? message : 'Something went wrong');
+    }
     return Promise.reject(error);
   },
 );

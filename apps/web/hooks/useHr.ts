@@ -275,9 +275,13 @@ export function useMyLeaveRequests() {
     queryFn: async (): Promise<LeaveRequestRecord[]> => {
       const res = await api.get<ApiResponse<LeaveRequestRecord[]>>(
         '/hr/leave/my',
+        { skipErrorToast: true },
       );
       return res.data.data;
     },
+    // A 404 here means "no employee profile linked" — a real, non-transient
+    // state (e.g. an IT-only account), not a fetch failure worth retrying.
+    retry: false,
   });
 }
 
@@ -312,9 +316,13 @@ export function useMyLeaveBalances() {
     queryFn: async (): Promise<LeaveBalanceRecord[]> => {
       const res = await api.get<ApiResponse<LeaveBalanceRecord[]>>(
         '/hr/leave-balances/me',
+        { skipErrorToast: true },
       );
       return res.data.data;
     },
+    // Same reasoning as useMyLeaveRequests: a 404 means "no employee profile
+    // linked", not a transient failure.
+    retry: false,
   });
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { redirectToLoginAfterAuthFailure } from '@/lib/session';
+import { useRouteAccessGuard } from '@/hooks/useRouteAccessGuard';
 import { SalesSidebar } from '@/components/sales/SalesSidebar';
 import { FinanceTopbar } from '@/components/finance/FinanceTopbar';
 import type { ApiResponse, UserProfile } from '@cdy/shared';
@@ -12,9 +13,10 @@ export default function SalesLayout({
   children,
 }: {
   children: React.ReactNode;
-}): JSX.Element {
+}): JSX.Element | null {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const allowed = useRouteAccessGuard();
 
   useEffect(() => {
     api
@@ -27,6 +29,8 @@ export default function SalesLayout({
     router.push('/login');
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
   }
+
+  if (!allowed) return null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-cdy-navy">

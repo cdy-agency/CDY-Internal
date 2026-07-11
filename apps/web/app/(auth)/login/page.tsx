@@ -4,6 +4,8 @@ import { useState, FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { resolveLandingPath } from '@/lib/module-access';
+import type { UserProfile } from '@cdy/shared';
 
 export default function LoginPage(): JSX.Element {
   const [email, setEmail] = useState('');
@@ -29,9 +31,13 @@ export default function LoginPage(): JSX.Element {
         return;
       }
 
-      const data = await response.json();
-      const homeModule = (data.user?.homeModule as string | undefined) ?? '/finance';
-      window.location.href = homeModule;
+      const data = (await response.json()) as { user?: UserProfile };
+      const landingPath = resolveLandingPath(
+        data.user?.permissions,
+        data.user?.roleKey,
+        data.user?.homeModule,
+      );
+      window.location.href = landingPath;
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {
