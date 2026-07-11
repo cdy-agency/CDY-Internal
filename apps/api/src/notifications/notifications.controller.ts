@@ -11,6 +11,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { NotificationFiltersDto } from './dto/notification-filters.dto';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
+import { AllowAuthenticated } from '../auth/decorators/allow-authenticated.decorator';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -19,6 +20,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'List notifications for current user' })
   async findAll(
     @CurrentUser() user: JwtPayload,
@@ -33,6 +35,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Unread notification count' })
   async getUnreadCount(@CurrentUser() user: JwtPayload) {
     const count = await this.notificationsService.getUnreadCount(user.sub);
@@ -44,6 +47,7 @@ export class NotificationsController {
   }
 
   @Patch('read-all')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllRead(@CurrentUser() user: JwtPayload) {
     const data = await this.notificationsService.markAllRead(user.sub);
@@ -55,6 +59,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Mark notification as read' })
   async markRead(
     @Param('id') id: string,
@@ -69,6 +74,7 @@ export class NotificationsController {
   }
 
   @Delete(':id')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Soft-delete notification' })
   async remove(
     @Param('id') id: string,

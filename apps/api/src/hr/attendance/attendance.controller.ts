@@ -18,6 +18,7 @@ import {
 import { AttendanceService } from './attendance.service';
 import { AttendanceFiltersDto } from './dto/attendance-filters.dto';
 import { HrSummaryService } from '../hr-summary.service';
+import { AllowAuthenticated } from '../../auth/decorators/allow-authenticated.decorator';
 
 @ApiTags('hr-attendance')
 @ApiBearerAuth()
@@ -49,6 +50,7 @@ export class AttendanceController {
   }
 
   @Get('me')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Own attendance today and monthly report' })
   async findMy(
     @CurrentUser() user: JwtPayload,

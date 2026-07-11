@@ -19,6 +19,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RbacService } from '../../rbac/rbac.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { CacheService } from '../../cache/cache.service';
 import { ProjectActivityService } from '../activity/project-activity.service';
@@ -34,6 +35,7 @@ import {
 export class TasksService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly rbac: RbacService,
     private readonly notificationsService: NotificationsService,
     private readonly cacheService: CacheService,
     private readonly projectActivityService: ProjectActivityService,
@@ -234,12 +236,19 @@ export class TasksService {
   async findByProject(
     projectId: string,
     filters: TaskFiltersDto,
-    requestingUser: { id: string; roleKey: string },
+    requestingUser: { id: string },
   ) {
-    const isLimited = requestingUser.roleKey === 'TEAM_MEMBER';
+    // Users who can view all projects see all tasks; everyone else is scoped
+    // to tasks assigned to them. Driven by the projects.all feature rather than
+    // a role key so any role configured with that feature behaves the same.
+    const canViewAll = await this.rbac.can(
+      requestingUser.id,
+      'projects.all',
+      'read',
+    );
     let assigneeFilter: Prisma.TaskWhereInput = {};
 
-    if (isLimited) {
+    if (!canViewAll) {
       const employee = await this.prisma.employee.findUnique({
         where: { userId: requestingUser.id },
         select: { id: true },
@@ -255,7 +264,7 @@ export class TasksService {
         ...assigneeFilter,
         ...(filters.status && { status: filters.status }),
         ...(filters.assigneeId &&
-          !isLimited && { assigneeId: filters.assigneeId }),
+          canViewAll && { assigneeId: filters.assigneeId }),
         ...(filters.milestoneId && { milestoneId: filters.milestoneId }),
         ...(filters.priority && { priority: filters.priority }),
       },

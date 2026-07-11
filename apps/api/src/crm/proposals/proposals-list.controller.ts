@@ -21,11 +21,7 @@ export class ProposalsListController {
     @Query() filters: ProposalFiltersDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.proposalsService.findAllGlobal(
-      filters,
-      user.sub,
-      user.roleKey,
-    );
+    const data = await this.proposalsService.findAllGlobal(filters, user.sub);
     return { data, message: 'Proposals retrieved', statusCode: HttpStatus.OK };
   }
 }

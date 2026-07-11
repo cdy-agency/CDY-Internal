@@ -47,8 +47,8 @@ export class PipelineService {
     private readonly cache: CacheService,
   ) {}
 
-  getBoard(userId: string, roleKey: string) {
-    return this.leadsService.getPipelineBoard(userId, roleKey);
+  getBoard(userId: string) {
+    return this.leadsService.getPipelineBoard(userId);
   }
 
   async getConversionReport(

@@ -72,14 +72,8 @@ export class ProjectsController {
   @Get()
   @RequirePermission('projects.all', 'read')
   @ApiOperation({ summary: 'List projects' })
-  async findAll(
-    @Query() filters: ProjectFiltersDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    const data = await this.projectsService.findAll(filters, {
-      id: user.sub,
-      roleKey: user.roleKey,
-    });
+  async findAll(@Query() filters: ProjectFiltersDto) {
+    const data = await this.projectsService.findAll(filters);
     return { data, message: 'Projects retrieved', statusCode: HttpStatus.OK };
   }
 

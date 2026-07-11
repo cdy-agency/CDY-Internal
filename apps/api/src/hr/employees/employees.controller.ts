@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { AllowAuthenticated } from '../../auth/decorators/allow-authenticated.decorator';
 import {
   CurrentUser,
   JwtPayload,
@@ -36,6 +37,7 @@ export class EmployeesController {
   ) {}
 
   @Get('me')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Get own employee profile' })
   async findMe(@CurrentUser() user: JwtPayload) {
     const data = await this.employeesService.findByUserId(user.sub);
@@ -43,6 +45,7 @@ export class EmployeesController {
   }
 
   @Patch('me')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Update own limited profile fields' })
   async updateMe(
     @CurrentUser() user: JwtPayload,
@@ -69,7 +72,6 @@ export class EmployeesController {
   ) {
     const data = await this.employeesService.findAll(filters, {
       id: user.sub,
-      roleKey: user.roleKey,
     });
     return { data, message: 'Employees retrieved', statusCode: HttpStatus.OK };
   }
@@ -128,7 +130,7 @@ export class EmployeesController {
   @RequirePermission('hr.employees', 'read')
   @ApiOperation({ summary: 'Get employee by ID' })
   async findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    const data = await this.employeesService.findOne(id, user.roleKey);
+    const data = await this.employeesService.findOne(id, user.sub);
     return { data, message: 'Employee retrieved', statusCode: HttpStatus.OK };
   }
 

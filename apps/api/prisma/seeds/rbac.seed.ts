@@ -23,11 +23,13 @@ export const SYSTEM_FEATURES = [
   { key: 'ventures.view', name: 'Ventures — View', module: 'finance', description: 'View venture income and expenses' },
   { key: 'ventures.manage', name: 'Ventures — Manage', module: 'finance', description: 'Create and manage ventures, log income and expenses' },
   { key: 'crm.leads', name: 'Leads', module: 'crm', description: 'Lead capture, management, and pipeline movement' },
+  { key: 'crm.all', name: 'CRM — View All Records', module: 'crm', description: 'View all agents\u2019 leads, pipeline, and proposals (not just own)' },
   { key: 'crm.pipeline', name: 'Sales Pipeline', module: 'crm', description: 'Kanban pipeline board and stage management' },
   { key: 'crm.clients', name: 'Clients', module: 'crm', description: 'Converted client account management' },
   { key: 'crm.proposals', name: 'Proposals', module: 'crm', description: 'Proposal tracking (PDF prepared externally)' },
   { key: 'crm.reports', name: 'CRM Reports', module: 'crm', description: 'Sales performance and conversion reports' },
   { key: 'hr.employees', name: 'Employees', module: 'hr', description: 'Employee profiles and directory' },
+  { key: 'hr.employees.sensitive', name: 'Employees — Sensitive Data', module: 'hr', description: 'View sensitive employee data (salary, bank, personal details)' },
   { key: 'hr.attendance', name: 'Attendance & Leave', module: 'hr', description: 'Leave requests and attendance' },
   { key: 'hr.payroll', name: 'HR Payroll View', module: 'hr', description: 'HR view of payroll data' },
   { key: 'hr.performance', name: 'Performance Reviews', module: 'hr', description: 'Performance review tracking' },
@@ -105,6 +107,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'ventures.manage', canRead: true, canWrite: true },
       { key: 'crm.clients', canRead: true, canWrite: false },
       { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.employees.sensitive', canRead: true, canWrite: false },
       { key: 'hr.payroll', canRead: true, canWrite: true },
       { key: 'projects.all', canRead: true, canWrite: false },
       { key: 'projects.approvals', canRead: true, canWrite: false },
@@ -176,11 +179,13 @@ export const DEFAULT_ROLES: Array<{
       { key: 'projects.approvals', canRead: true, canWrite: true },
       { key: 'projects.reports', canRead: true, canWrite: true },
       { key: 'hr.employees', canRead: true, canWrite: true },
+      { key: 'hr.employees.sensitive', canRead: true, canWrite: false },
       { key: 'hr.attendance', canRead: true, canWrite: true },
       { key: 'hr.payroll', canRead: true, canWrite: true },
       { key: 'hr.performance', canRead: true, canWrite: true },
       { key: 'hr.settings', canRead: true, canWrite: true },
       { key: 'crm.leads', canRead: true, canWrite: false },
+      { key: 'crm.all', canRead: true, canWrite: false },
       { key: 'crm.pipeline', canRead: true, canWrite: false },
       { key: 'crm.clients', canRead: true, canWrite: true },
       { key: 'crm.reports', canRead: true, canWrite: false },
@@ -221,12 +226,15 @@ export const DEFAULT_ROLES: Array<{
   {
     key: 'CLIENT',
     name: 'Client',
-    homeModule: '/finance/invoices',
-    description: 'Own invoices and project portal only',
+    homeModule: '/finance/ventures',
+    description: 'Venture visibility only until a scoped client portal exists',
     isDefault: true,
     isSystem: false,
     permissions: [
-      { key: 'finance.invoices', canRead: true, canWrite: false },
+      // NOTE: finance.invoices intentionally NOT granted. The invoices API is
+      // not scoped per-client, so granting a CLIENT read access would expose
+      // every company invoice (IDOR). A dedicated, scoped client portal must
+      // back any future client-facing invoice access.
       { key: 'ventures.view', canRead: true, canWrite: false },
     ],
   },
@@ -262,6 +270,16 @@ export async function seedRbac(prisma: PrismaClient): Promise<void> {
   await prisma.role.updateMany({
     where: { key: 'IT' },
     data: { key: 'IT_ADMINISTRATOR' },
+  });
+
+  // Security migration: revoke the CLIENT role's finance.invoices permission
+  // in existing databases. The invoices API is not scoped per client, so this
+  // grant exposed every company invoice to any CLIENT login (IDOR).
+  await prisma.rolePermission.deleteMany({
+    where: {
+      role: { key: 'CLIENT' },
+      feature: { key: 'finance.invoices' },
+    },
   });
 
   for (const feature of SYSTEM_FEATURES) {

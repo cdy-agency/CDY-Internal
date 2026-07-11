@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator';
+import { AllowAuthenticated } from '../../auth/decorators/allow-authenticated.decorator';
 import {
   CurrentUser,
   JwtPayload,
@@ -80,6 +81,7 @@ export class PerformanceReviewController {
   }
 
   @Get('my')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'My performance reviews' })
   async getMy(@CurrentUser() user: JwtPayload) {
     const data = await this.performanceReviewService.getMyReviews(user.sub);
@@ -87,6 +89,7 @@ export class PerformanceReviewController {
   }
 
   @Get(':id')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Get performance review by ID' })
   async findOne(
     @Param('id') id: string,
@@ -102,6 +105,7 @@ export class PerformanceReviewController {
   }
 
   @Patch(':id/self-assessment')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Submit self-assessment' })
   async submitSelfAssessment(
     @Param('id') id: string,
@@ -141,6 +145,7 @@ export class PerformanceReviewController {
   }
 
   @Patch(':id/acknowledge')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Acknowledge completed review' })
   async acknowledge(
     @Param('id') id: string,

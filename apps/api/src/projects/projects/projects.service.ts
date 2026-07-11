@@ -28,8 +28,6 @@ import { ProjectFiltersDto } from './dto/project-filters.dto';
 import { CompleteProjectDto } from './dto/complete-project.dto';
 import { WorkloadFiltersDto } from '../approvals/approval.dto';
 
-const LIMITED_ROLES = ['TEAM_MEMBER', 'SALES_AGENT'];
-
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
@@ -216,16 +214,21 @@ export class ProjectsService {
     }
   }
 
+  /**
+   * @param options.scopeToMemberUserId When set, only projects the given user
+   * is a member of are returned (used by the "my projects" / projects.own
+   * flow). When omitted, all projects are returned — the caller's route is
+   * already gated by the projects.all permission, so visibility is driven by
+   * the endpoint's feature, not by the caller's role key.
+   */
   async findAll(
     filters: ProjectFiltersDto,
-    requestingUser: { id: string; roleKey: string },
+    options?: { scopeToMemberUserId?: string },
   ) {
-    const isLimited = LIMITED_ROLES.includes(requestingUser.roleKey);
-
     let employeeId: string | null = null;
-    if (isLimited) {
+    if (options?.scopeToMemberUserId) {
       const employee = await this.prisma.employee.findUnique({
-        where: { userId: requestingUser.id },
+        where: { userId: options.scopeToMemberUserId },
         select: { id: true },
       });
       employeeId = employee?.id ?? null;
@@ -234,10 +237,9 @@ export class ProjectsService {
 
     const where: Prisma.ProjectWhereInput = {
       deletedAt: null,
-      ...(isLimited &&
-        employeeId && {
-          members: { some: { employeeId } },
-        }),
+      ...(employeeId && {
+        members: { some: { employeeId } },
+      }),
       ...(filters.status && { status: filters.status }),
       ...(filters.clientId && { clientId: filters.clientId }),
       ...(filters.managerId && { managerId: filters.managerId }),
@@ -274,7 +276,7 @@ export class ProjectsService {
   }
 
   async findMyProjects(userId: string) {
-    return this.findAll({}, { id: userId, roleKey: 'TEAM_MEMBER' });
+    return this.findAll({}, { scopeToMemberUserId: userId });
   }
 
   async findOne(id: string) {

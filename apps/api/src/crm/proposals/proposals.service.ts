@@ -37,10 +37,9 @@ export class ProposalsService {
     leadId: string,
     dto: CreateProposalDto,
     userId: string,
-    roleKey: string,
     actor: CrmActor,
   ) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+    await this.leadsService.findOne(leadId, userId);
 
     const proposal = await this.prisma.proposal.create({
       data: {
@@ -74,8 +73,8 @@ export class ProposalsService {
     return proposal;
   }
 
-  async findAll(leadId: string, userId: string, roleKey: string) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+  async findAll(leadId: string, userId: string) {
+    await this.leadsService.findOne(leadId, userId);
 
     return this.prisma.proposal.findMany({
       where: { leadId },
@@ -83,17 +82,13 @@ export class ProposalsService {
     });
   }
 
-  async findAllGlobal(
-    filters: ProposalFiltersDto,
-    userId: string,
-    roleKey: string,
-  ) {
-    const agentFilter =
-      roleKey === 'SALES_AGENT'
-        ? { lead: { assignedTo: userId } }
-        : filters.assignedTo
-          ? { lead: { assignedTo: filters.assignedTo } }
-          : {};
+  async findAllGlobal(filters: ProposalFiltersDto, userId: string) {
+    const canViewAll = await this.leadsService.canViewAllCrm(userId);
+    const agentFilter = !canViewAll
+      ? { lead: { assignedTo: userId } }
+      : filters.assignedTo
+        ? { lead: { assignedTo: filters.assignedTo } }
+        : {};
 
     return this.prisma.proposal.findMany({
       where: {
@@ -129,9 +124,8 @@ export class ProposalsService {
     proposalId: string,
     dto: UpdateProposalDto,
     userId: string,
-    roleKey: string,
   ) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+    await this.leadsService.findOne(leadId, userId);
 
     const proposal = await this.prisma.proposal.findFirst({
       where: { id: proposalId, leadId },
@@ -164,10 +158,9 @@ export class ProposalsService {
     proposalId: string,
     dto: UpdateProposalStatusDto,
     userId: string,
-    roleKey: string,
     actor: CrmActor,
   ) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+    await this.leadsService.findOne(leadId, userId);
 
     const proposal = await this.prisma.proposal.findFirst({
       where: { id: proposalId, leadId },
@@ -274,7 +267,6 @@ export class ProposalsService {
     leadId: string,
     proposalId: string,
     userId: string,
-    roleKey: string,
     actor: CrmActor,
   ) {
     return this.updateStatus(
@@ -282,7 +274,6 @@ export class ProposalsService {
       proposalId,
       { status: ProposalStatus.SENT },
       userId,
-      roleKey,
       actor,
     );
   }
@@ -291,10 +282,9 @@ export class ProposalsService {
     leadId: string,
     proposalId: string,
     userId: string,
-    roleKey: string,
     actor: CrmActor,
   ): Promise<{ message: string }> {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+    await this.leadsService.findOne(leadId, userId);
 
     const proposal = await this.prisma.proposal.findFirst({
       where: { id: proposalId, leadId },

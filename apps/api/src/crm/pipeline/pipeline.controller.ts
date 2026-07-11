@@ -18,7 +18,7 @@ export class PipelineController {
   @RequirePermission('crm.pipeline', 'read')
   @ApiOperation({ summary: 'Get kanban pipeline board data' })
   async getBoard(@CurrentUser() user: JwtPayload) {
-    const data = await this.pipelineService.getBoard(user.sub, user.roleKey);
+    const data = await this.pipelineService.getBoard(user.sub);
     return { data, message: 'Pipeline retrieved', statusCode: HttpStatus.OK };
   }
 

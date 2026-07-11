@@ -16,6 +16,7 @@ import {
   RetainerStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RbacService } from '../../rbac/rbac.service';
 import { LeadScoringService } from './lead-scoring.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -66,6 +67,7 @@ export class LeadsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly rbac: RbacService,
     private readonly leadScoringService: LeadScoringService,
     private readonly commissionsService: CommissionsService,
     private readonly notificationsService: NotificationsService,
@@ -74,6 +76,16 @@ export class LeadsService {
     private readonly crmSettingsService: CrmSettingsService,
     private readonly clientServiceService: ClientServiceService,
   ) {}
+
+  /**
+   * Feature-based scoping: a user sees every agent's records when their role
+   * grants `crm.all` (read), otherwise only records assigned to them. This
+   * replaces the previous `roleKey === 'SALES_AGENT'` check so behaviour is
+   * driven purely by permissions and works for any (including custom) role.
+   */
+  async canViewAllCrm(userId: string): Promise<boolean> {
+    return this.rbac.can(userId, 'crm.all', 'read');
+  }
 
   async invalidateSummaryCache(): Promise<void> {
     await this.cache.del(CRM_SUMMARY_CACHE_KEY);
@@ -141,14 +153,13 @@ export class LeadsService {
   private buildWhereClause(
     filters: LeadFiltersDto,
     userId: string,
-    roleKey: string,
+    canViewAll: boolean,
   ): Prisma.LeadWhereInput {
-    const agentFilter =
-      roleKey === 'SALES_AGENT'
-        ? { assignedTo: userId }
-        : filters.assignedTo
-          ? { assignedTo: filters.assignedTo }
-          : {};
+    const agentFilter = !canViewAll
+      ? { assignedTo: userId }
+      : filters.assignedTo
+        ? { assignedTo: filters.assignedTo }
+        : {};
 
     const qualityScoreFilter: Prisma.IntNullableFilter = {};
     if (filters.minScore !== undefined) qualityScoreFilter.gte = filters.minScore;
@@ -198,13 +209,10 @@ export class LeadsService {
     };
   }
 
-  async findAll(
-    filters: LeadFiltersDto,
-    userId: string,
-    roleKey: string,
-  ) {
+  async findAll(filters: LeadFiltersDto, userId: string) {
+    const canViewAll = await this.canViewAllCrm(userId);
     return this.prisma.lead.findMany({
-      where: this.buildWhereClause(filters, userId, roleKey),
+      where: this.buildWhereClause(filters, userId, canViewAll),
       include: {
         activities: {
           orderBy: { performedAt: 'desc' },
@@ -221,7 +229,7 @@ export class LeadsService {
     });
   }
 
-  async findOne(id: string, userId: string, roleKey: string) {
+  async findOne(id: string, userId: string) {
     const lead = await this.prisma.lead.findFirst({
       where: { id, deletedAt: null },
       include: {
@@ -236,7 +244,8 @@ export class LeadsService {
       throw new NotFoundException('Lead not found');
     }
 
-    if (roleKey === 'SALES_AGENT' && lead.assignedTo !== userId) {
+    const canViewAll = await this.canViewAllCrm(userId);
+    if (!canViewAll && lead.assignedTo !== userId) {
       throw new NotFoundException('Lead not found');
     }
 
@@ -291,10 +300,9 @@ export class LeadsService {
     id: string,
     dto: UpdateLeadDto,
     userId: string,
-    roleKey: string,
     actor?: CrmActor,
   ) {
-    const existing = await this.findOne(id, userId, roleKey);
+    const existing = await this.findOne(id, userId);
 
     const lead = await this.prisma.lead.update({
       where: { id },
@@ -324,8 +332,8 @@ export class LeadsService {
     return lead;
   }
 
-  async softDelete(id: string, userId: string, roleKey: string, actor?: CrmActor) {
-    const existing = await this.findOne(id, userId, roleKey);
+  async softDelete(id: string, userId: string, actor?: CrmActor) {
+    const existing = await this.findOne(id, userId);
     const lead = await this.prisma.lead.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -347,9 +355,9 @@ export class LeadsService {
     return lead;
   }
 
-  async getPipelineBoard(userId: string, roleKey: string) {
-    const agentFilter =
-      roleKey === 'SALES_AGENT' ? { assignedTo: userId } : {};
+  async getPipelineBoard(userId: string) {
+    const canViewAll = await this.canViewAllCrm(userId);
+    const agentFilter = !canViewAll ? { assignedTo: userId } : {};
 
     const leads = await this.prisma.lead.findMany({
       where: {
@@ -384,7 +392,6 @@ export class LeadsService {
     id: string,
     dto: MoveStageDto,
     userId: string,
-    roleKey: string,
     actor?: CrmActor,
   ) {
     const lead = await this.prisma.lead.findFirst({
@@ -395,7 +402,8 @@ export class LeadsService {
       throw new NotFoundException('Lead not found');
     }
 
-    if (roleKey === 'SALES_AGENT' && lead.assignedTo !== userId) {
+    const canViewAll = await this.canViewAllCrm(userId);
+    if (!canViewAll && lead.assignedTo !== userId) {
       throw new NotFoundException('Lead not found');
     }
 
@@ -520,9 +528,15 @@ export class LeadsService {
   }
 
   async findSalesAgents() {
+    // "Sales agents" = users who can own commission records (feature-based,
+    // so custom roles built like a sales agent are included automatically).
+    const agentIds = await this.rbac.findUserIdsWithFeature(
+      'finance.commissions.own',
+      'read',
+    );
     return this.prisma.user.findMany({
       where: {
-        role: { key: 'SALES_AGENT' },
+        id: { in: agentIds },
         isActive: true,
         deletedAt: null,
       },
@@ -689,12 +703,15 @@ export class LeadsService {
       );
     }
 
-    const agent = await this.prisma.user.findUnique({
-      where: { id: agentId },
-      include: { role: true },
-    });
-    if (!agent || agent.role.key !== 'SALES_AGENT') {
-      throw new BadRequestException('Target user must be a Sales Agent');
+    const canOwnCommissions = await this.rbac.can(
+      agentId,
+      'finance.commissions.own',
+      'read',
+    );
+    if (!canOwnCommissions) {
+      throw new BadRequestException(
+        'Target user must be able to own commissions (a sales agent capability)',
+      );
     }
 
     const result = await this.prisma.lead.updateMany({
@@ -803,13 +820,10 @@ export class LeadsService {
     return { deleted: result.count };
   }
 
-  async exportToCsv(
-    filters: LeadFiltersDto,
-    userId: string,
-    roleKey: string,
-  ): Promise<string> {
+  async exportToCsv(filters: LeadFiltersDto, userId: string): Promise<string> {
+    const canViewAll = await this.canViewAllCrm(userId);
     const leads = await this.prisma.lead.findMany({
-      where: this.buildWhereClause(filters, userId, roleKey),
+      where: this.buildWhereClause(filters, userId, canViewAll),
       include: {
         activities: { orderBy: { performedAt: 'desc' }, take: 1 },
       },

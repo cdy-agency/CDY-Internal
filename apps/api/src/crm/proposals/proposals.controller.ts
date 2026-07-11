@@ -42,7 +42,6 @@ export class ProposalsController {
       leadId,
       dto,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Proposal created', statusCode: HttpStatus.CREATED };
@@ -55,11 +54,7 @@ export class ProposalsController {
     @Param('leadId') leadId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.proposalsService.findAll(
-      leadId,
-      user.sub,
-      user.roleKey,
-    );
+    const data = await this.proposalsService.findAll(leadId, user.sub);
     return { data, message: 'Proposals retrieved', statusCode: HttpStatus.OK };
   }
 
@@ -77,7 +72,6 @@ export class ProposalsController {
       id,
       dto,
       user.sub,
-      user.roleKey,
     );
     return { data, message: 'Proposal updated', statusCode: HttpStatus.OK };
   }
@@ -96,7 +90,6 @@ export class ProposalsController {
       id,
       dto,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return {
@@ -118,7 +111,6 @@ export class ProposalsController {
       leadId,
       id,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Proposal sent', statusCode: HttpStatus.OK };
@@ -136,7 +128,6 @@ export class ProposalsController {
       leadId,
       id,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: data.message, statusCode: HttpStatus.OK };

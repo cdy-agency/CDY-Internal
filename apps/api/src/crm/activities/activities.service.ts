@@ -17,10 +17,9 @@ export class ActivitiesService {
     leadId: string,
     dto: CreateActivityDto,
     userId: string,
-    roleKey: string,
     actor: CrmActor,
   ) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+    await this.leadsService.findOne(leadId, userId);
 
     const activity = await this.prisma.leadActivity.create({
       data: {
@@ -65,8 +64,8 @@ export class ActivitiesService {
     return activity;
   }
 
-  async findAll(leadId: string, userId: string, roleKey: string) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+  async findAll(leadId: string, userId: string) {
+    await this.leadsService.findOne(leadId, userId);
 
     return this.prisma.leadActivity.findMany({
       where: { leadId },
@@ -74,13 +73,8 @@ export class ActivitiesService {
     });
   }
 
-  async remove(
-    leadId: string,
-    activityId: string,
-    userId: string,
-    roleKey: string,
-  ) {
-    await this.leadsService.findOne(leadId, userId, roleKey);
+  async remove(leadId: string, activityId: string, userId: string) {
+    await this.leadsService.findOne(leadId, userId);
 
     const activity = await this.prisma.leadActivity.findFirst({
       where: { id: activityId, leadId },

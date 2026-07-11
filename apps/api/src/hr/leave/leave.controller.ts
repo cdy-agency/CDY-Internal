@@ -25,6 +25,7 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { ReviewLeaveRequestDto } from './dto/review-leave-request.dto';
 import { LeaveFiltersDto } from './dto/leave-filters.dto';
 import { HrSummaryService } from '../hr-summary.service';
+import { AllowAuthenticated } from '../../auth/decorators/allow-authenticated.decorator';
 
 @ApiTags('hr-leave')
 @ApiBearerAuth()
@@ -116,6 +117,7 @@ export class LeaveController {
   }
 
   @Get('leave/my')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Own leave requests' })
   async findMyRequests(@CurrentUser() user: JwtPayload) {
     const employee = await this.attendanceService.getEmployeeByUserId(user.sub);
@@ -124,6 +126,7 @@ export class LeaveController {
   }
 
   @Get('leave-balances/me')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Own leave balances' })
   async findMyBalances(@CurrentUser() user: JwtPayload) {
     const employee = await this.attendanceService.getEmployeeByUserId(user.sub);
@@ -181,6 +184,7 @@ export class LeaveController {
   }
 
   @Patch('leave/:id/cancel')
+  @AllowAuthenticated()
   @ApiOperation({ summary: 'Cancel own pending leave request' })
   async cancel(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     const employee = await this.attendanceService.getEmployeeByUserId(user.sub);

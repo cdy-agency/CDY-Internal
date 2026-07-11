@@ -119,6 +119,42 @@ export class RbacService {
     };
   }
 
+  /**
+   * IDs of active users whose role grants the given feature/action. Lets
+   * business queries ("which users are sales agents?") be expressed as a
+   * capability ("who can own commissions?") instead of a hardcoded role key,
+   * so custom roles with the same features behave identically. CEO is included
+   * because the CEO role holds every feature.
+   */
+  async findUserIdsWithFeature(
+    featureKey: string,
+    action: 'read' | 'write',
+  ): Promise<string[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        OR: [
+          { role: { key: 'CEO' } },
+          {
+            role: {
+              permissions: {
+                some: {
+                  feature: { key: featureKey, isActive: true },
+                  ...(action === 'read'
+                    ? { canRead: true }
+                    : { canWrite: true }),
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+    return users.map((u) => u.id);
+  }
+
   async invalidateUserCache(userId: string): Promise<void> {
     await this.cache.del(`rbac:user:${userId}`);
   }

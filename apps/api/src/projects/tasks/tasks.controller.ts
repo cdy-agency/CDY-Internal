@@ -49,7 +49,6 @@ export class TasksController {
   ) {
     const data = await this.tasksService.findByProject(projectId, filters, {
       id: user.sub,
-      roleKey: user.roleKey,
     });
     return { data, message: 'Tasks retrieved', statusCode: HttpStatus.OK };
   }

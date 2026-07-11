@@ -54,11 +54,7 @@ export class LeadsController {
     @Query() filters: LeadFiltersDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.leadsService.findAll(
-      filters,
-      user.sub,
-      user.roleKey,
-    );
+    const data = await this.leadsService.findAll(filters, user.sub);
     return { data, message: 'Leads retrieved', statusCode: HttpStatus.OK };
   }
 
@@ -70,11 +66,7 @@ export class LeadsController {
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
   ) {
-    const csv = await this.leadsService.exportToCsv(
-      filters,
-      user.sub,
-      user.roleKey,
-    );
+    const csv = await this.leadsService.exportToCsv(filters, user.sub);
     res.set({
       'Content-Type': 'text/csv',
       'Content-Disposition': `attachment; filename="CDY-Leads-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
@@ -135,7 +127,7 @@ export class LeadsController {
   @RequirePermission('crm.leads', 'read')
   @ApiOperation({ summary: 'Get lead by ID' })
   async findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    const data = await this.leadsService.findOne(id, user.sub, user.roleKey);
+    const data = await this.leadsService.findOne(id, user.sub);
     return { data, message: 'Lead retrieved', statusCode: HttpStatus.OK };
   }
 
@@ -151,7 +143,6 @@ export class LeadsController {
       id,
       dto,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Lead updated', statusCode: HttpStatus.OK };
@@ -169,7 +160,6 @@ export class LeadsController {
       id,
       dto,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Lead stage updated', statusCode: HttpStatus.OK };
@@ -194,7 +184,6 @@ export class LeadsController {
     const data = await this.leadsService.softDelete(
       id,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Lead deleted', statusCode: HttpStatus.OK };

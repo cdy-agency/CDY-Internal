@@ -38,7 +38,6 @@ export class ActivitiesController {
       leadId,
       dto,
       user.sub,
-      user.roleKey,
       toActor(user),
     );
     return { data, message: 'Activity logged', statusCode: HttpStatus.CREATED };
@@ -51,11 +50,7 @@ export class ActivitiesController {
     @Param('leadId') leadId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.activitiesService.findAll(
-      leadId,
-      user.sub,
-      user.roleKey,
-    );
+    const data = await this.activitiesService.findAll(leadId, user.sub);
     return { data, message: 'Activities retrieved', statusCode: HttpStatus.OK };
   }
 
@@ -67,12 +62,7 @@ export class ActivitiesController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const data = await this.activitiesService.remove(
-      leadId,
-      id,
-      user.sub,
-      user.roleKey,
-    );
+    const data = await this.activitiesService.remove(leadId, id, user.sub);
     return { data, message: 'Activity deleted', statusCode: HttpStatus.OK };
   }
 }

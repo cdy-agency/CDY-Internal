@@ -6,6 +6,7 @@
 } from '@nestjs/common';
 import { EmployeeStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RbacService } from '../../rbac/rbac.service';
 import { CacheService } from '../../cache/cache.service';
 import { AuditContext } from '../../common/audit/audit.context';
 import { EmployeeCodeService } from './employee-code.service';
@@ -19,12 +20,11 @@ import { EmployeeFiltersDto } from './dto/employee-filters.dto';
 import { TerminateEmployeeDto } from './dto/terminate-employee.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 
-const LIMITED_VIEW_ROLES = ['TEAM_MEMBER', 'SALES_AGENT', 'PROJECT_MANAGER'];
-
 @Injectable()
 export class EmployeesService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly rbac: RbacService,
     private readonly employeeCodeService: EmployeeCodeService,
     private readonly leaveBalanceService: LeaveBalanceService,
     private readonly onboardingService: OnboardingService,
@@ -118,9 +118,15 @@ export class EmployeesService {
 
   async findAll(
     filters: EmployeeFiltersDto,
-    requestingUser: { id: string; roleKey: string },
+    requestingUser: { id: string },
   ) {
-    const isLimitedView = LIMITED_VIEW_ROLES.includes(requestingUser.roleKey);
+    // Sensitive fields are exposed only to users whose role grants the
+    // hr.employees.sensitive feature (capability-based, not role-key based).
+    const canSeeSensitive = await this.rbac.can(
+      requestingUser.id,
+      'hr.employees.sensitive',
+      'read',
+    );
 
     const employees = await this.prisma.employee.findMany({
       where: {
@@ -146,7 +152,7 @@ export class EmployeesService {
       orderBy: [{ department: { name: 'asc' } }, { firstName: 'asc' }],
     });
 
-    if (isLimitedView) {
+    if (!canSeeSensitive) {
       return employees.map((e) => ({
         id: e.id,
         employeeCode: e.employeeCode,
@@ -164,7 +170,7 @@ export class EmployeesService {
     return employees.map((e) => this.serializeEmployee(e));
   }
 
-  async findOne(id: string, roleKey?: string) {
+  async findOne(id: string, requestingUserId?: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { id, deletedAt: null },
       include: {
@@ -177,7 +183,9 @@ export class EmployeesService {
     });
     if (!employee) throw new NotFoundException('Employee not found');
 
-    const canSeeSensitive = !LIMITED_VIEW_ROLES.includes(roleKey ?? '');
+    const canSeeSensitive = requestingUserId
+      ? await this.rbac.can(requestingUserId, 'hr.employees.sensitive', 'read')
+      : false;
     return this.serializeEmployee(employee, canSeeSensitive);
   }
 

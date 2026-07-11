@@ -7,11 +7,15 @@ import {
 } from '@prisma/client';
 import { format, startOfMonth } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RbacService } from '../../rbac/rbac.service';
 import { SalesReportFiltersDto } from './dto/sales-report-filters.dto';
 
 @Injectable()
 export class CrmReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rbac: RbacService,
+  ) {}
 
   async getSalesPerformanceReport(filters: SalesReportFiltersDto) {
     const from = filters.from
@@ -20,9 +24,15 @@ export class CrmReportsService {
     const to = filters.to ? new Date(filters.to) : new Date();
     const monthKey = format(from, 'yyyy-MM');
 
+    // Feature-based: report on every user who can own commissions, so custom
+    // "sales agent"-style roles are included rather than only the seeded key.
+    const agentIds = await this.rbac.findUserIdsWithFeature(
+      'finance.commissions.own',
+      'read',
+    );
     const agents = await this.prisma.user.findMany({
       where: {
-        role: { key: 'SALES_AGENT' },
+        id: { in: agentIds },
         isActive: true,
         deletedAt: null,
       },

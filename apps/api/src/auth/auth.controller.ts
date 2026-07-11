@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from '../common/decorators/public.decorator';
+import { AllowAuthenticated } from './decorators/allow-authenticated.decorator';
 import { CurrentUser, JwtPayload } from './decorators/current-user.decorator';
 
 @ApiTags('auth')
@@ -38,6 +39,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AllowAuthenticated()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   async me(@CurrentUser() user: JwtPayload) {

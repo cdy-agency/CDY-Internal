@@ -243,10 +243,24 @@ export class ItManagementService {
     return { updated: dto.permissions.length };
   }
 
+  // Explicit field selection so security-sensitive columns (passwordHash) are
+  // never serialized back to the IT dashboard.
+  private static readonly SAFE_USER_SELECT = {
+    id: true,
+    email: true,
+    firstName: true,
+    lastName: true,
+    isActive: true,
+    roleId: true,
+    createdAt: true,
+    updatedAt: true,
+  } as const;
+
   async listUsers() {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
-      include: {
+      select: {
+        ...ItManagementService.SAFE_USER_SELECT,
         role: { select: { id: true, key: true, name: true } },
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
@@ -256,7 +270,10 @@ export class ItManagementService {
   async getUser(id: string) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
-      include: { role: true },
+      select: {
+        ...ItManagementService.SAFE_USER_SELECT,
+        role: true,
+      },
     });
 
     if (!user) throw new NotFoundException('User not found');
@@ -279,6 +296,11 @@ export class ItManagementService {
 
     const role = await this.prisma.role.findUnique({ where: { id: dto.roleId } });
     if (!role) throw new NotFoundException('Role not found');
+    if (role.key === 'CEO') {
+      throw new BadRequestException(
+        'The CEO role cannot be assigned through the IT dashboard.',
+      );
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
@@ -326,13 +348,37 @@ export class ItManagementService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    if (user.role.key === 'IT' && dto.roleId !== user.roleId) {
-      const targetRole = await this.prisma.role.findUnique({
-        where: { id: dto.roleId },
+    const targetRole = await this.prisma.role.findUnique({
+      where: { id: dto.roleId },
+    });
+    if (!targetRole) throw new NotFoundException('Role not found');
+
+    // The CEO role grants unconditional access; it must never be handed out
+    // (or handed off) through IT user management.
+    if (targetRole.key === 'CEO') {
+      throw new BadRequestException(
+        'The CEO role cannot be assigned through the IT dashboard.',
+      );
+    }
+
+    // Keep at least one active IT administrator: block moving the last one to
+    // a non-IT role. (Role key is IT_ADMINISTRATOR since the IT→IT_ADMINISTRATOR
+    // migration; the previous check used the obsolete 'IT' key and never fired.)
+    if (
+      user.role.key === 'IT_ADMINISTRATOR' &&
+      targetRole.key !== 'IT_ADMINISTRATOR'
+    ) {
+      const remainingItAdmins = await this.prisma.user.count({
+        where: {
+          role: { key: 'IT_ADMINISTRATOR' },
+          isActive: true,
+          deletedAt: null,
+          id: { not: userId },
+        },
       });
-      if (targetRole?.key !== 'IT') {
+      if (remainingItAdmins === 0) {
         throw new BadRequestException(
-          'Cannot change an IT user away from the IT role. Assign another IT user first.',
+          'Cannot change the last IT administrator away from the IT role. Assign another IT administrator first.',
         );
       }
     }
@@ -370,10 +416,10 @@ export class ItManagementService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    if (user.role.key === 'IT') {
+    if (user.role.key === 'IT_ADMINISTRATOR') {
       const itCount = await this.prisma.user.count({
         where: {
-          role: { key: 'IT' },
+          role: { key: 'IT_ADMINISTRATOR' },
           isActive: true,
           deletedAt: null,
           id: { not: userId },
