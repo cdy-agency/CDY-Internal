@@ -5,80 +5,29 @@ import { usePathname } from 'next/navigation';
 import { Briefcase, Coins, Code2, LayoutDashboard, Megaphone, Palette, Star, TrendingUp, UserCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/context/PermissionContext';
+import { MODULE_HOME_ROUTES, isRouteAllowed } from '@/lib/module-access';
 
 const MODULES = [
-  {
-    label: 'CEO',
-    href: '/ceo',
-    feature: 'ceo.dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Finance',
-    href: '/finance',
-    feature: 'finance.dashboard',
-    icon: Coins,
-  },
-  {
-    label: 'CRM',
-    href: '/crm',
-    feature: 'crm.pipeline',
-    icon: Users,
-  },
-  {
-    label: 'HR',
-    href: '/hr',
-    feature: 'hr.employees',
-    icon: UserCircle,
-  },
-  {
-    label: 'Projects',
-    href: '/projects',
-    feature: 'projects.all',
-    altFeature: 'projects.own',
-    icon: Briefcase,
-  },
-  {
-    label: 'Marketing',
-    href: '/marketing',
-    feature: 'marketing.content',
-    icon: Megaphone,
-  },
-  {
-    label: 'Software',
-    href: '/software',
-    feature: 'software.projects',
-    icon: Code2,
-  },
-  {
-    label: 'Branding',
-    href: '/branding',
-    feature: 'branding.projects',
-    icon: Palette,
-  },
-  {
-    label: 'Influencer',
-    href: '/influencer',
-    feature: 'influencer.campaigns',
-    icon: Star,
-  },
-  {
-    label: 'Sales',
-    href: '/sales',
-    feature: 'sales.campaigns',
-    icon: TrendingUp,
-  },
+  { label: 'CEO', href: '/ceo', module: 'ceo', icon: LayoutDashboard },
+  { label: 'Finance', href: '/finance', module: 'finance', icon: Coins },
+  { label: 'CRM', href: '/crm', module: 'crm', icon: Users },
+  { label: 'HR', href: '/hr', module: 'hr', icon: UserCircle },
+  { label: 'Projects', href: '/projects', module: 'projects', icon: Briefcase },
+  { label: 'Marketing', href: '/marketing', module: 'marketing', icon: Megaphone },
+  { label: 'Software', href: '/software', module: 'software', icon: Code2 },
+  { label: 'Branding', href: '/branding', module: 'branding', icon: Palette },
+  { label: 'Influencer', href: '/influencer', module: 'influencer', icon: Star },
+  { label: 'Sales', href: '/sales', module: 'sales', icon: TrendingUp },
 ] as const;
 
 export function ModuleSwitcher(): JSX.Element | null {
   const pathname = usePathname();
-  const { canRead } = usePermissions();
+  const { permissions } = usePermissions();
 
-  const visible = MODULES.filter(
-    (m) =>
-      canRead(m.feature) ||
-      ('altFeature' in m && m.altFeature && canRead(m.altFeature)),
-  );
+  const visible = MODULES.filter((m) => {
+    const route = MODULE_HOME_ROUTES.find((r) => r.module === m.module);
+    return route?.candidatePaths.some((p) => isRouteAllowed(p, permissions)) ?? false;
+  });
   if (visible.length <= 1) {
     return null;
   }
