@@ -406,7 +406,22 @@ export class PayrollService {
       throw new BadRequestException('Locked payroll runs cannot be deleted');
     }
 
-    await this.prisma.payrollRun.delete({ where: { id: runId } });
+    // PayrollLineItem has no deletedAt column, so its deleteMany() runs as a
+    // real hard delete; PayrollRun does have deletedAt, so its delete() is
+    // rewritten into a soft-delete update by the global soft-delete
+    // extension (see prisma/soft-delete.extension.ts). The run's line items
+    // must be removed first, or the guard in createRun() — which joins
+    // PayrollLineItem to PayrollRun without checking the run's deletedAt —
+    // still finds them and blocks a new run for the same employees/month.
+    //
+    // This must be an INTERACTIVE transaction (callback form), not the
+    // array-batch form ($transaction([a, b])): batching an extension-
+    // rewritten delete (delete -> update under the hood) alongside another
+    // query hangs indefinitely rather than completing or erroring.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payrollLineItem.deleteMany({ where: { payrollRunId: runId } });
+      await tx.payrollRun.delete({ where: { id: runId } });
+    });
 
     this.auditService.log({
       userId,

@@ -1,71 +1,66 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
-import { useEmployeeSalaries } from '@/hooks/usePayroll';
+import { useEmployees, useUpdateEmployeeSalary } from '@/hooks/useHr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { formatCurrency } from '@/lib/utils';
-import type { EmployeeSalary } from '@cdy/shared';
+import type { EmployeeRecord } from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
+import type { AxiosError } from 'axios';
+
+const CURRENCIES = ['RWF'];
+
+function hasNoSalary(employee: EmployeeRecord): boolean {
+  return !employee.baseSalary || employee.baseSalary <= 0;
+}
+
+function employeeName(employee: EmployeeRecord): string {
+  return `${employee.firstName} ${employee.lastName}`;
+}
 
 function SalaryModal({
-  existing,
+  employee,
+  candidates,
   onClose,
-  onSaved,
 }: {
-  existing?: EmployeeSalary;
+  employee: EmployeeRecord | null;
+  candidates: EmployeeRecord[];
   onClose: () => void;
-  onSaved: () => void;
 }): JSX.Element {
-  const [employeeId, setEmployeeId] = useState(existing?.employeeId ?? '');
-  const [employeeName, setEmployeeName] = useState(existing?.employeeName ?? '');
-  const [employeeEmail, setEmployeeEmail] = useState(existing?.employeeEmail ?? '');
-  const [baseSalary, setBaseSalary] = useState(
-    existing ? String(existing.baseSalary) : '',
+  const [selectedId, setSelectedId] = useState(employee?.id ?? '');
+  const [newSalary, setNewSalary] = useState(
+    employee?.baseSalary ? String(employee.baseSalary) : '',
   );
-  const [currency, setCurrency] = useState(existing?.currency ?? 'RWF');
-  const [effectiveFrom, setEffectiveFrom] = useState(
-    existing
-      ? format(new Date(existing.effectiveFrom), 'yyyy-MM-dd')
-      : format(new Date(), 'yyyy-MM-dd'),
-  );
-  const [saving, setSaving] = useState(false);
+  const [currency, setCurrency] = useState(employee?.currency ?? 'RWF');
+  const [effectiveFrom, setEffectiveFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [reason, setReason] = useState('');
+  const updateSalary = useUpdateEmployeeSalary();
+
+  const target = employee ?? candidates.find((c) => c.id === selectedId) ?? null;
+  const isUpdate = Boolean(employee && !hasNoSalary(employee));
 
   async function save(): Promise<void> {
-    setSaving(true);
+    if (!target) return;
     try {
-      if (existing) {
-        await api.patch(`/payroll/salaries/${existing.id}`, {
-          employeeName,
-          employeeEmail,
-          baseSalary: parseFloat(baseSalary),
+      await updateSalary.mutateAsync({
+        employeeId: target.id,
+        payload: {
+          newSalary: parseFloat(newSalary),
           currency,
           effectiveFrom,
-        });
-        toast.success('Salary updated');
-      } else {
-        await api.post('/payroll/salaries', {
-          employeeId,
-          employeeName,
-          employeeEmail,
-          baseSalary: parseFloat(baseSalary),
-          currency,
-          effectiveFrom,
-        });
-        toast.success('Salary created');
-      }
-      onSaved();
+          reason: reason || undefined,
+        },
+      });
+      toast.success(isUpdate ? 'Salary updated' : 'Salary set');
       onClose();
-    } catch {
-      /* interceptor */
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(axiosErr.response?.data?.message ?? 'Failed to save salary');
     }
   }
 
@@ -73,52 +68,58 @@ function SalaryModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
         <h2 className="text-lg font-semibold text-cdy-white">
-          {existing ? 'Edit Salary' : 'Add Employee Salary'}
+          {isUpdate ? 'Update Employee Salary' : 'Set Employee Salary'}
         </h2>
         <div className="mt-4 space-y-3">
-          {!existing && (
+          {employee ? (
+            <div className="rounded-md border border-cdy-navy-border bg-cdy-navy/50 px-3 py-2 text-sm text-cdy-white">
+              {employeeName(employee)}{' '}
+              <span className="text-cdy-muted">({employee.email})</span>
+            </div>
+          ) : (
             <label className="block text-sm text-cdy-muted">
-              Employee ID
-              <Input
-                value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                className="mt-1"
-              />
+              Employee (no salary set yet)
+              <select
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              >
+                <option value="">— Select employee —</option>
+                {candidates.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {employeeName(c)} ({c.email})
+                  </option>
+                ))}
+              </select>
+              {candidates.length === 0 && (
+                <span className="mt-1 block text-xs text-cdy-muted">
+                  Every active employee already has a salary set.
+                </span>
+              )}
             </label>
           )}
           <label className="block text-sm text-cdy-muted">
-            Employee name
-            <Input
-              value={employeeName}
-              onChange={(e) => setEmployeeName(e.target.value)}
-              className="mt-1"
-            />
-          </label>
-          <label className="block text-sm text-cdy-muted">
-            Employee email
-            <Input
-              type="email"
-              value={employeeEmail}
-              onChange={(e) => setEmployeeEmail(e.target.value)}
-              className="mt-1"
-            />
-          </label>
-          <label className="block text-sm text-cdy-muted">
-            Base salary
+            New base salary
             <Input
               type="number"
-              value={baseSalary}
-              onChange={(e) => setBaseSalary(e.target.value)}
+              min="0"
+              step="0.01"
+              value={newSalary}
+              onChange={(e) => setNewSalary(e.target.value)}
               className="mt-1"
             />
           </label>
           <label className="block text-sm text-cdy-muted">
             Currency
-            <Input
+            <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="mt-1"
-            />
+              className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </label>
           <label className="block text-sm text-cdy-muted">
             Effective from
@@ -129,12 +130,21 @@ function SalaryModal({
               className="mt-1"
             />
           </label>
+          <label className="block text-sm text-cdy-muted">
+            Reason (optional)
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Annual raise, promotion"
+              className="mt-1"
+            />
+          </label>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
             className="bg-cdy-red hover:bg-cdy-red/90"
-            disabled={saving}
+            disabled={updateSalary.isPending || !target || !newSalary}
             onClick={() => void save()}
           >
             Save
@@ -146,12 +156,24 @@ function SalaryModal({
 }
 
 export default function EmployeeSalariesPage(): JSX.Element {
-  const queryClient = useQueryClient();
-  const { data: salaries, isLoading } = useEmployeeSalaries();
+  const { data: employees, isLoading } = useEmployees({ status: 'ACTIVE' });
   const [modalOpen, setModalOpen] = useState(false);
-  const [editSalary, setEditSalary] = useState<EmployeeSalary | undefined>();
+  const [modalEmployee, setModalEmployee] = useState<EmployeeRecord | null>(null);
 
   if (isLoading) return <InvoiceTableSkeleton />;
+
+  const all = (employees ?? []) as EmployeeRecord[];
+  const noSalaryEmployees = all.filter(hasNoSalary);
+
+  function openCreate(): void {
+    setModalEmployee(null);
+    setModalOpen(true);
+  }
+
+  function openUpdate(employee: EmployeeRecord): void {
+    setModalEmployee(employee);
+    setModalOpen(true);
+  }
 
   return (
     <div className="space-y-6">
@@ -165,18 +187,22 @@ export default function EmployeeSalariesPage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-cdy-white">Employee Salaries</h1>
-        <PermissionGate feature="finance.payroll" action="write">
-          <Button
-            className="bg-cdy-red hover:bg-cdy-red/90"
-            onClick={() => {
-              setEditSalary(undefined);
-              setModalOpen(true);
-            }}
-          >
+        <PermissionGate feature="hr.payroll" action="write">
+          <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={openCreate}>
             Add Employee Salary
           </Button>
         </PermissionGate>
       </div>
+
+      {noSalaryEmployees.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          <span>
+            ⚠ {noSalaryEmployees.length} active employee
+            {noSalaryEmployees.length === 1 ? '' : 's'} without a salary set — they will
+            be skipped when running payroll.
+          </span>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
         <table className="w-full text-sm">
@@ -191,44 +217,48 @@ export default function EmployeeSalariesPage(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {(salaries ?? []).map((s) => (
-              <tr key={s.id} className="border-b border-cdy-navy-border/50">
-                <td className="px-4 py-3 text-cdy-white">{s.employeeName}</td>
-                <td className="px-4 py-3 text-cdy-muted">{s.employeeEmail}</td>
-                <td className="px-4 py-3 text-right text-cdy-white">
-                  {formatCurrency(s.baseSalary)}
-                </td>
-                <td className="px-4 py-3 text-cdy-muted">{s.currency}</td>
-                <td className="px-4 py-3 text-cdy-muted">
-                  {format(new Date(s.effectiveFrom), 'MMM d, yyyy')}
-                </td>
-                <td className="px-4 py-3">
-                  <PermissionGate feature="finance.payroll" action="write">
-                    <button
-                      type="button"
-                      className="text-cdy-red hover:underline"
-                      onClick={() => {
-                        setEditSalary(s);
-                        setModalOpen(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </PermissionGate>
-                </td>
-              </tr>
-            ))}
+            {all.map((employee) => {
+              const noSalary = hasNoSalary(employee);
+              return (
+                <tr key={employee.id} className="border-b border-cdy-navy-border/50">
+                  <td className="px-4 py-3 text-cdy-white">{employeeName(employee)}</td>
+                  <td className="px-4 py-3 text-cdy-muted">{employee.email}</td>
+                  <td className="px-4 py-3 text-right text-cdy-white">
+                    {noSalary ? (
+                      <span className="text-amber-400">Not set</span>
+                    ) : (
+                      formatCurrency(employee.baseSalary ?? 0, employee.currency)
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted">{employee.currency}</td>
+                  <td className="px-4 py-3 text-cdy-muted">
+                    {employee.salaryEffectiveFrom
+                      ? format(new Date(employee.salaryEffectiveFrom), 'MMM d, yyyy')
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <PermissionGate feature="hr.payroll" action="write">
+                      <button
+                        type="button"
+                        className="text-cdy-red hover:underline"
+                        onClick={() => openUpdate(employee)}
+                      >
+                        {noSalary ? 'Set Salary' : 'Update'}
+                      </button>
+                    </PermissionGate>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {modalOpen && (
         <SalaryModal
-          existing={editSalary}
+          employee={modalEmployee}
+          candidates={noSalaryEmployees}
           onClose={() => setModalOpen(false)}
-          onSaved={() =>
-            void queryClient.invalidateQueries({ queryKey: ['payroll', 'salaries'] })
-          }
         />
       )}
     </div>
