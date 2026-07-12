@@ -296,11 +296,6 @@ export class ItManagementService {
 
     const role = await this.prisma.role.findUnique({ where: { id: dto.roleId } });
     if (!role) throw new NotFoundException('Role not found');
-    if (role.key === 'CEO') {
-      throw new BadRequestException(
-        'The CEO role cannot be assigned through the IT dashboard.',
-      );
-    }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
@@ -352,14 +347,6 @@ export class ItManagementService {
       where: { id: dto.roleId },
     });
     if (!targetRole) throw new NotFoundException('Role not found');
-
-    // The CEO role grants unconditional access; it must never be handed out
-    // (or handed off) through IT user management.
-    if (targetRole.key === 'CEO') {
-      throw new BadRequestException(
-        'The CEO role cannot be assigned through the IT dashboard.',
-      );
-    }
 
     // Keep at least one active IT administrator: block moving the last one to
     // a non-IT role. (Role key is IT_ADMINISTRATOR since the IT→IT_ADMINISTRATOR
