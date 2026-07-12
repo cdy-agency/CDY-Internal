@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CDY System Docs - RBAC</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%90%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="nav-toggle" id="navToggle">
+      <button class="bars" id="navToggleBtn" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <span>CDY RBAC Docs</span>
+    </div>
+    <div class="nav-scrim" id="navScrim"></div>
+
+    <div class="layout">
+      <nav class="sidenav" id="sidenav">
+        <div class="sidenav-brand">
+          <span class="brand-mark">🔐</span>
+          <div>
+            <p class="brand-title">CDY RBAC</p>
+            <p class="brand-sub">In-house documentation</p>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-title">Overview</p>
+          <a href="#architecture" class="nav-link">Architecture</a>
+          <a href="#data-model" class="nav-link">Data model</a>
+          <a href="#auth-flow" class="nav-link">Auth flow</a>
+          <a href="#route-gating" class="nav-link">Route gating</a>
+          <a href="#security" class="nav-link">Security principles</a>
+          <a href="#how-to-read" class="nav-link">How to read the guides</a>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-title">Module guides</p>
+          <a href="#finance" class="nav-link"><i class="dot" data-accent="finance"></i>Finance &amp; Ventures</a>
+          <a href="#crm" class="nav-link"><i class="dot" data-accent="crm"></i>CRM</a>
+          <a href="#sales" class="nav-link"><i class="dot" data-accent="sales"></i>Sales</a>
+          <a href="#hr" class="nav-link"><i class="dot" data-accent="hr"></i>HR</a>
+          <a href="#projects" class="nav-link"><i class="dot" data-accent="projects"></i>Projects</a>
+          <a href="#it" class="nav-link"><i class="dot" data-accent="it"></i>IT</a>
+          <a href="#software" class="nav-link"><i class="dot" data-accent="software"></i>Software</a>
+          <a href="#branding" class="nav-link"><i class="dot" data-accent="branding"></i>Branding</a>
+          <a href="#influencer" class="nav-link"><i class="dot" data-accent="influencer"></i>Influencer</a>
+          <a href="#marketing" class="nav-link"><i class="dot" data-accent="marketing"></i>Marketing</a>
+          <a href="#ceo" class="nav-link"><i class="dot" data-accent="ceo"></i>CEO</a>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-title">Reference</p>
+          <a href="#pitfalls" class="nav-link">Cross-module cheat sheet</a>
+        </div>
+      </nav>
+
+      <main class="content">
+        <p class="badge">CDY In-House Documentation</p>
+        <h1>System Overview <span class="h1-sub">RBAC Focus</span></h1>
+        <p class="lead">
+          This page explains how the platform works, especially how RBAC is
+          enforced end-to-end using feature permissions rather than hardcoded
+          role checks.
+        </p>
+
+        <section class="card" id="architecture">
+          <h2>High-Level Architecture</h2>
+          <ul>
+            <li>
+              <strong>Frontend:</strong> <code>apps/web</code> (Next.js UI, route
+              gating, permission-aware components).
+            </li>
+            <li>
+              <strong>Backend:</strong> <code>apps/api</code> (NestJS + Prisma,
+              authoritative authorization checks).
+            </li>
+            <li>
+              Tokens support frontend routing, but backend permission decisions
+              are always DB-backed through RBAC service checks.
+            </li>
+          </ul>
+        </section>
+
+        <section class="card" id="data-model">
+          <h2>RBAC Data Model</h2>
+          <ul>
+            <li>
+              <code>SystemFeature</code>: capability keys like
+              <code>finance.invoices</code>, <code>crm.leads</code>,
+              <code>ceo.dashboard</code>.
+            </li>
+            <li><code>Role</code>: role metadata and default landing path.</li>
+            <li>
+              <code>RolePermission</code>: role-to-feature link with
+              <code>canRead</code> and <code>canWrite</code>.
+            </li>
+            <li>Users inherit feature access through their assigned role.</li>
+          </ul>
+        </section>
+
+        <section class="card" id="auth-flow">
+          <h2>Authorization Flow</h2>
+          <ol>
+            <li>User logs in and backend builds a permission profile from DB.</li>
+            <li>Access token gets compact permission claim (<code>perms</code>).</li>
+            <li>
+              API routes are protected with decorators:
+              <code>@RequirePermission(feature, action)</code> or
+              <code>@AllowAuthenticated()</code>.
+            </li>
+            <li>
+              <code>PermissionGuard</code> enforces fail-closed policy (no
+              policy, no access).
+            </li>
+            <li>
+              <code>RbacService.can(userId, feature, action)</code> validates
+              effective permission from DB-backed role data.
+            </li>
+          </ol>
+        </section>
+
+        <section class="card" id="route-gating">
+          <h2>Frontend Route Gating</h2>
+          <ul>
+            <li>
+              Middleware decodes token claims and expands compact
+              <code>perms</code> into a permission map.
+            </li>
+            <li>
+              Route checks and landing resolution are feature/module based and
+              fail closed when permissions are missing.
+            </li>
+            <li>
+              If permission data is unavailable in token, user is redirected to
+              re-authenticate.
+            </li>
+          </ul>
+        </section>
+
+        <section class="card" id="security">
+          <h2>Security Principles</h2>
+          <ul>
+            <li>No hardcoded role bypasses for authorization decisions.</li>
+            <li>Feature permissions are centrally seeded and role-attached.</li>
+            <li>Auth cookies are <code>httpOnly</code> and secure in production.</li>
+            <li>
+              JWT strategy re-validates user activity/deletion status each
+              request.
+            </li>
+            <li>Sensitive responses use safe field selection.</li>
+          </ul>
+        </section>
+
+        <section class="card" id="how-to-read">
+          <h2>How to Read the Module Guides Below</h2>
+          <p>
+            Each module below lists every <code>SystemFeature</code> permission
+            key, what it unlocks in the UI, and — the important part — which
+            <strong>other</strong> permissions must be granted alongside it for
+            the feature to actually work end to end.
+          </p>
+          <ul>
+            <li>
+              <strong>Unlocks:</strong> the page/action this permission's
+              <code>canRead</code>/<code>canWrite</code> gates directly (sidebar
+              link, API endpoint, or both).
+            </li>
+            <li>
+              <strong>Also grant:</strong> a companion permission (usually
+              read-only) needed because the page fetches data owned by a
+              <em>different</em> feature — e.g. a picker/dropdown, a linked
+              record, or a lookup the form needs before it can be submitted.
+              The API endpoint for the permission itself doesn't require this —
+              the UI silently breaks without it (empty dropdown, dead link,
+              "failed to load", or a 403 toast on submit after everything
+              looked fine).
+            </li>
+            <li>
+              A <span class="none">— none —</span> entry means the feature is
+              self-contained: nothing else to grant.
+            </li>
+          </ul>
+          <div class="warn">
+            <strong>Rule of thumb:</strong> when creating a custom role, grant
+            <code>read</code> on every permission referenced in the "Also
+            grant" column for every feature you give <code>write</code> on.
+            Missing one doesn't break the API — it breaks the form silently
+            (empty picker, blank card, or a submit button that 403s).
+          </div>
+        </section>
+
+        <section class="card module" id="finance" data-accent="finance">
+          <h2><i class="dot" data-accent="finance"></i>Finance &amp; Ventures</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>finance.dashboard</code></td>
+                  <td>Overview metrics, charts, summary cards</td>
+                  <td><code>ventures.manage</code> (r), <code>finance.reserve</code> (r)</td>
+                  <td>Without them the "Ventures — MTD" and "Reserve Fund" cards are simply omitted; the rest of the dashboard still loads.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.invoices</code></td>
+                  <td>Create, send, manage invoices</td>
+                  <td><code>crm.clients</code> (r), optionally (w)</td>
+                  <td>The invoice form's client field is a live client search — without <code>crm.clients</code> read it's empty and no invoice can be created.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.payments</code></td>
+                  <td>Record and view payments</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained. (See <code>ventures.manage</code> below — the venture "Log Income" button posts here.)</td>
+                </tr>
+                <tr>
+                  <td><code>finance.expenses</code></td>
+                  <td>Log and manage business expenses</td>
+                  <td><code>ventures.view</code> (r) — soft</td>
+                  <td>Only degrades the optional venture filter dropdown; the page otherwise works standalone.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.bills</code></td>
+                  <td>Track supplier bills</td>
+                  <td class="none">— none —</td>
+                  <td>Fully self-contained.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.ar</code></td>
+                  <td>Accounts receivable ledger (read-only)</td>
+                  <td><code>finance.invoices</code> (r), and (w) for "Send Reminder"</td>
+                  <td>Every row action (View, Send Reminder) opens or writes to an invoice.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.credit_notes</code></td>
+                  <td>Issue credit notes against invoices</td>
+                  <td><code>finance.invoices</code> (r)</td>
+                  <td>Credit notes are issued from inside the invoice detail page — there is no standalone entry point.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.payment_plans</code></td>
+                  <td>Instalment payment schedules</td>
+                  <td><code>finance.invoices</code> (r)</td>
+                  <td>Same reasoning as credit notes — lives inside the invoice detail page.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.reconciliation</code></td>
+                  <td>Reconcile bank statements</td>
+                  <td><code>finance.payments</code> (r), <code>finance.expenses</code> (r)</td>
+                  <td>Matched-transaction "View" links open the payment or expense record directly.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.tax</code></td>
+                  <td>Tax rates and liability reports</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained (also reachable from Finance Settings' Tax tab).</td>
+                </tr>
+                <tr>
+                  <td><code>finance.retainers</code></td>
+                  <td>Monthly retainer billing contracts</td>
+                  <td><code>crm.clients</code> (r); <code>ventures.view</code> (r) — soft</td>
+                  <td>Retainer creation needs the client picker; the venture dropdown is optional.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.commissions</code> / <code>finance.commissions.own</code></td>
+                  <td>Commission rules and records / own records only</td>
+                  <td class="none">— none —</td>
+                  <td>Self-scoped, no cross-module lookups.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.payroll</code></td>
+                  <td>Monthly payroll runs and payslips</td>
+                  <td class="none">— none —</td>
+                  <td>Employee names/IDs are entered as free text, not looked up from HR.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.budget</code></td>
+                  <td>Project budget tracking</td>
+                  <td class="none">— none —</td>
+                  <td>Project/client references are free-text, not a live lookup.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.reports</code></td>
+                  <td>P&amp;L, ageing, cash flow, balance sheet</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained aggregation.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.audit</code></td>
+                  <td>Tamper-proof finance action trail (read-only)</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.settings</code></td>
+                  <td>Company details, invoice/payroll config</td>
+                  <td><code>hr.employees</code> <strong>write</strong> (not read); <code>finance.tax</code> (w)</td>
+                  <td>The payroll "second approver" dropdown needs the HR employees endpoint at write level — read alone leaves it empty. Adding a tax rate from the Tax tab needs <code>finance.tax</code> write.</td>
+                </tr>
+                <tr>
+                  <td><code>finance.reserve</code></td>
+                  <td>View and manage the company reserve fund</td>
+                  <td class="none">— none —</td>
+                  <td>Fully self-gated.</td>
+                </tr>
+                <tr>
+                  <td><code>ventures.view</code></td>
+                  <td>View venture income and expenses</td>
+                  <td><code>finance.retainers</code> (r); <code>crm.clients</code> (r)</td>
+                  <td>A venture's Retainers tab and Clients tab "View →" links need their own read permission to render.</td>
+                </tr>
+                <tr>
+                  <td><code>ventures.manage</code></td>
+                  <td>Create/manage ventures, log income and expenses</td>
+                  <td><code>finance.invoices</code> (w), <code>finance.payments</code> (w) — via direct income, <code>finance.expenses</code> (w)</td>
+                  <td><strong>Most common misconfiguration in this module:</strong> the "Log Invoice", "Log Direct Income", and "Log Expense" buttons on a venture page are shown to anyone with <code>ventures.manage</code> write — but each one actually posts to Invoices/Payments/Expenses, which enforce their own write permission. Without them, the button looks fully usable and 403s on submit.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="crm" data-accent="crm">
+          <h2><i class="dot" data-accent="crm"></i>CRM</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>crm.leads</code></td>
+                  <td>Lead capture/edit, bulk actions, pipeline stage moves, CSV export</td>
+                  <td><code>ventures.view</code> (r) — for venture-type leads only</td>
+                  <td>Adding a <em>venture</em>-type lead requires picking a venture from a dropdown fed by the Ventures API. Without <code>ventures.view</code> read, that dropdown is empty and a venture lead can't be created (service-type leads are unaffected).</td>
+                </tr>
+                <tr>
+                  <td><code>crm.all</code> ("CRM — View All Records")</td>
+                  <td>See every agent's leads/pipeline/proposals, not just your own</td>
+                  <td><code>crm.leads</code> (r)</td>
+                  <td>Pure row-level scope switch — it has no effect unless the user already has read on the records it's widening. It does not affect <code>crm.clients</code> (no owner filter exists there) or <code>crm.reports</code> (always company-wide already).</td>
+                </tr>
+                <tr>
+                  <td><code>crm.pipeline</code></td>
+                  <td>Kanban board, CRM Overview dashboard</td>
+                  <td><code>crm.leads</code> (w)</td>
+                  <td><code>crm.pipeline</code> read only lets you view the board — dragging a lead between stages or adding one is a <code>crm.leads</code> write action.</td>
+                </tr>
+                <tr>
+                  <td><code>crm.clients</code></td>
+                  <td>Client list/detail, add/delete, invoice history tab</td>
+                  <td><code>finance.invoices</code> (r) — for the invoice tab/links</td>
+                  <td>Client data itself needs nothing else; but "Invoices" tab and links to <code>/finance/invoices</code> 403 without finance read. Note: <em>changing</em> a client's venture tag needs <code>ventures.manage</code> write, not just <code>ventures.view</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>crm.proposals</code></td>
+                  <td>Proposal creation/tracking, per lead and globally</td>
+                  <td><code>crm.leads</code> (r)</td>
+                  <td>Every proposal action looks up its parent lead first — without lead read access the lookup 404s even with proposals write.</td>
+                </tr>
+                <tr>
+                  <td><code>crm.reports</code></td>
+                  <td>Conversion funnel, sales performance, source analysis reports; also gates CRM Settings and Audit Log pages</td>
+                  <td class="none">— none —</td>
+                  <td>Always company-wide — ignores <code>crm.all</code> entirely, so this single permission exposes all-agent performance data even to someone who can't view individual agents' records.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="sales" data-accent="sales">
+          <h2><i class="dot" data-accent="sales"></i>Sales</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>sales.campaigns</code></td>
+                  <td>Field-sales campaign CRUD, agent deployment, completion</td>
+                  <td><code>crm.clients</code> (r) for "New Campaign"; <code>hr.employees</code> (r) for "Deploy Agent"; <code>finance.invoices</code> (r) for the auto-generated invoice link</td>
+                  <td>Both the client picker on campaign creation and the employee picker on agent deployment are live searches against other modules' endpoints — required fields, so the write action is blocked in the UI without them even though the campaign API itself doesn't need them.</td>
+                </tr>
+                <tr>
+                  <td><code>sales.reporting</code></td>
+                  <td>Daily field-activity logs, weekly reports ("My Activity")</td>
+                  <td><code>sales.campaigns</code> (r)</td>
+                  <td><strong>Confirmed real gap in the seeded Team Member role:</strong> "My Activity" loads the campaign list before anything else renders. A role with <code>sales.reporting</code> but not <code>sales.campaigns</code> sees the page in the sidebar (correctly gated) but the very first data call 403s, so no campaign can be selected and "+ Log Today" is effectively unreachable.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="hr" data-accent="hr">
+          <h2><i class="dot" data-accent="hr"></i>HR</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>hr.employees</code></td>
+                  <td>Employee directory, profile, onboarding, create/edit</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained for basic CRUD. Note <code>hr.employees.sensitive</code> below — it's a separate, silent field-level gate on top of this one.</td>
+                </tr>
+                <tr>
+                  <td><code>hr.employees.sensitive</code></td>
+                  <td>Reveals salary, bank, and national-ID fields on the directory/profile</td>
+                  <td><code>hr.employees</code> (r)</td>
+                  <td>There is no separate page for this — without it, sensitive fields are silently redacted from the list/profile response with no on-screen indicator that anything is hidden.</td>
+                </tr>
+                <tr>
+                  <td><code>hr.attendance</code></td>
+                  <td>Leave requests, attendance, self-service</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained.</td>
+                </tr>
+                <tr>
+                  <td><code>hr.payroll</code></td>
+                  <td>"Salary" tab on an employee profile</td>
+                  <td class="none">— none —</td>
+                  <td>Distinct from <code>finance.payroll</code>, which runs the actual payroll engine — the two aren't related.</td>
+                </tr>
+                <tr>
+                  <td><code>hr.performance</code></td>
+                  <td>Performance review list/detail, start a review</td>
+                  <td><code>hr.employees</code> (r)</td>
+                  <td>The "Start Review" employee picker and the team review-status grid both need the employee directory — without it they're empty and no review can be started.</td>
+                </tr>
+                <tr>
+                  <td><code>hr.settings</code></td>
+                  <td>Working days, leave-year config, leave types</td>
+                  <td><code>hr.attendance</code> (r)</td>
+                  <td>The "Active Leave Types" table on the same page is fed by the Attendance &amp; Leave API, not Settings — without it, existing leave types don't render (new ones can still be created blind).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="projects" data-accent="projects">
+          <h2><i class="dot" data-accent="projects"></i>Projects</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>projects.all</code></td>
+                  <td>All-projects list/detail, create, complete, handover, status report</td>
+                  <td><code>hr.employees</code> (r); <code>crm.clients</code> (r) — soft</td>
+                  <td>Manager/team-member pickers on project creation and the task-assignee dropdown both need the employee directory. The client search box has a manual-ID fallback, so it degrades rather than blocks.</td>
+                </tr>
+                <tr>
+                  <td><code>projects.own</code></td>
+                  <td>"My Tasks" — own assigned tasks, own status updates</td>
+                  <td class="none">— none —</td>
+                  <td><strong>Not a substitute for <code>projects.all</code>:</strong> the project detail page (Kanban, milestones, comments) always requires <code>projects.all</code> read — a user with only <code>projects.own</code> can never open a project page, only their own task list.</td>
+                </tr>
+                <tr>
+                  <td><code>projects.tasks</code></td>
+                  <td>Add/edit/delete tasks, comments, CSV import, status changes</td>
+                  <td><code>projects.all</code> (r)</td>
+                  <td>The only UI entry point to the task board lives inside the project detail page, which is gated on <code>projects.all</code> read regardless of task permissions.</td>
+                </tr>
+                <tr>
+                  <td><code>projects.approvals</code></td>
+                  <td>Approve/reject deliverables</td>
+                  <td><code>projects.all</code> (r)</td>
+                  <td>The Approvals tab lives inside the same project-detail-page gate, even though the approval endpoints only check <code>projects.approvals</code> directly.</td>
+                </tr>
+                <tr>
+                  <td><code>projects.reports</code></td>
+                  <td>Team workload and portfolio overview reports</td>
+                  <td><code>projects.all</code> (r) — for row "View" links</td>
+                  <td>The report data itself is self-contained, but each row links into <code>/projects/:id</code>, which 403s without <code>projects.all</code> read.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="it" data-accent="it">
+          <h2><i class="dot" data-accent="it"></i>IT</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>it.users</code></td>
+                  <td>User list, create, deactivate, change role</td>
+                  <td><code>it.roles</code> (r)</td>
+                  <td>Both "Create User" and "Change Role" populate their role dropdown from the Roles API — without it, no role can be selected.</td>
+                </tr>
+                <tr>
+                  <td><code>it.roles</code></td>
+                  <td>Create/rename/delete roles, view role list</td>
+                  <td><code>it.permissions</code> (r) to view the feature matrix, (w) to save it</td>
+                  <td><strong>Important split:</strong> the role editor's permission checkboxes save via a separate endpoint gated by <code>it.permissions</code> write, not <code>it.roles</code> write. A role with only <code>it.roles</code> write sees a fully interactive checkbox matrix that 403s on Save — a role it creates starts with zero feature grants and can't be given any.</td>
+                </tr>
+                <tr>
+                  <td><code>it.permissions</code></td>
+                  <td>Assign per-feature read/write to a role</td>
+                  <td><code>it.roles</code> (r)</td>
+                  <td>Has no standalone page — it only exists inside a role's detail page, which needs <code>it.roles</code> read to open at all.</td>
+                </tr>
+                <tr>
+                  <td><code>it.audit</code></td>
+                  <td>IT change audit trail</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="warn">
+            The IT sidebar shows all four links to anyone with <em>any</em>
+            <code>it.*</code> permission (a module-level check, not per-link),
+            and the Roles/Users list pages swallow 403s into an empty list
+            rather than showing an error. A user missing the right companion
+            permission sees "no data" instead of "access denied" — worth
+            explaining to anyone troubleshooting a custom IT role.
+          </div>
+        </section>
+
+        <section class="card module" id="software" data-accent="software">
+          <h2><i class="dot" data-accent="software"></i>Software</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>software.projects</code></td>
+                  <td>Project list, creation, delete — and gates the entire <code>/software/*</code> tree, including the detail page</td>
+                  <td><code>crm.clients</code> (r)</td>
+                  <td>The New Project drawer's client field is a live client search.</td>
+                </tr>
+                <tr>
+                  <td><code>software.delivery</code></td>
+                  <td>Requirements, Design, Sprints/Dev board, QA, Deployment, Maintenance panels on a project's detail page</td>
+                  <td><code>software.projects</code> (r)</td>
+                  <td><strong>Confirmed real gap in the seeded Team Member role:</strong> it has <code>software.delivery</code> write but not <code>software.projects</code> read. Since the whole <code>/software/*</code> route (including detail pages) is gated on <code>software.projects</code>, Team Members are redirected away before ever reaching the panels their own permission unlocks.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="branding" data-accent="branding">
+          <h2><i class="dot" data-accent="branding"></i>Branding</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>branding.projects</code></td>
+                  <td>Project list, creation, scope items, Suppliers CRUD</td>
+                  <td><code>crm.clients</code> (r)</td>
+                  <td>Same pattern as Software — the New Project drawer needs a live client search.</td>
+                </tr>
+                <tr>
+                  <td><code>branding.delivery</code></td>
+                  <td>Submit design, approve/reject, deliver</td>
+                  <td><code>branding.projects</code> (r)</td>
+                  <td>Same route-gating shape as Software's <code>software.delivery</code>/<code>software.projects</code> pair — but the seed pairs these two correctly by default here, unlike Software's Team Member role.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="influencer" data-accent="influencer">
+          <h2><i class="dot" data-accent="influencer"></i>Influencer</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>influencer.campaigns</code></td>
+                  <td>Campaign list/create/delete, assign/verify/pay/complete</td>
+                  <td><code>crm.clients</code> (r) for "New Campaign"; <code>influencer.database</code> (r) for "Assign Influencer"</td>
+                  <td>The influencer picker on the assign action is fed by the Influencer Database API — a different feature than the campaign itself.</td>
+                </tr>
+                <tr>
+                  <td><code>influencer.database</code></td>
+                  <td>Influencer database list, add/delete</td>
+                  <td class="none">— none —</td>
+                  <td>Viewing the database doesn't require any campaign access.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="marketing" data-accent="marketing">
+          <h2><i class="dot" data-accent="marketing"></i>Marketing</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>marketing.clients</code></td>
+                  <td>Add/delete marketing client, overview list</td>
+                  <td><code>finance.retainers</code> (r) — required field; <code>marketing.reports</code> (r)</td>
+                  <td>"Add Marketing Client" requires picking a retainer contract — a required field fed by the Retainers API, so without it the form can't be submitted at all. The Overview page's summary table is powered by <code>marketing.reports</code>, not this permission.</td>
+                </tr>
+                <tr>
+                  <td><code>marketing.content</code></td>
+                  <td>Content calendar for a specific client</td>
+                  <td><code>marketing.clients</code> (r)</td>
+                  <td>The client page header (name, platforms, target) comes from the Marketing Clients API, separate from the content-calendar permission that gates the route.</td>
+                </tr>
+                <tr>
+                  <td><code>marketing.reports</code></td>
+                  <td>Monthly content performance / delivery-rate summary</td>
+                  <td class="none">— none —</td>
+                  <td>Silently required by both the client detail page and the all-clients overview to render their summary cards (see above) — has no page of its own.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card module" id="ceo" data-accent="ceo">
+          <h2><i class="dot" data-accent="ceo"></i>CEO</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Permission</th><th>Unlocks</th><th>Also grant</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>ceo.dashboard</code></td>
+                  <td>The entire executive <code>/ceo</code> dashboard</td>
+                  <td class="none">— none —</td>
+                  <td>Self-contained by design — see note below.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>How "the CEO sees everything" actually works:</strong> it's
+            neither a permission bypass nor per-module composition. The
+            dashboard is a dedicated read-model — its single backing endpoint
+            runs its own aggregate queries directly against Finance, CRM, HR,
+            Projects, Ventures, and every service module's data, gated by
+            exactly one permission: <code>ceo.dashboard</code> read. It never
+            calls the other modules' guarded endpoints, so no other permission
+            is ever evaluated in that code path — it would render fully for a
+            hypothetical role holding <em>only</em> <code>ceo.dashboard</code>.
+            Separately, the seeded CEO role is <em>also</em> granted full
+            read+write on every system feature, which is what lets a CEO click
+            into Finance/CRM/HR/Projects pages themselves (each independently
+            gated) — that grant is unrelated to how the dashboard itself
+            works.
+          </p>
+        </section>
+
+        <section class="card" id="pitfalls">
+          <h2>Cross-Module Cheat Sheet</h2>
+          <p>
+            The fastest way to sanity-check a custom role: for every
+            permission it grants <strong>write</strong> on, check this list
+            for a companion <strong>read</strong> permission it also needs.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>If you grant…</th><th>Also grant (read)</th><th>Or this breaks</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>ventures.manage</code></td><td><code>finance.invoices</code>, <code>finance.payments</code>, <code>finance.expenses</code> (all write)</td><td>"Log Invoice/Income/Expense" buttons render but 403 on submit</td></tr>
+                <tr><td><code>crm.leads</code> (venture-type)</td><td><code>ventures.view</code></td><td>Venture dropdown on Add Lead is empty</td></tr>
+                <tr><td><code>crm.proposals</code></td><td><code>crm.leads</code></td><td>Every proposal action 404s on its parent-lead lookup</td></tr>
+                <tr><td><code>crm.pipeline</code></td><td><code>crm.leads</code> (write)</td><td>Board is view-only, can't move or add leads</td></tr>
+                <tr><td><code>crm.all</code></td><td><code>crm.leads</code></td><td>Scope widening has nothing to widen</td></tr>
+                <tr><td><code>finance.invoices</code></td><td><code>crm.clients</code></td><td>Client picker on invoice creation is empty</td></tr>
+                <tr><td><code>finance.ar</code> / <code>finance.credit_notes</code> / <code>finance.payment_plans</code></td><td><code>finance.invoices</code></td><td>Every action lives inside the invoice detail page</td></tr>
+                <tr><td><code>finance.settings</code></td><td><code>hr.employees</code> (write, not read)</td><td>Payroll "second approver" dropdown is empty</td></tr>
+                <tr><td><code>sales.campaigns</code></td><td><code>crm.clients</code>, <code>hr.employees</code></td><td>Client and agent pickers are empty; campaign can't be created/deployed</td></tr>
+                <tr><td><code>sales.reporting</code></td><td><code>sales.campaigns</code></td><td>"My Activity" 403s on its first data call — a real gap in the seeded Team Member role</td></tr>
+                <tr><td><code>hr.performance</code></td><td><code>hr.employees</code></td><td>Reviewer/employee pickers are empty</td></tr>
+                <tr><td><code>hr.settings</code></td><td><code>hr.attendance</code></td><td>Existing leave types don't render</td></tr>
+                <tr><td><code>projects.tasks</code> / <code>projects.approvals</code></td><td><code>projects.all</code></td><td>Can't reach the project detail page at all (<code>projects.own</code> is not a substitute)</td></tr>
+                <tr><td><code>it.roles</code></td><td><code>it.permissions</code></td><td>Permission checkbox matrix 403s on Save; new roles get zero features</td></tr>
+                <tr><td><code>it.users</code></td><td><code>it.roles</code></td><td>Role dropdown on create/change-role is empty</td></tr>
+                <tr><td><code>software.delivery</code></td><td><code>software.projects</code></td><td>Redirected away before reaching the delivery panels — a real gap in the seeded Team Member role</td></tr>
+                <tr><td><code>branding.delivery</code></td><td><code>branding.projects</code></td><td>Same shape as Software (seed already pairs these correctly)</td></tr>
+                <tr><td><code>influencer.campaigns</code></td><td><code>crm.clients</code>, <code>influencer.database</code></td><td>Client search and "Assign Influencer" picker are empty</td></tr>
+                <tr><td><code>software.projects</code> / <code>branding.projects</code></td><td><code>crm.clients</code></td><td>Client search on project creation is empty</td></tr>
+                <tr><td><code>marketing.clients</code></td><td><code>finance.retainers</code>, <code>marketing.reports</code></td><td>Required retainer field can't be set; summary cards are blank</td></tr>
+                <tr><td><code>marketing.content</code></td><td><code>marketing.clients</code></td><td>Client page header (name, platforms, target) fails to load</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <button id="backToTop" class="back-to-top" aria-label="Back to top">↑</button>
+
+    <script>
+      (function () {
+        var sidenav = document.getElementById('sidenav');
+        var toggleBtn = document.getElementById('navToggleBtn');
+        var scrim = document.getElementById('navScrim');
+        var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+        var backToTop = document.getElementById('backToTop');
+
+        function openNav() {
+          sidenav.classList.add('open');
+          scrim.classList.add('visible');
+          toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+        function closeNav() {
+          sidenav.classList.remove('open');
+          scrim.classList.remove('visible');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+        toggleBtn.addEventListener('click', function () {
+          sidenav.classList.contains('open') ? closeNav() : openNav();
+        });
+        scrim.addEventListener('click', closeNav);
+        links.forEach(function (link) {
+          link.addEventListener('click', closeNav);
+        });
+
+        var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+        if ('IntersectionObserver' in window) {
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                var id = entry.target.getAttribute('id');
+                links.forEach(function (link) {
+                  link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+                });
+              });
+            },
+            { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+          );
+          sections.forEach(function (section) {
+            observer.observe(section);
+          });
+        }
+
+        window.addEventListener(
+          'scroll',
+          function () {
+            backToTop.classList.toggle('visible', window.scrollY > 480);
+          },
+          { passive: true }
+        );
+        backToTop.addEventListener('click', function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      })();
+    </script>
+  </body>
+</html>

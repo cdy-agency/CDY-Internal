@@ -1,0 +1,485 @@
+:root {
+  --bg: #081322;
+  --panel: #10233a;
+  --panel-border: #214161;
+  --text: #e8f0fb;
+  --muted: #b4c8e2;
+  --accent: #7aaeff;
+
+  --c-finance: #4ade80;
+  --c-crm: #38bdf8;
+  --c-sales: #fb923c;
+  --c-hr: #c084fc;
+  --c-projects: #2dd4bf;
+  --c-it: #f87171;
+  --c-software: #818cf8;
+  --c-branding: #f472b6;
+  --c-influencer: #facc15;
+  --c-marketing: #22d3ee;
+  --c-ceo: #fcd34d;
+
+  --sidenav-w: 268px;
+  --topbar-h: 56px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Inter, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+/* ---------- layout shell ---------- */
+
+.layout {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.sidenav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: var(--sidenav-w);
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 28px 14px 40px;
+  border-right: 1px solid var(--panel-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+}
+
+.sidenav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.brand-mark {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.brand-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.brand-sub {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.nav-group {
+  margin-bottom: 18px;
+}
+
+.nav-group-title {
+  margin: 0 0 6px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6f8bb0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nav-link:hover {
+  background: rgba(122, 174, 255, 0.08);
+  color: var(--text);
+}
+
+.nav-link.active {
+  background: rgba(122, 174, 255, 0.14);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+}
+
+.nav-link .dot[data-accent="finance"] { background: var(--c-finance); }
+.nav-link .dot[data-accent="crm"] { background: var(--c-crm); }
+.nav-link .dot[data-accent="sales"] { background: var(--c-sales); }
+.nav-link .dot[data-accent="hr"] { background: var(--c-hr); }
+.nav-link .dot[data-accent="projects"] { background: var(--c-projects); }
+.nav-link .dot[data-accent="it"] { background: var(--c-it); }
+.nav-link .dot[data-accent="software"] { background: var(--c-software); }
+.nav-link .dot[data-accent="branding"] { background: var(--c-branding); }
+.nav-link .dot[data-accent="influencer"] { background: var(--c-influencer); }
+.nav-link .dot[data-accent="marketing"] { background: var(--c-marketing); }
+.nav-link .dot[data-accent="ceo"] { background: var(--c-ceo); }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  max-width: 900px;
+  padding: 40px 36px 100px;
+}
+
+/* ---------- mobile top bar ---------- */
+
+.nav-toggle {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: var(--topbar-h);
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(8, 19, 34, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nav-toggle .bars {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 20px;
+  height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-toggle .bars span {
+  display: block;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+}
+
+/* ---------- typography ---------- */
+
+.badge {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  color: var(--accent);
+  background: rgba(122, 174, 255, 0.12);
+  font-size: 13px;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 32px;
+  line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.h1-sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 21px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  scroll-margin-top: 20px;
+}
+
+h2 .dot {
+  width: 10px;
+  height: 10px;
+}
+
+h2 .dot[data-accent="finance"] { background: var(--c-finance); }
+h2 .dot[data-accent="crm"] { background: var(--c-crm); }
+h2 .dot[data-accent="sales"] { background: var(--c-sales); }
+h2 .dot[data-accent="hr"] { background: var(--c-hr); }
+h2 .dot[data-accent="projects"] { background: var(--c-projects); }
+h2 .dot[data-accent="it"] { background: var(--c-it); }
+h2 .dot[data-accent="software"] { background: var(--c-software); }
+h2 .dot[data-accent="branding"] { background: var(--c-branding); }
+h2 .dot[data-accent="influencer"] { background: var(--c-influencer); }
+h2 .dot[data-accent="marketing"] { background: var(--c-marketing); }
+h2 .dot[data-accent="ceo"] { background: var(--c-ceo); }
+
+h3 {
+  margin: 22px 0 8px;
+  font-size: 17px;
+  color: var(--text);
+}
+
+h3:first-child {
+  margin-top: 0;
+}
+
+p {
+  color: var(--muted);
+}
+
+.lead {
+  margin-top: 0;
+  margin-bottom: 26px;
+  color: var(--muted);
+  font-size: 15.5px;
+  max-width: 62ch;
+}
+
+/* ---------- cards / sections ---------- */
+
+section {
+  scroll-margin-top: 20px;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 40%), var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px -16px rgba(0, 0, 0, 0.5);
+}
+
+.module {
+  border-left: 3px solid var(--accent-color, var(--panel-border));
+}
+
+.module[data-accent="finance"] { --accent-color: var(--c-finance); }
+.module[data-accent="crm"] { --accent-color: var(--c-crm); }
+.module[data-accent="sales"] { --accent-color: var(--c-sales); }
+.module[data-accent="hr"] { --accent-color: var(--c-hr); }
+.module[data-accent="projects"] { --accent-color: var(--c-projects); }
+.module[data-accent="it"] { --accent-color: var(--c-it); }
+.module[data-accent="software"] { --accent-color: var(--c-software); }
+.module[data-accent="branding"] { --accent-color: var(--c-branding); }
+.module[data-accent="influencer"] { --accent-color: var(--c-influencer); }
+.module[data-accent="marketing"] { --accent-color: var(--c-marketing); }
+.module[data-accent="ceo"] { --accent-color: var(--c-ceo); }
+
+ul,
+ol {
+  margin: 8px 0 0 22px;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+code {
+  background: #0a192a;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  color: #d4e6ff;
+  font-size: 0.92em;
+}
+
+/* ---------- tables ---------- */
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 8px 0 4px;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--muted);
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+td:first-child,
+th:first-child {
+  white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+tbody tr:hover {
+  background: rgba(122, 174, 255, 0.06);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.warn {
+  background: rgba(255, 176, 79, 0.1);
+  border: 1px solid rgba(255, 176, 79, 0.35);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 14px 0 4px;
+  color: #ffd9a3;
+  font-size: 14px;
+}
+
+.warn strong {
+  color: #ffb04f;
+}
+
+.none {
+  color: #6f8bb0;
+  font-style: italic;
+}
+
+/* ---------- back to top ---------- */
+
+.back-to-top {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 40;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--accent);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 960px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sidenav {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    width: 84vw;
+    max-width: 320px;
+    background: var(--bg);
+    z-index: 45;
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    box-shadow: 12px 0 30px -18px rgba(0, 0, 0, 0.7);
+  }
+
+  .sidenav.open {
+    transform: translateX(0);
+  }
+
+  .nav-scrim {
+    display: none;
+    position: fixed;
+    inset: var(--topbar-h) 0 0 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 44;
+  }
+
+  .nav-scrim.visible {
+    display: block;
+  }
+
+  .content {
+    max-width: 100%;
+    padding: calc(var(--topbar-h) + 24px) 18px 80px;
+  }
+
+  .back-to-top {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (min-width: 961px) {
+  .nav-scrim {
+    display: none !important;
+  }
+}
