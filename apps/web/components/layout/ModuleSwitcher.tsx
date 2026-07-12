@@ -24,10 +24,12 @@ export function ModuleSwitcher(): JSX.Element | null {
   const pathname = usePathname();
   const { permissions } = usePermissions();
 
-  const visible = MODULES.filter((m) => {
+  const visible = MODULES.map((m) => {
     const route = MODULE_HOME_ROUTES.find((r) => r.module === m.module);
-    return route?.candidatePaths.some((p) => isRouteAllowed(p, permissions)) ?? false;
-  });
+    const target = route?.candidatePaths.find((p) => isRouteAllowed(p, permissions));
+    return target ? { ...m, target } : null;
+  }).filter((m): m is typeof MODULES[number] & { target: string } => m !== null);
+
   if (visible.length <= 1) {
     return null;
   }
@@ -40,7 +42,7 @@ export function ModuleSwitcher(): JSX.Element | null {
         return (
           <Link
             key={module.href}
-            href={module.href}
+            href={module.target}
             className={cn(
               'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
               active
