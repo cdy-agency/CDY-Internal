@@ -119,7 +119,12 @@ export class LeadsService {
         source: dto.source,
         estimatedValue: dto.estimatedValue,
         currency: dto.currency ?? 'RWF',
-        assignedTo: dto.assignedTo,
+        // Default to the creator when left unassigned — otherwise a user
+        // without crm.all read who creates their own lead immediately loses
+        // access to it (buildWhereClause scopes them to assignedTo: userId,
+        // which a null assignedTo never matches) and no commission can ever
+        // be calculated when it closes.
+        assignedTo: dto.assignedTo ?? actor.userId,
         notes: dto.notes,
         qualityScore,
         createdBy: actor.userId,
