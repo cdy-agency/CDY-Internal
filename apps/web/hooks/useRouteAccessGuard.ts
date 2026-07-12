@@ -28,13 +28,13 @@ import { firstAccessibleModulePath, isRouteAllowed } from '@/lib/module-access';
 export function useRouteAccessGuard(): boolean {
   const pathname = usePathname();
   const router = useRouter();
-  const { permissions, roleKey, isLoading } = usePermissions();
-  const allowed = isLoading || isRouteAllowed(pathname, permissions, roleKey);
+  const { permissions, isLoading } = usePermissions();
+  const allowed = isLoading || isRouteAllowed(pathname, permissions);
 
   useEffect(() => {
     if (allowed) return;
-    router.replace(firstAccessibleModulePath(permissions, roleKey));
-  }, [allowed, pathname, permissions, roleKey, router]);
+    router.replace(firstAccessibleModulePath(permissions));
+  }, [allowed, pathname, permissions, router]);
 
   return allowed;
 }

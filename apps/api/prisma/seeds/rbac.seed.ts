@@ -72,7 +72,8 @@ export const DEFAULT_ROLES: Array<{
     key: 'CEO',
     name: 'Chief Executive Officer',
     homeModule: '/ceo',
-    description: 'Full access across all modules — enforced in code, not DB',
+    description:
+      'Full access across all modules — granted via seeded feature permissions (no code bypass)',
     isDefault: true,
     isSystem: true,
     permissions: SYSTEM_FEATURES.map((f) => ({ key: f.key, canRead: true, canWrite: true })),

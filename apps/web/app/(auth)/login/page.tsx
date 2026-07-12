@@ -34,10 +34,9 @@ export default function LoginPage(): JSX.Element {
       const data = (await response.json()) as { user?: UserProfile };
       const landingPath = resolveLandingPath(
         data.user?.permissions,
-        data.user?.roleKey,
         data.user?.homeModule,
       );
-      window.location.href = landingPath;
+      // window.location.h6ref = landingPath;
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {

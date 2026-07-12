@@ -146,10 +146,10 @@ export default function CommissionsPage(): JSX.Element {
         const profile = res.data.data;
         setUser(profile);
         // Feature-based: users who can only see their own commissions are
-        // sent to the personal view (CEO implicitly has every feature).
-        const canReadAllCommissions =
-          profile.roleKey === 'CEO' ||
-          Boolean(profile.permissions?.['finance.commissions']?.canRead);
+        // sent to the personal view.
+        const canReadAllCommissions = Boolean(
+          profile.permissions?.['finance.commissions']?.canRead,
+        );
         if (!canReadAllCommissions) {
           router.replace('/finance/commissions/my');
         }

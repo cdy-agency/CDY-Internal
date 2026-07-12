@@ -66,10 +66,10 @@ export function middleware(request: NextRequest): NextResponse {
     if (!payload) return redirectToLogin(request);
     // Legacy/slim tokens without a permission map can't prove access; force a
     // fresh login that issues a full token instead of guessing a landing page.
-    if (payload.roleKey !== 'CEO' && !payload.permissions) {
+    if (!payload.permissions) {
       return redirectToLogin(request);
     }
-    const landingPath = resolveLandingPath(payload.permissions, payload.roleKey, payload.homeModule);
+    const landingPath = resolveLandingPath(payload.permissions, payload.homeModule);
     return NextResponse.redirect(new URL(landingPath, request.url));
   }
 
@@ -88,7 +88,7 @@ export function middleware(request: NextRequest): NextResponse {
   // Login page: redirect authenticated users to their landing page
   if (pathname === '/login') {
     if (payload) {
-      const landingPath = resolveLandingPath(payload.permissions, payload.roleKey, payload.homeModule);
+      const landingPath = resolveLandingPath(payload.permissions, payload.homeModule);
       return NextResponse.redirect(new URL(landingPath, request.url));
     }
     return clearAuthCookies(NextResponse.next());
@@ -104,11 +104,6 @@ export function middleware(request: NextRequest): NextResponse {
     return redirectToLogin(request);
   }
 
-  // CEO bypasses all permission checks
-  if (payload.roleKey === 'CEO') {
-    return NextResponse.next();
-  }
-
   // Fail closed: a token without embedded permissions (legacy/slim token)
   // cannot prove access to anything. Force a fresh login, which issues a
   // full token with the permission map.
@@ -116,14 +111,14 @@ export function middleware(request: NextRequest): NextResponse {
     return redirectToLogin(request);
   }
 
-  if (!isRouteAllowed(pathname, payload.permissions, payload.roleKey)) {
+  if (!isRouteAllowed(pathname, payload.permissions)) {
     // Deliberately ignore payload.homeModule here (unlike the redirects above):
     // homeModule can point at the very module that was just denied (e.g. a
     // stale/default value for a custom role), which would redirect right
     // back into another denial and loop forever. Module-root paths always
     // pass their own module's catch-all rule, so this is guaranteed to land
     // somewhere the user can actually access (or /403 if nowhere).
-    const fallbackPath = firstAccessibleModulePath(payload.permissions, payload.roleKey);
+    const fallbackPath = firstAccessibleModulePath(payload.permissions);
     return NextResponse.redirect(new URL(fallbackPath, request.url));
   }
 

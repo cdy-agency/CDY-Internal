@@ -143,7 +143,7 @@ export default function ItRoleDetailPage(): JSX.Element {
         {isProtected && (
           <p className="mt-2 text-sm text-amber-400">
             {role.key === 'CEO'
-              ? 'CEO permissions are enforced in code and cannot be modified here.'
+              ? 'The CEO role is granted every feature by the system seed and cannot be modified here.'
               : 'IT Administrator permissions cannot be modified through the dashboard.'}
           </p>
         )}

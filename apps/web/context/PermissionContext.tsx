@@ -95,18 +95,13 @@ export function PermissionProvider({
       roleName,
       homeModule,
       isLoading,
-      can: (featureKey, action) => {
-        if (roleKey === 'CEO') return true;
-        return action === 'read'
+      can: (featureKey, action) =>
+        action === 'read'
           ? (permissions[featureKey]?.canRead ?? false)
-          : (permissions[featureKey]?.canWrite ?? false);
-      },
-      canRead: (featureKey) =>
-        roleKey === 'CEO' ? true : (permissions[featureKey]?.canRead ?? false),
-      canWrite: (featureKey) =>
-        roleKey === 'CEO' ? true : (permissions[featureKey]?.canWrite ?? false),
+          : (permissions[featureKey]?.canWrite ?? false),
+      canRead: (featureKey) => permissions[featureKey]?.canRead ?? false,
+      canWrite: (featureKey) => permissions[featureKey]?.canWrite ?? false,
       hasModule: (module) =>
-        roleKey === 'CEO' ||
         Object.keys(permissions).some((key) => key.startsWith(`${module}.`)),
       refreshPermissions,
     }),

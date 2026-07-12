@@ -40,10 +40,7 @@ export default function ItLayout({
         const profile = res.data.data;
         // Feature-based gate: access requires an it.* permission (any role
         // granted IT features qualifies), not a hardcoded role key.
-        const canAccessIt =
-          profile.roleKey === 'CEO' ||
-          hasModuleAccess(profile.permissions, 'it');
-        if (!canAccessIt) {
+        if (!hasModuleAccess(profile.permissions, 'it')) {
           router.push('/403');
           return;
         }

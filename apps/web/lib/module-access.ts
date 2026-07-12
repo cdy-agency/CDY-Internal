@@ -73,12 +73,10 @@ export function hasModuleAccess(
  */
 export function firstAccessibleModulePath(
   permissions: PermissionMap | undefined,
-  roleKey?: string,
 ): string {
-  if (roleKey === 'CEO') return '/ceo';
   for (const route of MODULE_HOME_ROUTES) {
     for (const path of route.candidatePaths) {
-      if (isRouteAllowed(path, permissions, roleKey)) return path;
+      if (isRouteAllowed(path, permissions)) return path;
     }
   }
   return NO_ACCESS_PATH;
@@ -95,18 +93,16 @@ export function firstAccessibleModulePath(
  */
 export function resolveLandingPath(
   permissions: PermissionMap | undefined,
-  roleKey?: string,
   preferredPath?: string,
 ): string {
-  if (roleKey === 'CEO') return preferredPath || '/ceo';
   // Fail closed: no permission data means we cannot prove access to anything.
   // (Legacy/slim tokens without embedded permissions are forced back through
   // login by the middleware, which reissues a full token.)
   if (!permissions) return NO_ACCESS_PATH;
-  if (preferredPath && isRouteAllowed(preferredPath, permissions, roleKey)) {
+  if (preferredPath && isRouteAllowed(preferredPath, permissions)) {
     return preferredPath;
   }
-  return firstAccessibleModulePath(permissions, roleKey);
+  return firstAccessibleModulePath(permissions);
 }
 
 // ─── Per-page permission table ──────────────────────────────────────────
@@ -229,9 +225,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
 export function isRouteAllowed(
   pathname: string,
   permissions: PermissionMap | undefined,
-  roleKey?: string,
 ): boolean {
-  if (roleKey === 'CEO') return true;
   if (!permissions) return false;
 
   const rule = ROUTE_PERMISSIONS.find((r) => r.pattern.test(pathname));
