@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -13,6 +14,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Request } from 'express';
 import { DirectIncomeService } from './direct-income.service';
 import { CreateDirectIncomeDto } from './dto/create-direct-income.dto';
+import { UpdateDirectIncomeDto } from './dto/update-direct-income.dto';
 import { DirectIncomeFiltersDto } from './dto/direct-income-filters.dto';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { CurrentUser, JwtPayload } from '../auth/decorators/current-user.decorator';
@@ -64,6 +66,24 @@ export class DirectIncomeController {
   async findOne(@Param('id') id: string) {
     const data = await this.directIncomeService.findOne(id);
     return { data, message: 'Record retrieved', statusCode: HttpStatus.OK };
+  }
+
+  @Patch(':id')
+  @RequirePermission('finance.payments', 'write')
+  @ApiOperation({ summary: 'Update a direct income record (creator only)' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDirectIncomeDto,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.directIncomeService.update(
+      id,
+      dto,
+      user.sub,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Direct income updated', statusCode: HttpStatus.OK };
   }
 
   @Delete(':id')

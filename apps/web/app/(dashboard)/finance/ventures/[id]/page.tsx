@@ -74,6 +74,7 @@ export default function VentureDetailPage(): JSX.Element {
   const [tab, setTab] = useState<Tab>('income');
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
+  const [editDirectIncome, setEditDirectIncome] = useState<DirectIncomeEntry | null>(null);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editName, setEditName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -278,7 +279,7 @@ export default function VentureDetailPage(): JSX.Element {
                   </p>
                   <PermissionGate feature="ventures.manage" action="write">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setDirectIncomeOpen(true)}>
+                      <Button size="sm" variant="outline" onClick={() => { setEditDirectIncome(null); setDirectIncomeOpen(true); }}>
                         <Plus className="h-4 w-4" /> Log Direct Income
                       </Button>
                       <Button size="sm" onClick={() => setIncomeOpen(true)}>
@@ -300,6 +301,7 @@ export default function VentureDetailPage(): JSX.Element {
                             <th className="px-4 py-3">Category</th>
                             <th className="px-4 py-3">Method</th>
                             <th className="px-4 py-3 text-right">Amount</th>
+                            <th className="px-4 py-3 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -315,6 +317,17 @@ export default function VentureDetailPage(): JSX.Element {
                               </td>
                               <td className="px-4 py-3 text-right font-mono text-green-400">
                                 {formatCurrency(entry.amount, entry.currency)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <PermissionGate feature="ventures.manage" action="write">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setEditDirectIncome(entry); setDirectIncomeOpen(true); }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </PermissionGate>
                               </td>
                             </tr>
                           ))}
@@ -579,7 +592,8 @@ export default function VentureDetailPage(): JSX.Element {
               open={directIncomeOpen}
               ventureId={ventureId}
               ventureName={venture.name}
-              onClose={() => setDirectIncomeOpen(false)}
+              entry={editDirectIncome}
+              onClose={() => { setDirectIncomeOpen(false); setEditDirectIncome(null); }}
             />
             <LogExpenseDrawer
               open={expenseOpen}

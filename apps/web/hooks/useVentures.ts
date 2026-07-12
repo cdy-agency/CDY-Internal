@@ -133,8 +133,10 @@ export interface DirectIncomeEntry {
   reference: string | null;
   category: string | null;
   date: string;
+  clientId: string | null;
   clientName: string | null;
   ventureId: string | null;
+  notes: string | null;
 }
 
 export function useVentureDirectIncome(ventureId: string, filters: VentureListFilters = {}) {

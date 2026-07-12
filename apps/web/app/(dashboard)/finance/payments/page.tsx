@@ -3,16 +3,20 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { CreditCard, Plus } from 'lucide-react';
+import { CreditCard, Loader2, Pencil, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { usePayments } from '@/hooks/usePayments';
 import { PaymentMethodBadge } from '@/components/finance/payments/PaymentMethodBadge';
 import { DirectIncomeDrawer } from '@/components/finance/directIncome/DirectIncomeDrawer';
+import type { DirectIncomeEntry } from '@/hooks/useVentures';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { EmptyState } from '@/components/finance/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import type { PaymentFilters } from '@/types/payment';
+import type { ApiResponse } from '@cdy/shared';
 import { PaymentMethod } from '@cdy/shared';
 import { PermissionGate } from '@/components/PermissionGate';
 
@@ -41,16 +45,31 @@ function TypeBadge({ type }: { type: 'INVOICE_PAYMENT' | 'DIRECT_INCOME' }): JSX
 export default function PaymentsPage(): JSX.Element {
   const [filters, setFilters] = useState<PaymentFilters>({ page: 1, limit: 25 });
   const [directIncomeOpen, setDirectIncomeOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<DirectIncomeEntry | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
   const { data, isLoading, isError } = usePayments(filters);
 
   const hasFilters = filters.clientId || filters.dateFrom || filters.dateTo || filters.method;
+
+  async function handleEditDirectIncome(id: string): Promise<void> {
+    setEditLoadingId(id);
+    try {
+      const res = await api.get<ApiResponse<DirectIncomeEntry>>(`/finance/income/direct/${id}`);
+      setEditEntry(res.data.data);
+      setDirectIncomeOpen(true);
+    } catch {
+      toast.error('Failed to load income record');
+    } finally {
+      setEditLoadingId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-cdy-white">Payments</h1>
         <PermissionGate feature="finance.payments" action="write">
-          <Button onClick={() => setDirectIncomeOpen(true)}>
+          <Button onClick={() => { setEditEntry(null); setDirectIncomeOpen(true); }}>
             <Plus className="h-4 w-4" />
             Record Income
           </Button>
@@ -177,6 +196,7 @@ export default function PaymentsPage(): JSX.Element {
                   <th className="px-4 py-3 font-medium text-right">Amount</th>
                   <th className="px-4 py-3 font-medium">Method</th>
                   <th className="px-4 py-3 font-medium">Reference</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,6 +234,24 @@ export default function PaymentsPage(): JSX.Element {
                     </td>
                     <td className="px-4 py-3 font-mono text-cdy-muted">
                       {payment.reference ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {payment.type === 'DIRECT_INCOME' && (
+                        <PermissionGate feature="finance.payments" action="write">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={editLoadingId === payment.id}
+                            onClick={() => handleEditDirectIncome(payment.id)}
+                          >
+                            {editLoadingId === payment.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Pencil className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </PermissionGate>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -253,7 +291,8 @@ export default function PaymentsPage(): JSX.Element {
 
       <DirectIncomeDrawer
         open={directIncomeOpen}
-        onClose={() => setDirectIncomeOpen(false)}
+        entry={editEntry}
+        onClose={() => { setDirectIncomeOpen(false); setEditEntry(null); }}
       />
     </div>
   );

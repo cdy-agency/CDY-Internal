@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PaymentMethod } from '@cdy/shared';
 import { FINANCE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
+import type { DirectIncomeEntry } from '@/hooks/useVentures';
 import type { AxiosError } from 'axios';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -27,13 +28,14 @@ interface DirectIncomeDrawerProps {
   onClose: () => void;
   ventureId?: string;
   ventureName?: string;
+  entry?: DirectIncomeEntry | null;
 }
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]!;
 }
 
-export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: DirectIncomeDrawerProps): JSX.Element | null {
+export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName, entry }: DirectIncomeDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
@@ -44,6 +46,8 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
   const [category, setCategory] = useState('');
   const [date, setDate] = useState(todayStr());
   const [notes, setNotes] = useState('');
+
+  const isEdit = Boolean(entry);
 
   function reset() {
     setDescription('');
@@ -56,11 +60,27 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
     setNotes('');
   }
 
+  useEffect(() => {
+    if (open && entry) {
+      setDescription(entry.description);
+      setAmount(String(entry.amount));
+      setCurrency(entry.currency);
+      setPaymentMethod(entry.paymentMethod as PaymentMethod);
+      setReference(entry.reference ?? '');
+      setCategory(entry.category ?? '');
+      setDate(entry.date.split('T')[0]!);
+      setNotes(entry.notes ?? '');
+    } else if (open && !entry) {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, entry]);
+
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/finance/income/direct', {
+      const payload = {
         description,
         amount: parseFloat(amount),
         currency,
@@ -70,8 +90,16 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
         date,
         notes: notes || undefined,
         ventureId: ventureId || undefined,
-      });
-      toast.success('Income recorded');
+      };
+
+      if (isEdit && entry) {
+        await api.patch(`/finance/income/direct/${entry.id}`, payload);
+        toast.success('Income updated');
+      } else {
+        await api.post('/finance/income/direct', payload);
+        toast.success('Income recorded');
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['payments'] });
       await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
       if (ventureId) {
@@ -82,7 +110,7 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
       onClose();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(axiosErr.response?.data?.message ?? 'Failed to record income');
+      toast.error(axiosErr.response?.data?.message ?? 'Failed to save income');
     } finally {
       setLoading(false);
     }
@@ -96,7 +124,8 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
       <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
         <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
           <h2 className="text-lg font-semibold text-cdy-white">
-            Record Direct Income{ventureName ? ` — ${ventureName}` : ''}
+            {isEdit ? 'Edit Direct Income' : 'Record Direct Income'}
+            {ventureName ? ` — ${ventureName}` : ''}
           </h2>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-cdy-muted hover:text-cdy-white" aria-label="Close">
             <X className="h-5 w-5" />
@@ -204,7 +233,13 @@ export function DirectIncomeDrawer({ open, onClose, ventureId, ventureName }: Di
 
           <div className="border-t border-cdy-navy-border p-6">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Record Income'}
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isEdit ? (
+                'Update Income'
+              ) : (
+                'Record Income'
+              )}
             </Button>
           </div>
         </form>

@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditContext } from '../common/audit/audit.context';
 import { CreateDirectIncomeDto } from './dto/create-direct-income.dto';
+import { UpdateDirectIncomeDto } from './dto/update-direct-income.dto';
 import { DirectIncomeFiltersDto } from './dto/direct-income-filters.dto';
 
 @Injectable()
@@ -55,6 +56,67 @@ export class DirectIncomeService {
       action: 'direct_income.created',
       entityType: 'DirectIncome',
       entityId: record.id,
+      newValue: serialized,
+    });
+
+    return serialized;
+  }
+
+  async update(
+    id: string,
+    dto: UpdateDirectIncomeDto,
+    userId: string,
+    auditCtx: AuditContext,
+  ) {
+    const existing = await this.prisma.directIncome.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        client: { select: { id: true, companyName: true, contactName: true } },
+      },
+    });
+    if (!existing) throw new NotFoundException('Direct income record not found');
+    if (existing.createdBy !== userId) {
+      throw new BadRequestException('Only the creator can edit this record');
+    }
+
+    if (dto.clientId) {
+      const client = await this.prisma.client.findFirst({
+        where: { id: dto.clientId, deletedAt: null },
+      });
+      if (!client) throw new BadRequestException('Client not found');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const before = this.serialize(existing as any);
+
+    const record = await this.prisma.directIncome.update({
+      where: { id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: {
+        ...(dto.clientId !== undefined && { clientId: dto.clientId }),
+        ...(dto.ventureId !== undefined && { ventureId: dto.ventureId }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.currency !== undefined && { currency: dto.currency }),
+        ...(dto.paymentMethod !== undefined && { paymentMethod: dto.paymentMethod }),
+        ...(dto.reference !== undefined && { reference: dto.reference }),
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+      } as any,
+      include: {
+        client: { select: { id: true, companyName: true, contactName: true } },
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const serialized = this.serialize(record as any);
+    this.auditService.log({
+      ...auditCtx,
+      action: 'direct_income.updated',
+      entityType: 'DirectIncome',
+      entityId: id,
+      previousValue: before,
       newValue: serialized,
     });
 
