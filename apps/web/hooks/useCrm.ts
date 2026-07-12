@@ -182,6 +182,38 @@ export function useCreateClient() {
   });
 }
 
+export function useUpdateClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        companyName?: string;
+        contactName?: string;
+        email?: string;
+        phone?: string;
+        country?: string;
+        city?: string;
+        website?: string;
+        industry?: string;
+        notes?: string;
+        assignedTo?: string;
+        ventureId?: string | null;
+      };
+    }) => {
+      const res = await api.patch<ApiResponse<ClientRecord>>(`/crm/clients/${id}`, data);
+      return res.data.data;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'clients'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'clients', variables.id] });
+    },
+  });
+}
+
 export function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -247,15 +279,25 @@ export function useMoveLeadStage() {
       stage,
       lostReason,
       wonOutcome,
+      finalValue,
+      companyName,
+      contactName,
+      email,
+      phone,
     }: {
       leadId: string;
       stage: PipelineStage;
       lostReason?: string;
       wonOutcome?: 'invoice' | 'retainer';
+      finalValue?: number;
+      companyName?: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
     }) => {
       const res = await api.patch<ApiResponse<LeadRecord>>(
         `/crm/leads/${leadId}/stage`,
-        { stage, lostReason, wonOutcome },
+        { stage, lostReason, wonOutcome, finalValue, companyName, contactName, email, phone },
       );
       return res.data.data;
     },
@@ -274,6 +316,29 @@ export function useCreateLead() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm'] });
+    },
+  });
+}
+
+export function useUpdateLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      leadId,
+      payload,
+    }: {
+      leadId: string;
+      payload: Record<string, unknown>;
+    }) => {
+      const res = await api.patch<ApiResponse<LeadRecord>>(
+        `/crm/leads/${leadId}`,
+        payload,
+      );
+      return res.data.data;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['crm'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'leads', variables.leadId] });
     },
   });
 }

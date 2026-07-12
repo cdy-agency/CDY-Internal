@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
-import { Download, Plus, Trash2 } from 'lucide-react';
+import { Download, Pencil, Plus, Trash2 } from 'lucide-react';
 import { PermissionGate } from '@/components/PermissionGate';
 import { AddClientDrawer } from '@/components/crm/clients/AddClientDrawer';
+import { EditClientDrawer } from '@/components/crm/clients/EditClientDrawer';
 import { ventureColorHex } from '@/lib/ventureUtils';
-import type { ClientSource } from '@cdy/shared';
+import type { ClientRecord, ClientSource } from '@cdy/shared';
 
 const SOURCE_CONFIG: Record<ClientSource, { label: string; className: string }> = {
   PIPELINE: { label: 'Pipeline', className: 'text-blue-400' },
@@ -36,6 +37,7 @@ export default function ClientsListPage(): JSX.Element {
   const [ventureFilter, setVentureFilter] = useState('');
   const [exporting, setExporting] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const [editClient, setEditClient] = useState<ClientRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(
     null,
   );
@@ -191,6 +193,14 @@ export default function ClientsListPage(): JSX.Element {
                       <PermissionGate feature="crm.clients" action="write">
                         <button
                           type="button"
+                          onClick={() => setEditClient(client)}
+                          className="text-cdy-muted hover:text-cdy-white"
+                          aria-label="Edit client"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() =>
                             setDeleteTarget({
                               id: client.id,
@@ -222,6 +232,12 @@ export default function ClientsListPage(): JSX.Element {
       <AddClientDrawer
         open={addClientOpen}
         onClose={() => setAddClientOpen(false)}
+      />
+
+      <EditClientDrawer
+        open={Boolean(editClient)}
+        client={editClient}
+        onClose={() => setEditClient(null)}
       />
 
       <ConfirmDialog

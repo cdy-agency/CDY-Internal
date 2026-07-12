@@ -15,11 +15,13 @@ import {
   type LeadActivityRecord,
   type ProposalRecord,
 } from '@cdy/shared';
+import { Pencil } from 'lucide-react';
 import { useLead, useMoveLeadStage, useUpdateProposalStatus } from '@/hooks/useCrm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/PermissionGate';
 import { CloseDealModal } from '@/components/crm/pipeline/CloseDealModal';
+import { EditLeadDrawer } from '@/components/crm/leads/EditLeadDrawer';
 import { formatCurrency } from '@/lib/utils';
 import { getScoreBand, scoreBandLabel } from '@/lib/leadScoring';
 
@@ -56,6 +58,7 @@ export default function LeadDetailPage(): JSX.Element {
   const updateProposalStatus = useUpdateProposalStatus();
   const [activityOpen, setActivityOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
   const [proposalTitle, setProposalTitle] = useState('');
   const [proposalService, setProposalService] = useState('software_dev');
@@ -275,7 +278,20 @@ export default function LeadDetailPage(): JSX.Element {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
-            <h1 className="text-2xl font-bold text-cdy-white">{lead.companyName ?? lead.contactName}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-cdy-white">{lead.companyName ?? lead.contactName}</h1>
+              {lead.stage !== PipelineStage.CLOSED_WON && lead.stage !== PipelineStage.CLOSED_LOST && (
+                <PermissionGate feature="crm.leads" action="write">
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="flex items-center gap-1 text-xs text-cdy-muted hover:text-cdy-white"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                </PermissionGate>
+              )}
+            </div>
             <p className="text-cdy-muted">{lead.contactName}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="rounded-full bg-cdy-red/20 px-3 py-1 text-xs text-cdy-red">
@@ -285,6 +301,14 @@ export default function LeadDetailPage(): JSX.Element {
                 Score {lead.qualityScore ?? 0} — {scoreBandLabel(band)}
               </span>
             </div>
+            {lead.clientId && (
+              <Link
+                href={`/crm/clients/${lead.clientId}`}
+                className="mt-3 inline-block text-sm text-cdy-red hover:underline"
+              >
+                View client →
+              </Link>
+            )}
             <div className="mt-4 grid gap-2 text-sm text-cdy-muted sm:grid-cols-2">
               <p>Email: {lead.email}</p>
               <p>Phone: {lead.phone ?? '—'}</p>
@@ -588,6 +612,12 @@ export default function LeadDetailPage(): JSX.Element {
         leadId={id}
         onClose={() => setCloseOpen(false)}
         onSuccess={() => toast.success('Deal closed! Draft invoice created in Finance.')}
+      />
+
+      <EditLeadDrawer
+        open={editOpen}
+        lead={editOpen ? lead : null}
+        onClose={() => setEditOpen(false)}
       />
     </div>
   );

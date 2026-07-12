@@ -425,6 +425,12 @@ export class LeadsService {
       );
     }
 
+    if (dto.stage === PipelineStage.CLOSED_WON && !dto.finalValue) {
+      throw new BadRequestException(
+        'Please enter the final deal value before closing this lead as won',
+      );
+    }
+
     if (dto.stage === PipelineStage.CLOSED_LOST && dto.lostReason) {
       const presets = await this.crmSettingsService.getLostReasons();
       if (
@@ -454,6 +460,15 @@ export class LeadsService {
       }),
       ...(dto.stage === PipelineStage.CLOSED_WON && {
         convertedAt: new Date(),
+        // Overwrite the (possibly stale) original estimate with the
+        // confirmed final value entered at close time — this is what
+        // handleDealClosed() uses for the invoice/retainer amount and
+        // commission calculation below.
+        estimatedValue: dto.finalValue,
+        ...(dto.companyName !== undefined && { companyName: dto.companyName }),
+        ...(dto.contactName !== undefined && { contactName: dto.contactName }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
       }),
     };
 
@@ -580,6 +595,18 @@ export class LeadsService {
           source: ClientSource.PIPELINE,
           leadId: lead.id,
           createdBy: userId,
+        },
+      });
+    } else {
+      // An existing client matched this lead — carry over any contact-info
+      // corrections made in the close-deal step (email is left alone since
+      // it's part of the match key used above).
+      client = await this.prisma.client.update({
+        where: { id: client.id },
+        data: {
+          companyName: lead.companyName ?? client.companyName,
+          contactName: lead.contactName ?? client.contactName,
+          phone: lead.phone ?? client.phone,
         },
       });
     }

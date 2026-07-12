@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { Pencil } from 'lucide-react';
 import { InvoiceStatus, type ClientSource } from '@cdy/shared';
 import { useClient } from '@/hooks/useCrm';
 import { useVentures } from '@/hooks/useVentures';
@@ -13,6 +14,7 @@ import { formatCurrency } from '@/lib/utils';
 import { ventureColorHex } from '@/lib/ventureUtils';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { PermissionGate } from '@/components/PermissionGate';
+import { EditClientDrawer } from '@/components/crm/clients/EditClientDrawer';
 import api from '@/lib/api';
 import type { ApiResponse } from '@cdy/shared';
 
@@ -115,6 +117,7 @@ export default function ClientDetailPage(): JSX.Element {
   const { data: client, isLoading } = useClient(id);
   const [tab, setTab] = useState<ClientTab>('overview');
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading || !client) {
     return <p className="text-cdy-muted">Loading client...</p>;
@@ -137,6 +140,15 @@ export default function ClientDetailPage(): JSX.Element {
 
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-cdy-white">{client.companyName}</h1>
+        <PermissionGate feature="crm.clients" action="write">
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-1 text-xs text-cdy-muted hover:text-cdy-white"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </button>
+        </PermissionGate>
         {(() => {
           const src = SOURCE_CONFIG[client.source as ClientSource] ?? SOURCE_CONFIG.DIRECT;
           return (
@@ -401,6 +413,12 @@ export default function ClientDetailPage(): JSX.Element {
           </Link>
         </div>
       )}
+
+      <EditClientDrawer
+        open={editOpen}
+        client={editOpen ? client : null}
+        onClose={() => setEditOpen(false)}
+      />
     </div>
   );
 }

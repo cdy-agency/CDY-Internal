@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePipelineBoard, useMoveLeadStage } from '@/hooks/useCrm';
 import { AddLeadDrawer } from '@/components/crm/leads/AddLeadDrawer';
+import { EditLeadDrawer } from '@/components/crm/leads/EditLeadDrawer';
 import { LeadCard } from '@/components/crm/pipeline/LeadCard';
 import { CloseDealModal } from '@/components/crm/pipeline/CloseDealModal';
 import { formatCurrency } from '@/lib/utils';
@@ -55,7 +56,13 @@ function DroppableColumn({
   );
 }
 
-function DraggableLead({ lead }: { lead: LeadRecord }): JSX.Element {
+function DraggableLead({
+  lead,
+  onEdit,
+}: {
+  lead: LeadRecord;
+  onEdit: () => void;
+}): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
   });
@@ -71,7 +78,7 @@ function DraggableLead({ lead }: { lead: LeadRecord }): JSX.Element {
       {...attributes}
       className={isDragging ? 'opacity-50' : undefined}
     >
-      <LeadCard lead={lead} />
+      <LeadCard lead={lead} onEdit={onEdit} />
     </div>
   );
 }
@@ -84,6 +91,7 @@ export default function PipelinePage(): JSX.Element {
   const [closeModalOpen, setCloseModalOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
   const [search, setSearch] = useState('');
+  const [editLead, setEditLead] = useState<LeadRecord | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -178,7 +186,11 @@ export default function PipelinePage(): JSX.Element {
               </div>
               <div className="space-y-3">
                 {column.leads.map((lead) => (
-                  <DraggableLead key={lead.id} lead={lead as LeadRecord} />
+                  <DraggableLead
+                    key={lead.id}
+                    lead={lead as LeadRecord}
+                    onEdit={() => setEditLead(lead as LeadRecord)}
+                  />
                 ))}
               </div>
             </DroppableColumn>
@@ -216,6 +228,12 @@ export default function PipelinePage(): JSX.Element {
         onSuccess={() => {
           toast.success('Deal closed! Draft invoice created in Finance.');
         }}
+      />
+
+      <EditLeadDrawer
+        open={Boolean(editLead)}
+        lead={editLead}
+        onClose={() => setEditLead(null)}
       />
     </div>
   );

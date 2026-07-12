@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useLostReasons, useMoveLeadStage } from '@/hooks/useCrm';
+import { useEffect, useState } from 'react';
+import { useLead, useLostReasons, useMoveLeadStage } from '@/hooks/useCrm';
 import { PipelineStage } from '@cdy/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { FileText, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, RefreshCw } from 'lucide-react';
 
 interface CloseDealModalProps {
   open: boolean;
@@ -23,10 +24,27 @@ export function CloseDealModal({
 }: CloseDealModalProps): JSX.Element | null {
   const moveStage = useMoveLeadStage();
   const { data: presetReasons } = useLostReasons();
+  const { data: lead } = useLead(leadId ?? '');
   const [mode, setMode] = useState<'won' | 'lost'>('won');
   const [wonOutcome, setWonOutcome] = useState<'invoice' | 'retainer' | ''>('');
   const [lostReason, setLostReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const [finalValue, setFinalValue] = useState('');
+  const [editInfoOpen, setEditInfoOpen] = useState(false);
+  const [companyName, setCompanyName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+
+  useEffect(() => {
+    if (open && lead) {
+      setFinalValue(lead.estimatedValue ? String(lead.estimatedValue) : '');
+      setCompanyName(lead.companyName ?? '');
+      setContactName(lead.contactName ?? '');
+      setEmail(lead.email ?? '');
+      setPhone(lead.phone ?? '');
+    }
+  }, [open, lead]);
 
   if (!open || !leadId) return null;
 
@@ -37,6 +55,8 @@ export function CloseDealModal({
     setWonOutcome('');
     setLostReason('');
     setCustomReason('');
+    setFinalValue('');
+    setEditInfoOpen(false);
   }
 
   async function confirm(): Promise<void> {
@@ -54,6 +74,13 @@ export function CloseDealModal({
       stage: mode === 'won' ? PipelineStage.CLOSED_WON : PipelineStage.CLOSED_LOST,
       lostReason: reason,
       wonOutcome: mode === 'won' ? (wonOutcome as 'invoice' | 'retainer') : undefined,
+      ...(mode === 'won' && {
+        finalValue: parseFloat(finalValue),
+        companyName: companyName.trim() || undefined,
+        contactName: contactName.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+      }),
     });
 
     onSuccess?.();
@@ -61,10 +88,11 @@ export function CloseDealModal({
     reset();
   }
 
+  const parsedFinalValue = parseFloat(finalValue);
   const canConfirm =
     !moveStage.isPending &&
     (mode === 'won'
-      ? Boolean(wonOutcome)
+      ? Boolean(wonOutcome) && parsedFinalValue > 0
       : Boolean(lostReason === 'Other' ? customReason.trim() : lostReason));
 
   const outcomeLink =
@@ -123,6 +151,85 @@ export function CloseDealModal({
                 <span className="font-medium">Retainer</span>
                 <span className="text-center text-xs opacity-75">Recurring contract</span>
               </button>
+            </div>
+          )}
+
+          {/* Final value — required to close as won */}
+          {mode === 'won' && (
+            <div className="ml-6 space-y-2">
+              <Label htmlFor="final-value">Final deal value *</Label>
+              <Input
+                id="final-value"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={finalValue}
+                onChange={(e) => setFinalValue(e.target.value)}
+                placeholder="Confirmed amount for this deal"
+              />
+              <p className="text-xs text-cdy-muted">
+                Drives the invoice/retainer amount and commission — confirm the
+                real final value even if it differs from the original estimate.
+              </p>
+            </div>
+          )}
+
+          {/* Optional: correct client/lead contact info before converting */}
+          {mode === 'won' && (
+            <div className="ml-6">
+              <button
+                type="button"
+                onClick={() => setEditInfoOpen((v) => !v)}
+                className="flex items-center gap-1 text-sm text-cdy-muted hover:text-cdy-white"
+              >
+                {editInfoOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+                Edit client/lead info
+              </button>
+              {editInfoOpen && (
+                <div className="mt-2 space-y-3 rounded-lg border border-cdy-navy-border bg-cdy-navy p-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="close-company">Company name</Label>
+                    <Input
+                      id="close-company"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="close-contact">Contact name</Label>
+                    <Input
+                      id="close-contact"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="close-email">Email</Label>
+                    <Input
+                      id="close-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="close-phone">Phone</Label>
+                    <Input
+                      id="close-phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-cdy-muted">
+                    These corrections are saved on the lead and carried into
+                    the client record this deal creates or links to.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import { Pencil } from 'lucide-react';
 import type { LeadRecord } from '@cdy/shared';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -9,6 +10,7 @@ import {
   scoreBandBorder,
 } from '@/lib/leadScoring';
 import { cn } from '@/lib/utils';
+import { PermissionGate } from '@/components/PermissionGate';
 
 interface LeadCardProps {
   lead: LeadRecord & {
@@ -16,9 +18,10 @@ interface LeadCardProps {
   };
   draggable?: boolean;
   onDragStart?: () => void;
+  onEdit?: () => void;
 }
 
-export function LeadCard({ lead, draggable, onDragStart }: LeadCardProps): JSX.Element {
+export function LeadCard({ lead, draggable, onDragStart, onEdit }: LeadCardProps): JSX.Element {
   const score = lead.qualityScore ?? 0;
   const band = getScoreBand(score);
   const latestActivity = lead.activities?.[0];
@@ -36,11 +39,29 @@ export function LeadCard({ lead, draggable, onDragStart }: LeadCardProps): JSX.E
         <span className="text-xs font-medium text-cdy-muted">
           {band === 'hot' ? '🔥' : band === 'warm' ? '🌡' : '❄'} Score: {score}
         </span>
-        {lead.estimatedValue != null && (
-          <span className="text-xs font-semibold text-cdy-white">
-            {formatCurrency(Number(lead.estimatedValue), lead.currency)}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {lead.estimatedValue != null && (
+            <span className="text-xs font-semibold text-cdy-white">
+              {formatCurrency(Number(lead.estimatedValue), lead.currency)}
+            </span>
+          )}
+          {onEdit && (
+            <PermissionGate feature="crm.leads" action="write">
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="text-cdy-muted hover:text-cdy-white"
+                aria-label="Edit lead"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </PermissionGate>
+          )}
+        </div>
       </div>
       <Link href={`/crm/leads/${lead.id}`} className="block font-medium text-cdy-white hover:text-cdy-red">
         {lead.companyName ?? lead.contactName}
