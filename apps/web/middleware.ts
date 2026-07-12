@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AUTH_COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/lib/auth';
 import { firstAccessibleModulePath, isRouteAllowed, resolveLandingPath } from '@/lib/module-access';
-import type { PermissionMap } from '@cdy/shared';
+import { decodePermissions, type PermissionMap } from '@cdy/shared';
 
 interface JwtPayload {
   sub: string;
@@ -10,8 +10,13 @@ interface JwtPayload {
   roleKey: string;
   roleName: string;
   homeModule?: string;
-  permissions: PermissionMap;
+  /** Expanded from the token's compact `perms` claim ("feature.key:rw"). */
+  permissions?: PermissionMap;
   exp?: number;
+}
+
+interface RawJwtClaims extends Omit<JwtPayload, 'permissions'> {
+  perms?: string[];
 }
 
 function decodeJwtPayload(token: string): JwtPayload {
@@ -23,7 +28,8 @@ function decodeJwtPayload(token: string): JwtPayload {
   const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
   const json = atob(padded);
-  return JSON.parse(json) as JwtPayload;
+  const { perms, ...claims } = JSON.parse(json) as RawJwtClaims;
+  return { ...claims, permissions: decodePermissions(perms) };
 }
 
 function parseJwtPayload(token: string): JwtPayload | null {

@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { UserProfile } from '@cdy/shared';
+import { encodePermissions, UserProfile } from '@cdy/shared';
 import { JwtPayload } from './decorators/current-user.decorator';
 
 interface AuthTokens {
@@ -58,7 +58,7 @@ export class AuthService {
       roleKey: profile.roleKey,
       roleName: profile.roleName,
       homeModule: profile.homeModule,
-      permissions: profile.permissions,
+      perms: encodePermissions(profile.permissions),
     };
 
     const tokens = await this.generateTokens(payload);
@@ -104,7 +104,7 @@ export class AuthService {
         roleKey: profile.roleKey,
         roleName: profile.roleName,
         homeModule: profile.homeModule,
-        permissions: profile.permissions,
+        perms: encodePermissions(profile.permissions),
       };
 
       const accessToken = await this.jwtService.signAsync(accessPayload, {

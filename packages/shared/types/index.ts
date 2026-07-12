@@ -19,6 +19,35 @@ export type PermissionMap = Record<
   { canRead: boolean; canWrite: boolean }
 >;
 
+/**
+ * Compact wire format for a PermissionMap, used as the `perms` claim inside
+ * the JWT access token. The verbose object form (~55 chars per feature) blew
+ * the access-token cookie past the 4 KB browser limit for roles with many
+ * features; this form ("crm.leads:rw", "finance.invoices:r") stays well under.
+ */
+export function encodePermissions(map: PermissionMap): string[] {
+  return Object.entries(map)
+    .filter(([, v]) => v.canRead || v.canWrite)
+    .map(
+      ([key, v]) => `${key}:${v.canRead ? 'r' : ''}${v.canWrite ? 'w' : ''}`,
+    );
+}
+
+/** Inverse of {@link encodePermissions}. Returns undefined for absent claims. */
+export function decodePermissions(
+  perms: string[] | undefined,
+): PermissionMap | undefined {
+  if (!perms) return undefined;
+  const map: PermissionMap = {};
+  for (const entry of perms) {
+    const sep = entry.lastIndexOf(':');
+    const key = sep === -1 ? entry : entry.slice(0, sep);
+    const flags = sep === -1 ? '' : entry.slice(sep + 1);
+    map[key] = { canRead: flags.includes('r'), canWrite: flags.includes('w') };
+  }
+  return map;
+}
+
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
   SENT = 'SENT',

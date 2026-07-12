@@ -25,8 +25,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { accessToken, refreshToken } = result.data;
     const nextResponse = NextResponse.json({ user: result.data.user });
 
-    // Secure cookies by default in production; COOKIES_SECURE=false only for
-    // local/plain-HTTP deployments that opt out explicitly.
     const secure =
       process.env.COOKIES_SECURE != null
         ? process.env.COOKIES_SECURE === 'true'
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       httpOnly: true,
       secure,
       sameSite: 'lax',
-      maxAge: 60 * 15,
+      maxAge: 60 * 60 * 24 ,
       path: '/',
     });
 

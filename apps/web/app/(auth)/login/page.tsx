@@ -36,7 +36,7 @@ export default function LoginPage(): JSX.Element {
         data.user?.permissions,
         data.user?.homeModule,
       );
-      // window.location.h6ref = landingPath;
+      window.location.href = landingPath;
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {
