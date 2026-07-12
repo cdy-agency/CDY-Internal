@@ -216,19 +216,32 @@ export class CeoDashboardService {
       this.prisma.salesCampaign.count({ where: { status: 'ACTIVE' } }),
 
       // ── Ventures ────────────────────────────────────────────
+      // Income/expenses are sourced the same way VenturesService.getSummary()
+      // computes them (Invoice + DirectIncome for income, Expense for
+      // expenses) — NOT the VentureIncome/VentureExpense models, which have
+      // their own /ventures/:id/income and /ventures/:id/expenses endpoints
+      // but no UI ever calls them, so they always sum to zero.
       this.prisma.venture.findMany({
         where: { isActive: true },
         select: {
           id: true,
           name: true,
           color: true,
-          incomeEntries: {
+          invoices: {
+            where: {
+              status: 'PAID',
+              paidAt: { gte: monthStart, lte: monthEnd },
+              deletedAt: null,
+            },
+            select: { total: true },
+          },
+          directIncome: {
             where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
             select: { amount: true },
           },
-          expenseEntries: {
+          expenses: {
             where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
-            select: { ventureAmount: true },
+            select: { amount: true, ventureSharePercent: true },
           },
         },
       }),
@@ -265,14 +278,13 @@ export class CeoDashboardService {
 
     // Venture summary
     const venturesData = venturesSummary.map((v) => {
-      const income = v.incomeEntries.reduce(
-        (s, e) => s + Number(e.amount),
-        0,
-      );
-      const expenses = v.expenseEntries.reduce(
-        (s, e) => s + Number(e.ventureAmount),
-        0,
-      );
+      const invoiceIncome = v.invoices.reduce((s, i) => s + Number(i.total), 0);
+      const directIncome = v.directIncome.reduce((s, d) => s + Number(d.amount), 0);
+      const income = invoiceIncome + directIncome;
+      const expenses = v.expenses.reduce((s, e) => {
+        const sharePct = e.ventureSharePercent != null ? Number(e.ventureSharePercent) : 100;
+        return s + (Number(e.amount) * sharePct) / 100;
+      }, 0);
       return {
         id: v.id,
         name: v.name,
