@@ -19,8 +19,8 @@ interface MetricHeroProps {
 }
 
 const SIZES = {
-  lg: 'text-xl sm:text-2xl md:text-3xl lg:text-4xl',
-  md: 'text-base sm:text-xl md:text-2xl lg:text-3xl',
+  lg: 'text-lg sm:text-2xl md:text-xl lg:text-2xl',
+  md: 'text-base sm:text-md md:text-lg lg:text-xl',
   sm: 'text-sm sm:text-lg md:text-xl lg:text-2xl',
 } as const;
 

@@ -40,6 +40,11 @@
         </div>
 
         <div class="nav-group">
+          <p class="nav-group-title">Glossary</p>
+          <a href="#glossary" class="nav-link">Terminology A–Z</a>
+        </div>
+
+        <div class="nav-group">
           <p class="nav-group-title">Module guides</p>
           <a href="#finance" class="nav-link"><i class="dot" data-accent="finance"></i>Finance &amp; Ventures</a>
           <a href="#crm" class="nav-link"><i class="dot" data-accent="crm"></i>CRM</a>
@@ -192,6 +197,329 @@
             grant" column for every feature you give <code>write</code> on.
             Missing one doesn't break the API — it breaks the form silently
             (empty picker, blank card, or a submit button that 403s).
+          </div>
+        </section>
+
+        <section class="card" id="glossary">
+          <h2>Terminology A–Z</h2>
+          <p>
+            Every domain term used across the app's dashboards, forms, and
+            statuses — grounded in how each one is actually implemented, not a
+            generic dictionary definition.
+          </p>
+          <div class="glossary-search">
+            <svg class="glossary-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="search"
+              id="glossarySearch"
+              placeholder="Search terms… (e.g. “MRR”, “overdue”, “milestone”)"
+              aria-label="Search glossary terms"
+              autocomplete="off"
+            />
+            <span class="glossary-search-count" id="glossarySearchCount"></span>
+          </div>
+          <p id="glossaryNoResults" class="glossary-empty" hidden>
+            No terms match your search.
+          </p>
+          <p class="glossary-jump-label" id="glossaryJumpLabel">Or jump to a group:</p>
+          <ul class="glossary-jump" id="glossaryJump">
+            <li><a href="#gl-invoices"><i class="dot" data-accent="finance"></i>Invoices</a></li>
+            <li><a href="#gl-ar-cash"><i class="dot" data-accent="finance"></i>AR &amp; Cash</a></li>
+            <li><a href="#gl-ventures"><i class="dot" data-accent="finance"></i>Ventures &amp; Commissions</a></li>
+            <li><a href="#gl-recurring"><i class="dot" data-accent="finance"></i>Recurring Billing</a></li>
+            <li><a href="#gl-compliance"><i class="dot" data-accent="finance"></i>Compliance &amp; Tax</a></li>
+            <li><a href="#gl-payroll-fin"><i class="dot" data-accent="finance"></i>Payroll</a></li>
+            <li><a href="#gl-crm-core"><i class="dot" data-accent="crm"></i>CRM Core</a></li>
+            <li><a href="#gl-pipeline"><i class="dot" data-accent="crm"></i>Pipeline &amp; Deals</a></li>
+            <li><a href="#gl-sales"><i class="dot" data-accent="sales"></i>Sales</a></li>
+            <li><a href="#gl-marketing"><i class="dot" data-accent="marketing"></i>Marketing</a></li>
+            <li><a href="#gl-influencer"><i class="dot" data-accent="influencer"></i>Influencer</a></li>
+            <li><a href="#gl-hr"><i class="dot" data-accent="hr"></i>HR</a></li>
+            <li><a href="#gl-projects"><i class="dot" data-accent="projects"></i>Projects</a></li>
+            <li><a href="#gl-rbac"><i class="dot" data-accent="it"></i>IT / RBAC Core</a></li>
+            <li><a href="#gl-software"><i class="dot" data-accent="software"></i>Software Delivery</a></li>
+            <li><a href="#gl-branding"><i class="dot" data-accent="branding"></i>Branding Delivery</a></li>
+          </ul>
+
+          <div class="glossary-group" id="gl-invoices">
+            <h3><i class="dot" data-accent="finance"></i>Invoices</h3>
+            <dl class="glossary">
+              <dt>Draft</dt>
+              <dd>An invoice created but not yet sent to the client. It has no due-date pressure and can't receive payments until it's sent.</dd>
+              <dt>Sent</dt>
+              <dd>The invoice has been issued to the client and is now awaiting payment.</dd>
+              <dt>Partially Paid</dt>
+              <dd>One or more payments have been recorded against the invoice, but the total paid is still less than the invoice total.</dd>
+              <dt>Paid</dt>
+              <dd>The sum of all recorded payments meets or exceeds the invoice total; the system stamps a paid date automatically.</dd>
+              <dt>Overdue</dt>
+              <dd>A nightly automated job flips any Sent or Partially Paid invoice whose due date has passed into Overdue and notifies Finance Managers — nobody has to do this by hand.</dd>
+              <dt>Written Off</dt>
+              <dd>A Finance user gives up on collecting an invoice (client dispute, insolvency, etc.). Only Sent, Partially Paid, or Overdue invoices can be written off; doing so locks it from further payments and alerts the CEO.</dd>
+              <dt>Write-off Category</dt>
+              <dd>The reason tag recorded on a write-off: Client Dispute, Client Insolvent, Agreed Write-off, Uncollectable, or Other.</dd>
+              <dt>Credit Note</dt>
+              <dd>A document that reduces or refunds part of an already-issued invoice (e.g. an overcharge or agreed discount). Moves through Issued → Refund Pending → Refund Paid, or can be Voided.</dd>
+              <dt>Payment Plan</dt>
+              <dd>An agreement to split one invoice's balance into instalments, each with its own due date and status. The plan itself is Active, Completed, or Cancelled.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-ar-cash">
+            <h3><i class="dot" data-accent="finance"></i>AR &amp; Cash</h3>
+            <dl class="glossary">
+              <dt>MTD (Month-to-Date)</dt>
+              <dd>The period from the 1st day of the current calendar month up to now — used consistently across every finance dashboard figure.</dd>
+              <dt>AR / Outstanding AR</dt>
+              <dd>The total still owed across all Sent, Partially Paid, and Overdue invoices (each invoice's total minus payments already recorded against it). Draft, Paid, and Written-off invoices never count.</dd>
+              <dt>Revenue / Invoiced</dt>
+              <dd>The total value of invoices created within a given period, regardless of whether they've been paid yet.</dd>
+              <dt>Collected</dt>
+              <dd>Actual cash received — the sum of Payment records recorded in the period, not just invoiced amounts.</dd>
+              <dt>Income</dt>
+              <dd>Collected payments plus Direct Income for the period — the all-in "money that actually came in" figure.</dd>
+              <dt>Direct Income</dt>
+              <dd>Money logged as received without ever raising an invoice (e.g. a walk-in cash sale), recorded with its own payment method and reference.</dd>
+              <dt>Bank Reconciliation</dt>
+              <dd>Uploading a bank statement and matching each line to a Payment or Expense already in the system. A statement run is In Progress, Completed, or ends in Discrepancy if things don't line up.</dd>
+              <dt>Matched Transaction</dt>
+              <dd>Each bank statement line is auto-matched or left Unmatched; an unmatched line can be manually linked to an existing payment/expense (Manually Resolved) or dismissed as irrelevant (Ignored).</dd>
+              <dt>Reserve Fund</dt>
+              <dd>A company savings account topped up or drawn down only by manual Deposit/Withdrawal entries — not an automatic percentage of revenue. A deposit also logs an expense; a withdrawal also logs direct income.</dd>
+              <dt>Bills &amp; Payables</dt>
+              <dd>Money the company owes to vendors/suppliers. A Bill starts Unpaid, becomes Partially Paid or Paid as it's settled.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-ventures">
+            <h3><i class="dot" data-accent="finance"></i>Ventures &amp; Commissions</h3>
+            <dl class="glossary">
+              <dt>Venture</dt>
+              <dd>A distinct business line or brand under the company. Clients, invoices, expenses, income entries, retainers, and leads can each be tagged to a venture to track that business line's numbers separately from the company as a whole.</dd>
+              <dt>Tagging a client to a venture</dt>
+              <dd>Assigning a venture to a client record so all of that client's activity rolls up under the venture's reporting.</dd>
+              <dt>Commission Rule</dt>
+              <dd>A standing percentage rate set for a specific sales agent (optionally per service type), used to calculate commissions on future deals.</dd>
+              <dt>Commission Record</dt>
+              <dd>The actual commission earned on one closed deal, calculated from the matching rule and moved through Pending → Approved/Rejected → Paid by a manager. Amounts can be manually adjusted with a reason.</dd>
+              <dt>"Own" commissions vs. all</dt>
+              <dd>Agents with the narrower commissions permission can only view/manage their own commission records; a separate, broader permission is needed to see every agent's commissions.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-recurring">
+            <h3><i class="dot" data-accent="finance"></i>Recurring Billing</h3>
+            <dl class="glossary">
+              <dt>Retainer (Retainer Contract)</dt>
+              <dd>A recurring service agreement with a client for a fixed monthly amount, billed automatically on a set day of the month. Statuses: Draft, Active, Paused, or Ended. Supports extensions that change its end date/amount.</dd>
+              <dt>MRR (Monthly Recurring Revenue)</dt>
+              <dd>The sum of the monthly amount of every currently Active retainer contract — a snapshot of guaranteed recurring billing, not actual cash collected.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-compliance">
+            <h3><i class="dot" data-accent="finance"></i>Compliance &amp; Tax</h3>
+            <dl class="glossary">
+              <dt>Tax Rate</dt>
+              <dd>A configured percentage (by country and optionally service type) applied to invoices and retainers when calculating tax.</dd>
+              <dt>Tax Owed / Liability</dt>
+              <dd>For the current month: the tax portion of all invoices marked Paid, minus whatever has already been remitted to tax authorities in overlapping periods. A positive number means money is still owed.</dd>
+              <dt>Tax Remittance</dt>
+              <dd>A record of an actual payment made to a tax authority for a given period, used to offset the computed tax liability.</dd>
+              <dt>Budget (Project Budget)</dt>
+              <dd>The approved spending ceiling for a project. Tracks an alert threshold percentage and can automatically block further spending once exceeded, with its own approval workflow (Pending/Approved/Rejected) for requests to increase it.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-payroll-fin">
+            <h3><i class="dot" data-accent="finance"></i>Payroll</h3>
+            <dl class="glossary">
+              <dt>Payroll Run</dt>
+              <dd>One month's payroll batch, moving from Draft (editable) to Processed (calculated, employees paid) to Locked (frozen — can no longer be edited or deleted).</dd>
+              <dt>Payslip</dt>
+              <dd>The per-employee breakdown within a run (base salary, commission, bonus, deductions, net pay), which can be emailed to the employee once generated.</dd>
+              <dt>Second Approver</dt>
+              <dd>An optional employee designated in Finance Settings to review/process a payroll run — the run's creator is not allowed to process their own run, so a second person must be involved.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-crm-core">
+            <h3><i class="dot" data-accent="crm"></i>CRM Core</h3>
+            <dl class="glossary">
+              <dt>Lead</dt>
+              <dd>A prospective deal captured with contact info, an estimated value, and a source. Whether it's a "venture-type" or "service-type" lead depends on whether a Venture was picked (venture-type) or it's classified by a free-text service interest instead (service-type).</dd>
+              <dt>Proposal</dt>
+              <dd>A priced offer sent to a lead, moving through Draft → Sent → Accepted/Rejected/Expired.</dd>
+              <dt>Client (CRM)</dt>
+              <dd>A converted, ongoing business relationship record with a source (how they became a client: Pipeline, Direct, Referral, Returning) and a primary service that drives which service module gets set up for them.</dd>
+              <dt>"CRM — View All Records"</dt>
+              <dd>Not a separate feature or page — a permission that switches a user's CRM views from "my assigned records only" to "every record in the CRM."</dd>
+              <dt>Venture (CRM link)</dt>
+              <dd>Leads and clients can be tagged to a Venture so revenue (invoices, retainers, commissions) is attributed to that specific business line rather than the company as a whole.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-pipeline">
+            <h3><i class="dot" data-accent="crm"></i>Pipeline &amp; Deals</h3>
+            <dl class="glossary">
+              <dt>Pipeline stage</dt>
+              <dd>A lead's position in the sales journey: New → Contacted → Proposal Sent → Negotiation → Closed Won/Closed Lost.</dd>
+              <dt>Sending a proposal</dt>
+              <dd>Auto-advances the lead from New/Contacted to Proposal Sent.</dd>
+              <dt>Accepting a proposal</dt>
+              <dd>Auto-advances the lead to Negotiation — not straight to Closed Won — and notifies the owner to close the deal manually.</dd>
+              <dt>Closed Won</dt>
+              <dd>Moving a lead here requires choosing an outcome (invoice or retainer). It auto-creates or links a Client, calculates the rep's commission, and either drafts a Retainer Contract or sets up the matching service record (software project, branding project, marketing/influencer campaign, etc.) depending on whether the lead was venture-tagged or service-tagged.</dd>
+              <dt>Closed Lost</dt>
+              <dd>Requires a reason, is terminal, and cannot be moved again.</dd>
+              <dt>Conversion Rate / Funnel</dt>
+              <dd>The share of leads that end Closed Won vs. Closed Lost within a date range, plus stage-by-stage counts, average deal value, and average days-to-close.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-sales">
+            <h3><i class="dot" data-accent="sales"></i>Sales</h3>
+            <dl class="glossary">
+              <dt>Sales Campaign (field sales)</dt>
+              <dd>A territory/product outreach effort tied to a Client, with a start/end date and status Active/Completed/On Hold/Cancelled.</dd>
+              <dt>Deploy Agent</dt>
+              <dd>Assigning an HR employee to an active Sales Campaign as a field sales agent, with visit/lead/sales targets. Fails if the campaign isn't active or the employee is already deployed.</dd>
+              <dt>Campaign completion</dt>
+              <dd>Marking a campaign Completed auto-generates a draft invoice for Finance to review if a total cost was set, and notifies the Finance Manager.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-marketing">
+            <h3><i class="dot" data-accent="marketing"></i>Marketing</h3>
+            <dl class="glossary">
+              <dt>Marketing Client</dt>
+              <dd>A distinct record — not the same as a CRM Client — created only against an existing, active finance Retainer Contract. You must pick a retainer; it fails if the retainer isn't active or is already linked to another marketing client.</dd>
+              <dt>Retainer (marketing context)</dt>
+              <dd>The underlying recurring-billing contract in Finance that a Marketing Client is anchored to — it defines the service and billing amount being fulfilled.</dd>
+              <dt>Content item</dt>
+              <dd>A single scheduled social/marketing post belonging to a Marketing Client, moving Draft → Ready → Approved → Published, with Rejected and Cancelled as side branches.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-influencer">
+            <h3><i class="dot" data-accent="influencer"></i>Influencer</h3>
+            <dl class="glossary">
+              <dt>Influencer</dt>
+              <dd>A database entry for a content creator: name, handle, primary platform (plus other platforms), follower count, category, and contact info.</dd>
+              <dt>Influencer Campaign</dt>
+              <dd>An Active/Completed/On Hold/Cancelled effort for a Client with a budget that, once set, auto-generates a draft invoice for Finance.</dd>
+              <dt>Assign</dt>
+              <dd>Attaching an influencer to an active campaign with an agreed fee and one or more deliverables.</dd>
+              <dt>Verify (a deliverable)</dt>
+              <dd>Confirming the influencer actually posted the required content, stamping who verified it and when. A verified deliverable blocks removing that influencer from the campaign.</dd>
+              <dt>Pay</dt>
+              <dd>Logging a one-time payment to an influencer, which also books an expense in Finance and marks the assignment paid.</dd>
+              <dt>Complete (campaign)</dt>
+              <dd>Closes out the campaign and warns if any deliverables are still unverified or influencers unpaid.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-hr">
+            <h3><i class="dot" data-accent="hr"></i>HR</h3>
+            <dl class="glossary">
+              <dt>Attendance vs. Leave</dt>
+              <dd>Two separate features sharing one permission. Attendance is a daily check-in/check-out log with statuses Present, Absent, Half Day, On Leave, Public Holiday, Weekend. Leave is a separate request-and-approval workflow against a yearly entitlement.</dd>
+              <dt>Leave Type</dt>
+              <dd>A configurable category of leave (e.g. Annual, Sick) defining default days/year, whether it's paid, and whether it needs approval or a supporting document.</dd>
+              <dt>Leave Balance</dt>
+              <dd>An employee's entitlement for a given year and leave type: days entitled, used, pending approval, remaining, and carried over from the prior year.</dd>
+              <dt>Leave Request</dt>
+              <dd>An employee's application for time off, moving Pending → Approved/Rejected/Cancelled.</dd>
+              <dt>Leave Year</dt>
+              <dd>An HR-wide setting defining when annual leave entitlements reset (default January 1st).</dd>
+              <dt>Performance Review</dt>
+              <dd>A structured review cycle per employee/period: Draft → Self-Assessment → Manager Review → Acknowledged → Completed. A manager initiates it, the employee completes a self-assessment, the manager adds notes/rating, then the employee acknowledges it.</dd>
+              <dt>Onboarding Checklist</dt>
+              <dd>A per-employee list of onboarding tasks (category, due date, completion) tracked as In Progress, Completed, or Overdue.</dd>
+              <dt>Sensitive Employee Data</dt>
+              <dd>The fields hidden unless a role has the sensitive-data permission: salary, salary effective date, national ID, bank name/account, emergency contact, and notes.</dd>
+              <dt>HR Payroll</dt>
+              <dd>A read/adjust view of an employee's own salary history shown on their profile — not a payroll engine, just visibility into pay changes over time. Distinct from Finance's Payroll Run, which is the actual payroll engine.</dd>
+              <dt>HR Audit Log</dt>
+              <dd>A record of every create/update on HR data (who, what field changed, old/new value) for compliance.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-projects">
+            <h3><i class="dot" data-accent="projects"></i>Projects</h3>
+            <dl class="glossary">
+              <dt>Project</dt>
+              <dd>A client engagement running Active → On Hold/Completed/Cancelled/Archived, owned by a manager, with milestones, tasks, members, and files.</dd>
+              <dt>Milestone</dt>
+              <dd>A named phase/checkpoint of a project (Pending → In Progress → Completed) that groups tasks and is marked complete via its own action.</dd>
+              <dt>Task</dt>
+              <dd>A unit of work under a project (optionally under a milestone), moving To Do → In Progress/Blocked/In Review → Done, with priority, assignee, due date, and comments.</dd>
+              <dt>CSV Task Import</dt>
+              <dd>A bulk-upload feature that creates many tasks at once from an uploaded CSV file.</dd>
+              <dt>Status Report</dt>
+              <dd>An on-demand, real-time snapshot of a project's health: overall progress, recent activity, tasks due in the next 14 days, and currently blocked tasks. Computed live, not stored.</dd>
+              <dt>Handover Report</dt>
+              <dd>A one-time, permanently saved summary generated only after a project reaches Completed — covering final deliverables, milestones/tasks, approved client deliverables, files, cost, and duration.</dd>
+              <dt>Approval (Deliverable Approval)</dt>
+              <dd>The review of a specific task's deliverable (a file/description submitted for sign-off) — not the milestone itself. A manager/client approves or rejects with a required note on rejection; approving an approval-gated task auto-marks it Done.</dd>
+              <dt>All Projects vs. Own Projects</dt>
+              <dd>"All Projects" is the company-wide project-management view (create/edit any project, milestones, approvals). "Own Projects" restricts a user to projects/tasks they're a member of or assigned to — "my work across all my projects."</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-rbac">
+            <h3><i class="dot" data-accent="it"></i>IT / RBAC Core Concepts</h3>
+            <dl class="glossary">
+              <dt>Feature</dt>
+              <dd>The smallest permission unit in the system, e.g. <code>hr.payroll</code> or <code>projects.all</code>. Every feature belongs to exactly one Module.</dd>
+              <dt>Permission</dt>
+              <dd>The read/write grant a Role has on one Feature — stored as a read flag and a write flag.</dd>
+              <dt>Role</dt>
+              <dd>A named bundle of permissions (e.g. "HR Manager") assigned to users. A role links to many features, each with its own read/write flags — Role → Permission → Feature is the full chain that decides what a user can see and do.</dd>
+              <dt>Module</dt>
+              <dd>A top-level app section (finance, hr, projects, it, crm, etc.). Every feature is tagged with exactly one module, which is how the UI groups permissions and navigation.</dd>
+              <dt>Home Module</dt>
+              <dd>A field on a Role (default Finance) that determines the page a user lands on immediately after logging in.</dd>
+              <dt>IT Audit Log</dt>
+              <dd>A record of RBAC/user-management actions: role created/updated/deleted, bulk permission updates, and user created/role-changed/deactivated/activated, each with before/after values.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-software">
+            <h3><i class="dot" data-accent="software"></i>Software Delivery</h3>
+            <dl class="glossary">
+              <dt>Software Project (phase)</dt>
+              <dd>A dev engagement that moves through a fixed phase sequence: Requirements → Design → Development → QA → Deployment → Maintenance → Completed, each phase backed by its own panel rather than one shared workflow.</dd>
+              <dt>Requirements</dt>
+              <dd>Versioned requirement documents drafted, sent to the client, and signed off (Draft → Sent → Signed/Revised).</dd>
+              <dt>Design (phase)</dt>
+              <dd>A Figma-linked design stage that can be skipped, sent to the client, approved, or sent back with changes requested.</dd>
+              <dt>Sprint</dt>
+              <dd>A fixed-date development iteration (name, goal, start/end date) that goes Planned → Active → Completed/Skipped and contains its own items (title, assignee, story points, status).</dd>
+              <dt>QA</dt>
+              <dd>A bug-tracking phase (skippable) holding bug records with severity (Critical/High/Medium/Low) and status (Open/In Progress/Resolved/Won't Fix).</dd>
+              <dt>Deployment</dt>
+              <dd>The record of go-live: when it was deployed, the URL, server details, and who deployed it.</dd>
+              <dt>Maintenance</dt>
+              <dd>Post-launch issue tracking (bug/update/security) logged until the maintenance window ends.</dd>
+            </dl>
+          </div>
+
+          <div class="glossary-group" id="gl-branding">
+            <h3><i class="dot" data-accent="branding"></i>Branding Delivery</h3>
+            <dl class="glossary">
+              <dt>Branding Project</dt>
+              <dd>A client branding engagement (In Progress → Delivered/On Hold/Cancelled) made up of individual scope items.</dd>
+              <dt>Scope Item</dt>
+              <dd>One deliverable within a branding project (e.g. "logo design"), optionally assigned to a supplier, tracked In Progress → Submitted → Approved/Rejected → Delivered.</dd>
+              <dt>Supplier</dt>
+              <dd>An external vendor/contractor who can be assigned to fulfill a scope item.</dd>
+              <dt>Design Submission</dt>
+              <dd>A versioned file submitted against a scope item for client review, going Pending → Approved/Rejected with optional client feedback — this drives the parent scope item's own status forward.</dd>
+            </dl>
           </div>
         </section>
 
@@ -778,6 +1106,62 @@
         backToTop.addEventListener('click', function () {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
+
+        // ---- Glossary live search ----
+        var searchInput = document.getElementById('glossarySearch');
+        var searchCount = document.getElementById('glossarySearchCount');
+        var noResults = document.getElementById('glossaryNoResults');
+        var jumpList = document.getElementById('glossaryJump');
+        var jumpLabel = document.getElementById('glossaryJumpLabel');
+        var groups = Array.prototype.slice.call(document.querySelectorAll('.glossary-group'));
+
+        function filterGlossary() {
+          var query = searchInput.value.trim().toLowerCase();
+          var totalMatches = 0;
+
+          if (!query) {
+            groups.forEach(function (group) {
+              group.hidden = false;
+              Array.prototype.slice.call(group.querySelectorAll('dt, dd')).forEach(function (el) {
+                el.hidden = false;
+              });
+            });
+            searchCount.textContent = '';
+            noResults.hidden = true;
+            jumpList.style.display = '';
+            jumpLabel.style.display = '';
+            return;
+          }
+
+          jumpList.style.display = 'none';
+          jumpLabel.style.display = 'none';
+
+          groups.forEach(function (group) {
+            var terms = Array.prototype.slice.call(group.querySelectorAll('dl.glossary > dt'));
+            var groupHasMatch = false;
+
+            terms.forEach(function (dt) {
+              var dd = dt.nextElementSibling;
+              var text = dt.textContent.toLowerCase() + ' ' + (dd ? dd.textContent.toLowerCase() : '');
+              var match = text.indexOf(query) !== -1;
+              dt.hidden = !match;
+              if (dd) dd.hidden = !match;
+              if (match) {
+                groupHasMatch = true;
+                totalMatches++;
+              }
+            });
+
+            group.hidden = !groupHasMatch;
+          });
+
+          searchCount.textContent = totalMatches + (totalMatches === 1 ? ' match' : ' matches');
+          noResults.hidden = totalMatches !== 0;
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', filterGlossary);
+        }
       })();
     </script>
   </body>

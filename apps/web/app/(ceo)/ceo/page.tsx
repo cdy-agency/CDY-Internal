@@ -18,7 +18,6 @@ import api from '@/lib/api';
 import type { ApiResponse } from '@cdy/shared';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { formatCurrency } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
