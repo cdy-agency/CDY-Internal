@@ -112,7 +112,7 @@ export function AddMarketingClientDrawer({
               </div>
               {selectedRetainer && (
                 <p className="mt-1.5 text-xs text-green-400">
-                  Client: {selectedRetainer.clientName ?? selectedRetainer.clientId}
+                  Client: {selectedRetainer.clientName ?? selectedRetainer.contactName ?? selectedRetainer.clientId}
                 </p>
               )}
             </div>

@@ -93,6 +93,7 @@ export class RetainersService {
       where.OR = [
         { serviceName: { contains: term, mode: 'insensitive' } },
         { client: { companyName: { contains: term, mode: 'insensitive' } } },
+        { client: { contactName: { contains: term, mode: 'insensitive' } } },
       ];
     }
 

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 
 export interface RetainerSearchResult {
   id: string;
+  contactName:string;
   serviceName: string;
   amount: number;
   currency: string;
@@ -97,7 +98,7 @@ export function RetainerSearch({ value, onChange, placeholder = 'Search active r
             >
               <div className="text-sm font-medium text-cdy-white">{r.serviceName}</div>
               <div className="text-xs text-cdy-muted">
-                {r.clientName ?? r.clientId} · {r.currency} {r.amount.toLocaleString()}
+                {r.clientName ?? r.contactName ?? r.clientId} · {r.currency} {r.amount.toLocaleString()}
               </div>
             </button>
           ))}
