@@ -7,6 +7,7 @@ import type {
   MarketingClientRecord,
   ContentItemRecord,
   ContentCalendarResult,
+  GlobalContentCalendarResult,
   MarketingMonthlySummary,
   MarketingAllClientsSummaryItem,
 } from '@cdy/shared';
@@ -70,6 +71,20 @@ export function useContentCalendar(clientId: string, month: string) {
       return res.data.data;
     },
     enabled: Boolean(clientId) && Boolean(month),
+    staleTime: 30_000,
+  });
+}
+
+export function useGlobalContentCalendar(month: string) {
+  return useQuery({
+    queryKey: ['marketing', 'calendar', 'all', month],
+    queryFn: async (): Promise<GlobalContentCalendarResult> => {
+      const res = await api.get<ApiResponse<GlobalContentCalendarResult>>(
+        `/marketing/calendar?month=${month}`,
+      );
+      return res.data.data;
+    },
+    enabled: Boolean(month),
     staleTime: 30_000,
   });
 }

@@ -170,6 +170,37 @@ export class ContentService {
     });
   }
 
+  async getGlobalCalendar(month: string) {
+    const monthDate = parse(month, 'yyyy-MM', new Date());
+    const from = startOfMonth(monthDate);
+    const to = endOfMonth(monthDate);
+
+    const items = await this.prisma.contentItem.findMany({
+      where: {
+        scheduledDate: { gte: from, lte: to },
+        deletedAt: null,
+      },
+      include: {
+        marketingClient: { include: { client: true } },
+      },
+      orderBy: { scheduledDate: 'asc' },
+    });
+
+    const serialized = items.map((item) => ({
+      ...item,
+      clientName: item.marketingClient.client?.companyName ?? 'Unknown client',
+    }));
+
+    const byDate: Record<string, typeof serialized> = {};
+    for (const item of serialized) {
+      const key = format(item.scheduledDate, 'yyyy-MM-dd');
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(item);
+    }
+
+    return { month, items: serialized, byDate };
+  }
+
   async getCalendar(marketingClientId: string, month: string) {
     const monthDate = parse(month, 'yyyy-MM', new Date());
     const from = startOfMonth(monthDate);

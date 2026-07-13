@@ -41,7 +41,7 @@ const navItems: NavItem[] = [
   },
   {
     label: 'Content',
-    href: '/marketing',
+    href: '/marketing/calendar',
     icon: CalendarDays,
     feature: 'marketing.content',
     exact: false,

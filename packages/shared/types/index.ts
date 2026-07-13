@@ -1075,6 +1075,7 @@ export interface RetainerRecord {
   id: string;
   clientId: string;
   clientName?: string | null;
+  contactName?: string | null;
   ventureId?: string | null;
   ventureName?: string | null;
   serviceName: string;
@@ -2752,6 +2753,16 @@ export interface ContentCalendarResult {
   month: string;
   items: ContentItemRecord[];
   byDate: Record<string, ContentItemRecord[]>;
+}
+
+export interface GlobalContentItemRecord extends ContentItemRecord {
+  clientName: string;
+}
+
+export interface GlobalContentCalendarResult {
+  month: string;
+  items: GlobalContentItemRecord[];
+  byDate: Record<string, GlobalContentItemRecord[]>;
 }
 
 export interface MarketingMonthlySummary {

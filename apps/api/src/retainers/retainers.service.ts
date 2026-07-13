@@ -100,7 +100,7 @@ export class RetainersService {
       where,
       include: {
         taxRate: true,
-        client: { select: { id: true, companyName: true } },
+        client: { select: { id: true, companyName: true, contactName: true } },
         venture: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -116,7 +116,11 @@ export class RetainersService {
   async findOne(id: string) {
     const retainer = await this.prisma.retainerContract.findUnique({
       where: { id },
-      include: { taxRate: true, venture: { select: { id: true, name: true } } },
+      include: {
+        taxRate: true,
+        venture: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true, contactName: true } },
+      },
     });
     if (!retainer) throw new NotFoundException('Retainer not found');
     return this.serializeRetainer(retainer);
@@ -413,7 +417,7 @@ export class RetainersService {
         status: RetainerStatus.ACTIVE,
         endDate: { lte: thirtyDaysFromNow, not: null },
       },
-      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
+      include: { taxRate: true, client: { select: { id: true, companyName: true, contactName: true } }, venture: { select: { id: true, name: true } } },
     });
 
     const ninetyDaysAgo = subDays(new Date(), 90);
@@ -423,7 +427,7 @@ export class RetainersService {
         endedAt: { gte: ninetyDaysAgo },
       },
       orderBy: { endedAt: 'desc' },
-      include: { taxRate: true, client: { select: { id: true, companyName: true } }, venture: { select: { id: true, name: true } } },
+      include: { taxRate: true, client: { select: { id: true, companyName: true, contactName: true } }, venture: { select: { id: true, name: true } } },
     });
 
     const pausedCount = await this.prisma.retainerContract.count({
@@ -446,7 +450,7 @@ export class RetainersService {
       include: { taxRate: true };
     }> & {
       venture?: { id: string; name: string } | null;
-      client?: { id: string; companyName: string | null } | null;
+      client?: { id: string; companyName: string | null; contactName?: string | null } | null;
     },
   ) {
     return {
@@ -454,6 +458,7 @@ export class RetainersService {
 
       clientId: retainer.clientId,
       clientName: retainer.client?.companyName ?? null,
+      contactName: retainer.client?.contactName ?? null,
       ventureId: retainer.ventureId ?? null,
       ventureName: retainer.venture?.name ?? null,
       serviceName: retainer.serviceName,
