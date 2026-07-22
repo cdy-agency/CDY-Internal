@@ -39,6 +39,19 @@ export class PayrollService {
     private readonly payslipEmailService: PayslipEmailService,
   ) {}
 
+  private async getPayrollTaxRate(): Promise<number> {
+    const taxRateSetting = await this.settingsService.get('payroll_tax_rate');
+    // Allow 0 — do not treat "0" as unset (truthy check would fall back to 20%).
+    if (taxRateSetting === null || taxRateSetting.trim() === '') {
+      return 0.2;
+    }
+    const parsed = Number(taxRateSetting);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return 0.2;
+    }
+    return parsed / 100;
+  }
+
   async createRun(dto: CreatePayrollRunDto, userId: string): Promise<PayrollRun> {
     const { month, employeeIds } = dto;
 
@@ -106,8 +119,7 @@ export class PayrollService {
       {},
     );
 
-    const taxRateSetting = await this.settingsService.get('payroll_tax_rate');
-    const taxRate = taxRateSetting ? Number(taxRateSetting) / 100 : 0.2;
+    const taxRate = await this.getPayrollTaxRate();
 
     const lineItemsData = salaries.map((salary) => {
       const base = Number(salary.baseSalary);
@@ -213,8 +225,7 @@ export class PayrollService {
       );
     }
 
-    const taxRateSetting = await this.settingsService.get('payroll_tax_rate');
-    const taxRate = taxRateSetting ? Number(taxRateSetting) / 100 : 0.2;
+    const taxRate = await this.getPayrollTaxRate();
 
     const base =
       dto.baseSalary !== undefined
@@ -547,8 +558,7 @@ export class PayrollService {
     );
     const agentCount = new Set(commissions.map((c) => c.agentId)).size;
 
-    const taxRateSetting = await this.settingsService.get('payroll_tax_rate');
-    const taxRate = taxRateSetting ? Number(taxRateSetting) / 100 : 0.2;
+    const taxRate = await this.getPayrollTaxRate();
 
     const commissionByAgent = commissions.reduce<Record<string, number>>(
       (acc, c) => {

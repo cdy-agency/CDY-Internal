@@ -1,9 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { Invoice, Payment, Prisma } from '@prisma/client';
+import { CreditNote, Invoice, Payment } from '@prisma/client';
 import puppeteer, { Browser } from 'puppeteer';
 import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
+import { isInvoiceFullySettled } from '../common/invoice-balance.util';
 
-type InvoiceWithPayments = Invoice & { payments: Payment[] };
+type InvoiceWithPayments = Invoice & {
+  payments: Payment[];
+  creditNotes?: CreditNote[];
+};
 
 @Injectable()
 export class ReceiptPdfService implements OnModuleDestroy {
@@ -43,10 +47,11 @@ export class ReceiptPdfService implements OnModuleDestroy {
     const fmt = (n: number): string =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
 
-    const totalPaid = invoice.payments
-      .filter((p) => !p.deletedAt)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    const isFullyPaid = totalPaid >= Number(invoice.total) - 0.001;
+    const isFullyPaid = isInvoiceFullySettled({
+      total: invoice.total,
+      payments: invoice.payments.filter((p) => !p.deletedAt),
+      creditNotes: invoice.creditNotes,
+    });
     const stamp = isFullyPaid
       ? '<div style="color:#10B981;font-size:28px;font-weight:bold;border:3px solid #10B981;padding:12px 24px;display:inline-block;margin:20px 0;">PAID IN FULL</div>'
       : '<div style="color:#F59E0B;font-size:24px;font-weight:bold;border:3px solid #F59E0B;padding:12px 24px;display:inline-block;margin:20px 0;">PARTIAL PAYMENT</div>';

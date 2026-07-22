@@ -16,5 +16,7 @@ export function hasAnyAccess(permissions: PermissionMap, featureKey: string): bo
 }
 
 export function hasAnyModuleAccess(permissions: PermissionMap, module: string): boolean {
-  return Object.keys(permissions).some((key) => key.startsWith(`${module}.`));
+  return Object.keys(permissions).some(
+    (key) => key.startsWith(`${module}.`) && !key.endsWith('.lookup'),
+  );
 }

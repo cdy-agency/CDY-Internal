@@ -12,6 +12,7 @@ export const SYSTEM_FEATURES = [
   { key: 'finance.reconciliation', name: 'Bank Reconciliation', module: 'finance', description: 'Reconcile bank statements' },
   { key: 'finance.tax', name: 'Tax Management', module: 'finance', description: 'Tax rates and liability reports' },
   { key: 'finance.retainers', name: 'Retainer Contracts', module: 'finance', description: 'Monthly retainer billing' },
+  { key: 'finance.retainers.lookup', name: 'Retainers — Lookup', module: 'finance', description: 'Search/pick retainers for linking (not full retainers access)' },
   { key: 'finance.commissions', name: 'Commissions', module: 'finance', description: 'Commission rules and records' },
   { key: 'finance.commissions.own', name: 'Own Commissions', module: 'finance', description: 'View own commission records only' },
   { key: 'finance.payroll', name: 'Payroll', module: 'finance', description: 'Monthly payroll runs and payslips' },
@@ -26,9 +27,11 @@ export const SYSTEM_FEATURES = [
   { key: 'crm.all', name: 'CRM — View All Records', module: 'crm', description: 'View all agents\u2019 leads, pipeline, and proposals (not just own)' },
   { key: 'crm.pipeline', name: 'Sales Pipeline', module: 'crm', description: 'Kanban pipeline board and stage management' },
   { key: 'crm.clients', name: 'Clients', module: 'crm', description: 'Converted client account management' },
+  { key: 'crm.clients.lookup', name: 'Clients — Lookup', module: 'crm', description: 'Search/pick clients for forms (not full CRM clients access)' },
   { key: 'crm.proposals', name: 'Proposals', module: 'crm', description: 'Proposal tracking (PDF prepared externally)' },
   { key: 'crm.reports', name: 'CRM Reports', module: 'crm', description: 'Sales performance and conversion reports' },
   { key: 'hr.employees', name: 'Employees', module: 'hr', description: 'Employee profiles and directory' },
+  { key: 'hr.employees.lookup', name: 'Employees — Lookup', module: 'hr', description: 'Search/pick employees for assignment (name/title only)' },
   { key: 'hr.employees.sensitive', name: 'Employees — Sensitive Data', module: 'hr', description: 'View sensitive employee data (salary, bank, personal details)' },
   { key: 'hr.attendance', name: 'Attendance & Leave', module: 'hr', description: 'Leave requests and attendance' },
   { key: 'hr.payroll', name: 'HR Payroll View', module: 'hr', description: 'HR view of payroll data' },
@@ -97,6 +100,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'finance.reconciliation', canRead: true, canWrite: true },
       { key: 'finance.tax', canRead: true, canWrite: true },
       { key: 'finance.retainers', canRead: true, canWrite: true },
+      { key: 'finance.retainers.lookup', canRead: true, canWrite: false },
       { key: 'finance.commissions', canRead: true, canWrite: true },
       { key: 'finance.payroll', canRead: true, canWrite: true },
       { key: 'finance.budget', canRead: true, canWrite: true },
@@ -107,7 +111,9 @@ export const DEFAULT_ROLES: Array<{
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'ventures.manage', canRead: true, canWrite: true },
       { key: 'crm.clients', canRead: true, canWrite: false },
+      { key: 'crm.clients.lookup', canRead: true, canWrite: false },
       { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.employees.lookup', canRead: true, canWrite: false },
       { key: 'hr.employees.sensitive', canRead: true, canWrite: false },
       { key: 'hr.payroll', canRead: true, canWrite: true },
       { key: 'projects.all', canRead: true, canWrite: false },
@@ -131,6 +137,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.leads', canRead: true, canWrite: true },
       { key: 'crm.pipeline', canRead: true, canWrite: true },
       { key: 'crm.clients', canRead: true, canWrite: false },
+      { key: 'crm.clients.lookup', canRead: true, canWrite: false },
       { key: 'crm.proposals', canRead: true, canWrite: true },
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'hr.attendance', canRead: true, canWrite: true },
@@ -153,7 +160,9 @@ export const DEFAULT_ROLES: Array<{
       { key: 'projects.approvals', canRead: true, canWrite: true },
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'projects.reports', canRead: true, canWrite: false },
+      { key: 'crm.clients.lookup', canRead: true, canWrite: false },
       { key: 'hr.employees', canRead: true, canWrite: false },
+      { key: 'hr.employees.lookup', canRead: true, canWrite: false },
       { key: 'software.projects', canRead: true, canWrite: true },
       { key: 'software.delivery', canRead: true, canWrite: true },
       { key: 'branding.projects', canRead: true, canWrite: true },
@@ -174,12 +183,14 @@ export const DEFAULT_ROLES: Array<{
     permissions: [
       { key: 'finance.budget', canRead: true, canWrite: true },
       { key: 'finance.expenses', canRead: true, canWrite: false },
+      { key: 'finance.retainers.lookup', canRead: true, canWrite: false },
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'projects.all', canRead: true, canWrite: true },
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'projects.approvals', canRead: true, canWrite: true },
       { key: 'projects.reports', canRead: true, canWrite: true },
       { key: 'hr.employees', canRead: true, canWrite: true },
+      { key: 'hr.employees.lookup', canRead: true, canWrite: false },
       { key: 'hr.employees.sensitive', canRead: true, canWrite: false },
       { key: 'hr.attendance', canRead: true, canWrite: true },
       { key: 'hr.payroll', canRead: true, canWrite: true },
@@ -189,6 +200,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'crm.all', canRead: true, canWrite: false },
       { key: 'crm.pipeline', canRead: true, canWrite: false },
       { key: 'crm.clients', canRead: true, canWrite: true },
+      { key: 'crm.clients.lookup', canRead: true, canWrite: false },
       { key: 'crm.reports', canRead: true, canWrite: false },
       { key: 'marketing.clients', canRead: true, canWrite: true },
       { key: 'marketing.content', canRead: true, canWrite: true },
@@ -215,6 +227,7 @@ export const DEFAULT_ROLES: Array<{
       { key: 'projects.tasks', canRead: true, canWrite: true },
       { key: 'ventures.view', canRead: true, canWrite: false },
       { key: 'hr.attendance', canRead: true, canWrite: true },
+      { key: 'hr.employees.lookup', canRead: true, canWrite: false },
       { key: 'marketing.content', canRead: true, canWrite: true },
       { key: 'software.delivery', canRead: true, canWrite: true },
       { key: 'branding.projects', canRead: true, canWrite: false },
@@ -282,6 +295,10 @@ export async function seedRbac(prisma: PrismaClient): Promise<void> {
       feature: { key: 'finance.invoices' },
     },
   });
+
+  // Lookup features are picker-only. Ensure they exist as SystemFeatures before
+  // role grants below (upsert loop). They intentionally do NOT unlock module
+  // UIs — see apps/web/lib/module-access.ts hasModuleAccess (.lookup excluded).
 
   for (const feature of SYSTEM_FEATURES) {
     await prisma.systemFeature.upsert({

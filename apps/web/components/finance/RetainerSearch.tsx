@@ -33,7 +33,7 @@ export function RetainerSearch({ value, onChange, placeholder = 'Search active r
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/proxy/retainers?search=${encodeURIComponent(term)}&status=ACTIVE`,
+          `/api/proxy/retainers/lookup?q=${encodeURIComponent(term)}`,
           { credentials: 'include' },
         );
         const json = await res.json() as { data?: RetainerSearchResult[] };

@@ -15,6 +15,7 @@ import {
   CreateBalanceSheetEntryDto,
   UpdateBalanceSheetEntryDto,
 } from './dto/balance-sheet-entry.dto';
+import { invoiceRemainingBalance } from '../common/invoice-balance.util';
 
 export interface BalanceSheetResult {
   asOf: string;
@@ -228,15 +229,22 @@ export class BalanceSheetService {
           where: { deletedAt: null, paidAt: { lte: endOfDay } },
           select: { amount: true },
         },
+        creditNotes: {
+          where: { deletedAt: null, issuedAt: { lte: endOfDay } },
+          select: { amount: true, status: true },
+        },
       },
     });
 
     return invoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce(
-        (ps, p) => ps + Number(p.amount),
-        0,
+      return (
+        sum +
+        invoiceRemainingBalance({
+          total: inv.total,
+          payments: inv.payments,
+          creditNotes: inv.creditNotes,
+        })
       );
-      return sum + (Number(inv.total) - paid);
     }, 0);
   }
 

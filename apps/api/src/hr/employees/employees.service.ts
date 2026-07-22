@@ -170,6 +170,52 @@ export class EmployeesService {
     return employees.map((e) => this.serializeEmployee(e));
   }
 
+  /**
+   * Minimal picker results for assignees/managers/agents.
+   * Never includes salary, bank, or other sensitive fields.
+   * Empty query returns a capped active directory for select dropdowns.
+   */
+  async lookup(query: string) {
+    const term = query.trim();
+
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        deletedAt: null,
+        status: { not: EmployeeStatus.TERMINATED },
+        ...(term.length >= 2 && {
+          OR: [
+            { firstName: { contains: term, mode: 'insensitive' } },
+            { lastName: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+            { jobTitle: { contains: term, mode: 'insensitive' } },
+            { employeeCode: { contains: term, mode: 'insensitive' } },
+          ],
+        }),
+      },
+      take: term.length >= 2 ? 15 : 50,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        jobTitle: true,
+        email: true,
+        employeeCode: true,
+        department: { select: { name: true } },
+      },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+
+    return employees.map((e) => ({
+      id: e.id,
+      firstName: e.firstName,
+      lastName: e.lastName,
+      jobTitle: e.jobTitle,
+      email: e.email,
+      employeeCode: e.employeeCode,
+      departmentName: e.department?.name ?? null,
+    }));
+  }
+
   async findOne(id: string, requestingUserId?: string) {
     const employee = await this.prisma.employee.findFirst({
       where: { id, deletedAt: null },

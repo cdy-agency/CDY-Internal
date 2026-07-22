@@ -8,10 +8,42 @@ import {
   format,
 } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
+import { invoiceRemainingBalance } from '../common/invoice-balance.util';
 
 @Injectable()
 export class CeoDashboardService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async sumOutstandingForStatuses(
+    statuses: Array<'SENT' | 'PARTIALLY_PAID' | 'OVERDUE'>,
+  ): Promise<{ total: number; count: number }> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { status: { in: statuses }, deletedAt: null },
+      select: {
+        total: true,
+        payments: { where: { deletedAt: null }, select: { amount: true } },
+        creditNotes: {
+          where: { deletedAt: null },
+          select: { amount: true, status: true },
+        },
+      },
+    });
+
+    let total = 0;
+    let count = 0;
+    for (const inv of invoices) {
+      const remaining = invoiceRemainingBalance({
+        total: inv.total,
+        payments: inv.payments,
+        creditNotes: inv.creditNotes,
+      });
+      if (remaining > 0.001) {
+        total += remaining;
+        count += 1;
+      }
+    }
+    return { total: Number(total.toFixed(2)), count };
+  }
 
   async getFullSummary() {
     const now = new Date();
@@ -87,15 +119,8 @@ export class CeoDashboardService {
         where: { status: 'PAID', paidAt: { gte: monthStart, lte: monthEnd }, deletedAt: null },
         _sum: { total: true },
       }),
-      this.prisma.invoice.aggregate({
-        where: { status: { in: ['SENT', 'PARTIALLY_PAID'] }, deletedAt: null },
-        _sum: { total: true },
-      }),
-      this.prisma.invoice.aggregate({
-        where: { status: 'OVERDUE', deletedAt: null },
-        _sum: { total: true },
-        _count: { id: true },
-      }),
+      this.sumOutstandingForStatuses(['SENT', 'PARTIALLY_PAID', 'OVERDUE']),
+      this.sumOutstandingForStatuses(['OVERDUE']),
       this.prisma.expense.aggregate({
         where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
         _sum: { amount: true },
@@ -319,9 +344,9 @@ export class CeoDashboardService {
         revenueLastMonth: revLastMo,
         revenueTrend,
         collectedMTD: Number(collectedMTD._sum.total ?? 0),
-        outstandingAR: Number(outstandingAR._sum.total ?? 0),
-        overdueAmount: Number(overdueInvoices._sum.total ?? 0),
-        overdueCount: overdueInvoices._count.id,
+        outstandingAR: outstandingAR.total,
+        overdueAmount: overdueInvoices.total,
+        overdueCount: overdueInvoices.count,
         expensesMTD: Number(expensesMTD._sum.amount ?? 0),
         totalMRR: Number(totalMRR._sum.amount ?? 0),
         activeRetainers: totalMRR._count.id,
@@ -420,7 +445,7 @@ export class CeoDashboardService {
         pendingCommissions,
         pendingLeaveRequests,
         pendingBudgetRequests,
-        overdueInvoices: overdueInvoices._count.id,
+        overdueInvoices: overdueInvoices.count,
         blockedTasks,
       },
     };

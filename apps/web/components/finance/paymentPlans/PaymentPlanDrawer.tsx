@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import { invoiceRemainingBalance } from '@/lib/invoice-balance';
 import type { ApiResponse, InvoiceDetail, PaymentPlanRecord } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 
@@ -50,8 +51,11 @@ export function PaymentPlanDrawer({
     newRow(),
   ]);
 
-  const alreadyPaid = invoice.payments.reduce((s, p) => s + p.amount, 0);
-  const remaining = invoice.total - alreadyPaid;
+  const remaining = invoiceRemainingBalance({
+    total: invoice.total,
+    payments: invoice.payments,
+    creditNotes: invoice.creditNotes,
+  });
 
   const instalmentTotal = useMemo(() => {
     return instalments.reduce((s, row) => s + (parseFloat(row.amount) || 0), 0);

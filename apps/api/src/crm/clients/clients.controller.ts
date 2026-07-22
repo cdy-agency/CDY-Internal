@@ -73,9 +73,17 @@ export class ClientsController {
 
   @Get('search')
   @RequirePermission('crm.clients', 'read')
-  @ApiOperation({ summary: 'Search clients for autocomplete' })
+  @ApiOperation({ summary: 'Search clients for autocomplete (manage permission)' })
   async search(@Query('q') query = '') {
     const data = await this.clientsService.search(query);
+    return { data, message: 'Clients found', statusCode: HttpStatus.OK };
+  }
+
+  @Get('lookup')
+  @RequirePermission('crm.clients.lookup', 'read')
+  @ApiOperation({ summary: 'Lookup clients for pickers (lookup permission only)' })
+  async lookup(@Query('q') query = '') {
+    const data = await this.clientsService.lookup(query);
     return { data, message: 'Clients found', statusCode: HttpStatus.OK };
   }
 

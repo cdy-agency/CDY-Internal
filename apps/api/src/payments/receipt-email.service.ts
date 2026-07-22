@@ -1,9 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Invoice, Payment, Prisma } from '@prisma/client';
+import { CreditNote, Invoice, Payment } from '@prisma/client';
 import { Resend } from 'resend';
+import {
+  invoiceRemainingBalance,
+  isInvoiceFullySettled,
+} from '../common/invoice-balance.util';
 
-type InvoiceWithPayments = Invoice & { payments: Payment[] };
+type InvoiceWithPayments = Invoice & {
+  payments: Payment[];
+  creditNotes?: CreditNote[];
+};
 
 @Injectable()
 export class ReceiptEmailService {
@@ -34,11 +41,17 @@ export class ReceiptEmailService {
     const fmt = (n: number): string =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
 
-    const totalPaid = invoice.payments
-      .filter((p) => !p.deletedAt)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    const isFullyPaid = totalPaid >= Number(invoice.total) - 0.001;
-    const remaining = Number(invoice.total) - totalPaid;
+    const activePayments = invoice.payments.filter((p) => !p.deletedAt);
+    const isFullyPaid = isInvoiceFullySettled({
+      total: invoice.total,
+      payments: activePayments,
+      creditNotes: invoice.creditNotes,
+    });
+    const remaining = invoiceRemainingBalance({
+      total: invoice.total,
+      payments: activePayments,
+      creditNotes: invoice.creditNotes,
+    });
 
     const badge = isFullyPaid
       ? '<span style="background:#0D2A1A;color:#10B981;padding:6px 16px;border-radius:4px;font-weight:bold;">PAID IN FULL</span>'

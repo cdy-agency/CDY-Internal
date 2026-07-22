@@ -14,6 +14,7 @@ import { startOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AuditContext } from '../common/audit/audit.context';
+import { invoiceRemainingBalance } from '../common/invoice-balance.util';
 import {
   CreatePaymentPlanDto,
   PayInstalmentDto,
@@ -33,6 +34,7 @@ export class PaymentPlansService {
       where: { id: invoiceId, deletedAt: null },
       include: {
         payments: { where: { deletedAt: null } },
+        creditNotes: { where: { deletedAt: null } },
         paymentPlan: true,
       },
     });
@@ -56,11 +58,11 @@ export class PaymentPlansService {
       );
     }
 
-    const alreadyPaid = invoice.payments.reduce(
-      (s, p) => s + Number(p.amount),
-      0,
-    );
-    const remaining = Number(invoice.total) - alreadyPaid;
+    const remaining = invoiceRemainingBalance({
+      total: invoice.total,
+      payments: invoice.payments,
+      creditNotes: invoice.creditNotes,
+    });
     const instalmentTotal = dto.instalments.reduce((s, i) => s + i.amount, 0);
 
     if (Math.abs(instalmentTotal - remaining) > 0.01) {

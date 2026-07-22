@@ -12,6 +12,8 @@ import {
   NotificationType,
   Prisma,
   ProjectStatus,
+  SoftwarePhase,
+  SoftwareProjectType,
   TaskPriority,
   TaskStatus,
 } from '@prisma/client';
@@ -43,6 +45,13 @@ export class ProjectsService {
 
   async create(dto: CreateProjectDto, userId: string) {
     const projectCode = await this.projectCodeService.generate();
+    const isSoftwareDev = this.isSoftwareDevServiceType(dto.serviceType);
+
+    if (isSoftwareDev && !dto.clientId) {
+      throw new BadRequestException(
+        'A client is required when creating a Software Development project (a Software module project will also be created)',
+      );
+    }
 
     if (dto.clientId) {
       const client = await this.prisma.client.findFirst({
@@ -58,52 +67,84 @@ export class ProjectsService {
       throw new NotFoundException('Project manager not found in HR records');
     }
 
-    const project = await this.prisma.$transaction(async (tx) => {
-      const p = await tx.project.create({
-        data: {
-          projectCode,
-          name: dto.name,
-          description: dto.description,
-          clientId: dto.clientId,
-          serviceType: dto.serviceType,
-          status: ProjectStatus.ACTIVE,
-          priority: dto.priority,
-          managerId: dto.managerId,
-          startDate: new Date(dto.startDate),
-          endDate: dto.endDate ? new Date(dto.endDate) : null,
-          totalCost: dto.totalCost,
-          currency: dto.currency ?? 'RWF',
-          notes: dto.notes,
-          createdBy: userId,
-        },
-      });
+    const { project, softwareProjectId } = await this.prisma.$transaction(
+      async (tx) => {
+        const p = await tx.project.create({
+          data: {
+            projectCode,
+            name: dto.name,
+            description: dto.description,
+            clientId: dto.clientId,
+            serviceType: dto.serviceType,
+            status: ProjectStatus.ACTIVE,
+            priority: dto.priority,
+            managerId: dto.managerId,
+            startDate: new Date(dto.startDate),
+            endDate: dto.endDate ? new Date(dto.endDate) : null,
+            totalCost: dto.totalCost,
+            currency: dto.currency ?? 'RWF',
+            notes: dto.notes,
+            createdBy: userId,
+          },
+        });
 
-      await tx.projectMember.create({
-        data: {
-          projectId: p.id,
-          employeeId: dto.managerId,
-          role: MemberRole.MANAGER,
-        },
-      });
+        await tx.projectMember.create({
+          data: {
+            projectId: p.id,
+            employeeId: dto.managerId,
+            role: MemberRole.MANAGER,
+          },
+        });
 
-      if (dto.memberIds?.length) {
-        const uniqueMembers = dto.memberIds.filter((id) => id !== dto.managerId);
-        if (uniqueMembers.length > 0) {
-          await tx.projectMember.createMany({
-            data: uniqueMembers.map((employeeId) => ({
+        if (dto.memberIds?.length) {
+          const uniqueMembers = dto.memberIds.filter(
+            (id) => id !== dto.managerId,
+          );
+          if (uniqueMembers.length > 0) {
+            await tx.projectMember.createMany({
+              data: uniqueMembers.map((employeeId) => ({
+                projectId: p.id,
+                employeeId,
+                role: MemberRole.MEMBER,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        let createdSoftwareProjectId: string | null = null;
+        if (isSoftwareDev && dto.clientId) {
+          const softwareProject = await tx.softwareProject.create({
+            data: {
+              clientId: dto.clientId,
               projectId: p.id,
-              employeeId,
-              role: MemberRole.MEMBER,
-            })),
-            skipDuplicates: true,
+              name: dto.name,
+              description: dto.description,
+              projectType: SoftwareProjectType.WEBSITE,
+              phase: SoftwarePhase.REQUIREMENTS,
+              startDate: new Date(dto.startDate),
+              totalCost: dto.totalCost,
+              currency: dto.currency ?? 'RWF',
+              notes: dto.notes,
+              isActive: true,
+              createdBy: userId,
+            },
+          });
+          createdSoftwareProjectId = softwareProject.id;
+
+          // Link on client if not already set (do not overwrite an existing software project)
+          await tx.client.updateMany({
+            where: { id: dto.clientId, softwareProjectId: null },
+            data: { softwareProjectId: softwareProject.id },
           });
         }
-      }
 
-      return p;
-    });
+        return { project: p, softwareProjectId: createdSoftwareProjectId };
+      },
+    );
 
     // Auto-create DRAFT invoice if totalCost is set — fire-and-forget
+    // (Software project is linked; invoice stays on the Projects module record to avoid duplicates)
     if (dto.totalCost && Number(dto.totalCost) > 0 && dto.clientId) {
       const snapshot = { ...project };
       const managerId = manager.userId;
@@ -129,6 +170,15 @@ export class ProjectsService {
       link: `/projects/${project.id}`,
     });
 
+    if (softwareProjectId) {
+      void this.notificationsService.createForRole('OPERATIONS_MANAGER', {
+        type: NotificationType.SYSTEM,
+        title: `Software project created — ${project.name}`,
+        body: `A Software module project was auto-created from Projects (${projectCode}). Requirements phase started.`,
+        link: `/software/${softwareProjectId}`,
+      });
+    }
+
     const created = await this.findProjectWithRelations(project.id);
     if (!created) throw new NotFoundException('Project not found after creation');
 
@@ -136,11 +186,21 @@ export class ProjectsService {
       projectId: project.id,
       userId,
       type: ActivityEventType.PROJECT_CREATED,
-      summary: `Project "${project.name}" created (${projectCode})`,
-      metadata: { projectCode },
+      summary: softwareProjectId
+        ? `Project "${project.name}" created (${projectCode}) with linked Software project`
+        : `Project "${project.name}" created (${projectCode})`,
+      metadata: {
+        projectCode,
+        ...(softwareProjectId && { softwareProjectId }),
+      },
     });
 
     return this.serializeProject(created);
+  }
+
+  private isSoftwareDevServiceType(serviceType: string): boolean {
+    const normalized = serviceType.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return normalized === 'software_dev' || normalized === 'software';
   }
 
   private async createProjectInvoice(

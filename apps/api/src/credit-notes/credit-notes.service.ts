@@ -22,6 +22,12 @@ import {
   CreateCreditNoteDto,
   CreditNoteFiltersDto,
 } from './dto/create-credit-note.dto';
+import {
+  invoiceRemainingBalance,
+  isInvoiceFullySettled,
+  sumNonVoidCreditNotes,
+  sumPaymentAmounts,
+} from '../common/invoice-balance.util';
 
 @Injectable()
 export class CreditNotesService {
@@ -45,6 +51,8 @@ export class CreditNotesService {
       where: { id: invoiceId, deletedAt: null },
       include: {
         creditNotes: { where: { deletedAt: null } },
+        payments: { where: { deletedAt: null } },
+        client: { select: { companyName: true, contactName: true } },
       },
     });
 
@@ -61,19 +69,33 @@ export class CreditNotesService {
       );
     }
 
-    const existingCreditTotal = invoice.creditNotes
-      .filter((cn) => cn.status !== CreditNoteStatus.VOID)
-      .reduce((s, cn) => s + Number(cn.amount), 0);
+    const existingCreditTotal = sumNonVoidCreditNotes(invoice.creditNotes);
+    const refundDue = invoice.status === InvoiceStatus.PAID;
+    const absoluteMax = Number(
+      (Number(invoice.total) - existingCreditTotal).toFixed(2),
+    );
+    // Unpaid invoices can only credit the outstanding balance (after payments).
+    // Paid invoices can credit up to the full invoice total for refunds.
+    const maxCredit = refundDue
+      ? absoluteMax
+      : invoiceRemainingBalance({
+          total: invoice.total,
+          payments: invoice.payments,
+          creditNotes: invoice.creditNotes,
+        });
 
-    if (dto.amount + existingCreditTotal > Number(invoice.total)) {
+    if (dto.amount > maxCredit + 0.001) {
       throw new BadRequestException(
-        `Credit note amount ($${dto.amount}) would exceed the original invoice total. Maximum creditable: $${(Number(invoice.total) - existingCreditTotal).toFixed(2)}`,
+        `Credit note amount ($${dto.amount}) would exceed the maximum creditable ($${maxCredit.toFixed(2)})`,
       );
     }
 
     const creditNoteNumber =
       await this.invoiceNumberService.generateCreditNoteNumber();
-    const refundDue = invoice.status === InvoiceStatus.PAID;
+    const clientDisplayName =
+      invoice.client?.companyName?.trim() ||
+      invoice.client?.contactName?.trim() ||
+      invoice.clientId;
 
     const creditNote = await this.prisma.creditNote.create({
       data: {
@@ -90,9 +112,36 @@ export class CreditNotesService {
       },
     });
 
+    // Adjustment path: when credits settle the unpaid balance, mark invoice paid.
+    if (!refundDue) {
+      const settled = isInvoiceFullySettled({
+        total: invoice.total,
+        payments: invoice.payments,
+        creditNotes: [...invoice.creditNotes, creditNote],
+      });
+      if (settled) {
+        await this.prisma.invoice.update({
+          where: { id: invoiceId },
+          data: {
+            status: InvoiceStatus.PAID,
+            paidAt: new Date(),
+          },
+        });
+      } else if (sumPaymentAmounts(invoice.payments) > 0) {
+        await this.prisma.invoice.update({
+          where: { id: invoiceId },
+          data: { status: InvoiceStatus.PARTIALLY_PAID },
+        });
+      }
+    }
+
     let pdfBuffer: Buffer;
     try {
-      pdfBuffer = await this.creditNotePdfService.generate(creditNote, invoice);
+      pdfBuffer = await this.creditNotePdfService.generate(
+        creditNote,
+        invoice,
+        invoice.client,
+      );
     } catch (err) {
       this.logger.error(`Credit note PDF failed: ${String(err)}`);
       throw new InternalServerErrorException('Failed to generate credit note PDF');
@@ -107,7 +156,7 @@ export class CreditNotesService {
     if (refundDue) {
       await this.prisma.bill.create({
         data: {
-          vendorName: `Refund — ${invoice.clientId}`,
+          vendorName: `Refund — ${clientDisplayName}`,
           category: 'REFUND',
           amount: dto.amount,
           currency: invoice.currency,
@@ -231,12 +280,19 @@ export class CreditNotesService {
   async generatePdf(id: string): Promise<{ buffer: Buffer; number: string }> {
     const creditNote = await this.prisma.creditNote.findFirst({
       where: { id, deletedAt: null },
-      include: { invoice: true },
+      include: {
+        invoice: {
+          include: {
+            client: { select: { companyName: true, contactName: true } },
+          },
+        },
+      },
     });
     if (!creditNote) throw new NotFoundException('Credit note not found');
     const buffer = await this.creditNotePdfService.generate(
       creditNote,
       creditNote.invoice,
+      creditNote.invoice.client,
     );
     return { buffer, number: creditNote.creditNoteNumber };
   }

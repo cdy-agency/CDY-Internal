@@ -116,11 +116,11 @@ function DeployAgentDrawer({ open, campaignId, onClose }: { open: boolean; campa
     setQuery(q);
     if (q.length < 2) { setResults([]); return; }
     try {
-      const res = await fetch(`/api/proxy/hr/employees?search=${encodeURIComponent(q)}&limit=10`, {
+      const res = await fetch(`/api/proxy/hr/employees/lookup?q=${encodeURIComponent(q)}`, {
         credentials: 'include',
       });
       const data = await res.json();
-      setResults(data?.data?.data ?? []);
+      setResults(data?.data ?? []);
     } catch { setResults([]); }
   }
 

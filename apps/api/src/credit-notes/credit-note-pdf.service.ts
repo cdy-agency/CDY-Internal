@@ -3,6 +3,11 @@ import { CreditNote, Invoice } from '@prisma/client';
 import puppeteer, { Browser } from 'puppeteer';
 import { getPuppeteerLaunchOptions } from '../common/puppeteer.config';
 
+interface ClientInfo {
+  companyName: string | null;
+  contactName: string;
+}
+
 @Injectable()
 export class CreditNotePdfService implements OnModuleDestroy {
   private readonly logger = new Logger(CreditNotePdfService.name);
@@ -23,11 +28,15 @@ export class CreditNotePdfService implements OnModuleDestroy {
     return this.browserPromise;
   }
 
-  async generate(creditNote: CreditNote, invoice: Invoice): Promise<Buffer> {
+  async generate(
+    creditNote: CreditNote,
+    invoice: Invoice,
+    client?: ClientInfo | null,
+  ): Promise<Buffer> {
     const browser = await this.getBrowser();
     const page = await browser.newPage();
     try {
-      const html = this.buildHtml(creditNote, invoice);
+      const html = this.buildHtml(creditNote, invoice, client);
       await page.setContent(html, { waitUntil: 'domcontentloaded' });
       const pdf = await page.pdf({
         format: 'A4',
@@ -55,8 +64,18 @@ export class CreditNotePdfService implements OnModuleDestroy {
       .replace(/"/g, '&quot;');
   }
 
-  private buildHtml(creditNote: CreditNote, invoice: Invoice): string {
+  private resolveClientName(client?: ClientInfo | null): string {
+    const name = client?.companyName?.trim() || client?.contactName?.trim();
+    return name || '—';
+  }
+
+  private buildHtml(
+    creditNote: CreditNote,
+    invoice: Invoice,
+    client?: ClientInfo | null,
+  ): string {
     const amount = Number(creditNote.amount);
+    const clientName = this.resolveClientName(client);
     const refundBanner = creditNote.refundDue
       ? `<div style="margin:20px 0;padding:16px;background:#ecfdf5;border:2px solid #16a34a;border-radius:8px;">
           <strong style="color:#16a34a;font-size:16px;">REFUND DUE</strong>
@@ -81,7 +100,7 @@ export class CreditNotePdfService implements OnModuleDestroy {
         </div>
       </div>
       <p style="color:#475569;">Credited to Invoice: <strong>${this.escapeHtml(invoice.invoiceNumber)}</strong></p>
-      <p style="color:#475569;">Client: ${this.escapeHtml(invoice.clientId)}</p>
+      <p style="color:#475569;">Client: ${this.escapeHtml(clientName)}</p>
       <table style="width:100%;border-collapse:collapse;margin:24px 0;font-size:14px;">
         <thead><tr style="background:#f8fafc;">
           <th style="padding:10px 12px;text-align:left;">Description</th>

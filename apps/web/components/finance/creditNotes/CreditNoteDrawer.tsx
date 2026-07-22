@@ -9,8 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import {
+  invoiceRemainingBalance,
+  sumNonVoidCreditNotes,
+} from '@/lib/invoice-balance';
 import type { ApiResponse, CreditNoteRecord, InvoiceDetail } from '@cdy/shared';
-import { CreditNoteReason, CreditNoteStatus, InvoiceStatus } from '@cdy/shared';
+import { CreditNoteReason, InvoiceStatus } from '@cdy/shared';
 import type { AxiosError } from 'axios';
 
 interface CreditNoteDrawerProps {
@@ -44,15 +48,27 @@ export function CreditNoteDrawer({
   const [description, setDescription] = useState('');
 
   const existingCreditTotal = useMemo(() => {
-    return invoice.creditNotes
-      .filter((cn) => cn.status !== CreditNoteStatus.VOID)
-      .reduce((sum, cn) => sum + cn.amount, 0);
+    return sumNonVoidCreditNotes(invoice.creditNotes);
   }, [invoice.creditNotes]);
 
-  const maxCredit = invoice.total - existingCreditTotal;
-  const parsedAmount = parseFloat(amount) || 0;
   const isPaid = invoice.status === InvoiceStatus.PAID;
-  const remainingAfterCredit = invoice.total - existingCreditTotal - parsedAmount;
+  const absoluteMax = invoice.total - existingCreditTotal;
+  const maxCredit = isPaid
+    ? absoluteMax
+    : invoiceRemainingBalance({
+        total: invoice.total,
+        payments: invoice.payments,
+        creditNotes: invoice.creditNotes,
+      });
+  const parsedAmount = parseFloat(amount) || 0;
+  const remainingAfterCredit = Math.max(
+    0,
+    invoiceRemainingBalance({
+      total: invoice.total,
+      payments: invoice.payments,
+      creditNotes: invoice.creditNotes,
+    }) - parsedAmount,
+  );
 
   useEffect(() => {
     if (open) {
@@ -106,6 +122,8 @@ export function CreditNoteDrawer({
       );
       await queryClient.invalidateQueries({ queryKey: ['invoice', invoice.id] });
       await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
+      await queryClient.invalidateQueries({ queryKey: ['ar'] });
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] });
       onClose();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;

@@ -31,7 +31,7 @@ function ClientSearch({ value, onChange }: { value: string; onChange: (id: strin
     setQuery(q);
     if (q.length < 2) { setResults([]); return; }
     try {
-      const res = await fetch(`/api/proxy/crm/clients?search=${encodeURIComponent(q)}&limit=10`, {
+      const res = await fetch(`/api/proxy/crm/clients/lookup?q=${encodeURIComponent(q)}`, {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });

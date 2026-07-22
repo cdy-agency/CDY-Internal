@@ -14,6 +14,7 @@ import { CrmActor } from '../common/crm-actor.interface';
 import { buildCsvRow } from '../common/csv.util';
 import { ClientServiceService } from './client-service.service';
 import { getClientDisplayName } from './client.utils';
+import { invoiceRemainingBalance } from '../../common/invoice-balance.util';
 
 const OUTSTANDING_STATUSES: InvoiceStatus[] = [
   InvoiceStatus.SENT,
@@ -111,21 +112,28 @@ export class ClientsService {
 
     const clientIds = clients.map((client) => client.id);
 
-    const [invoicedTotals, outstandingTotals] = await Promise.all([
+    const [invoicedTotals, openInvoices] = await Promise.all([
       this.prisma.invoice.groupBy({
         by: ['clientId'],
         where: { clientId: { in: clientIds }, deletedAt: null },
         _sum: { total: true },
         _count: { id: true },
       }),
-      this.prisma.invoice.groupBy({
-        by: ['clientId'],
+      this.prisma.invoice.findMany({
         where: {
           clientId: { in: clientIds },
           status: { in: OUTSTANDING_STATUSES },
           deletedAt: null,
         },
-        _sum: { total: true },
+        select: {
+          clientId: true,
+          total: true,
+          payments: { where: { deletedAt: null }, select: { amount: true } },
+          creditNotes: {
+            where: { deletedAt: null },
+            select: { amount: true, status: true },
+          },
+        },
       }),
     ]);
 
@@ -139,19 +147,26 @@ export class ClientsService {
       ]),
     );
 
-    const outstandingMap = new Map(
-      outstandingTotals.map((row) => [
-        row.clientId,
-        Number(row._sum.total ?? 0),
-      ]),
-    );
+    const outstandingMap = new Map<string, number>();
+    for (const inv of openInvoices) {
+      const remaining = invoiceRemainingBalance({
+        total: inv.total,
+        payments: inv.payments,
+        creditNotes: inv.creditNotes,
+      });
+      if (remaining <= 0.001) continue;
+      outstandingMap.set(
+        inv.clientId,
+        (outstandingMap.get(inv.clientId) ?? 0) + remaining,
+      );
+    }
 
     return clients.map((client) => ({
       ...client,
       financeSummary: {
         totalInvoiced: invoicedMap.get(client.id)?.totalInvoiced ?? 0,
         invoiceCount: invoicedMap.get(client.id)?.invoiceCount ?? 0,
-        outstanding: outstandingMap.get(client.id) ?? 0,
+        outstanding: Number((outstandingMap.get(client.id) ?? 0).toFixed(2)),
       },
     }));
   }
@@ -179,6 +194,11 @@ export class ClientsService {
         country: true,
       },
     });
+  }
+
+  /** Alias for picker flows gated by crm.clients.lookup */
+  async lookup(query: string) {
+    return this.search(query);
   }
 
   async findOne(id: string) {
@@ -210,7 +230,7 @@ export class ClientsService {
       _count: { id: true },
     });
 
-    const outstanding = await this.prisma.invoice.aggregate({
+    const outstandingInvoices = await this.prisma.invoice.findMany({
       where: {
         clientId: id,
         status: {
@@ -218,8 +238,25 @@ export class ClientsService {
         },
         deletedAt: null,
       },
-      _sum: { total: true },
+      select: {
+        total: true,
+        payments: { where: { deletedAt: null }, select: { amount: true } },
+        creditNotes: {
+          where: { deletedAt: null },
+          select: { amount: true, status: true },
+        },
+      },
     });
+    const outstandingTotal = outstandingInvoices.reduce(
+      (sum, inv) =>
+        sum +
+        invoiceRemainingBalance({
+          total: inv.total,
+          payments: inv.payments,
+          creditNotes: inv.creditNotes,
+        }),
+      0,
+    );
 
     const paid = await this.prisma.invoice.aggregate({
       where: {
@@ -271,7 +308,7 @@ export class ClientsService {
       financeSummary: {
         totalInvoiced: Number(invoiceSummary._sum.total ?? 0),
         invoiceCount: invoiceSummary._count.id,
-        outstanding: Number(outstanding._sum.total ?? 0),
+        outstanding: Number(outstandingTotal.toFixed(2)),
         paid: Number(paid._sum.total ?? 0),
       },
       activities: activities.map((activity) => ({

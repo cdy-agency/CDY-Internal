@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CashFlowFiltersDto } from './dto/cash-flow-filters.dto';
 import { CreateCashFlowAdjustmentDto } from './dto/create-cash-flow-adjustment.dto';
+import { invoiceRemainingBalance } from '../common/invoice-balance.util';
 
 export type CashFlowItemType = 'INVOICE' | 'BILL' | 'ADJUSTMENT';
 
@@ -63,22 +64,29 @@ export class CashFlowService {
           where: { deletedAt: null },
           select: { amount: true },
         },
+        creditNotes: {
+          where: { deletedAt: null },
+          select: { amount: true, status: true },
+        },
       },
     });
 
-    const invoiceInflows: CashFlowLineItem[] = openInvoices.map((inv) => {
-      const paid = inv.payments.reduce(
-        (s, p) => s + Number(p.amount),
-        0,
-      );
-      return {
-        date: inv.dueDate,
-        amount: Number(inv.total) - paid,
-        label: `Invoice ${inv.invoiceNumber}`,
-        type: 'INVOICE' as const,
-        invoiceId: inv.id,
-      };
-    });
+    const invoiceInflows: CashFlowLineItem[] = openInvoices
+      .map((inv) => {
+        const remaining = invoiceRemainingBalance({
+          total: inv.total,
+          payments: inv.payments,
+          creditNotes: inv.creditNotes,
+        });
+        return {
+          date: inv.dueDate,
+          amount: remaining,
+          label: `Invoice ${inv.invoiceNumber}`,
+          type: 'INVOICE' as const,
+          invoiceId: inv.id,
+        };
+      })
+      .filter((item) => item.amount > 0.001);
 
     const unpaidBills = await this.prisma.bill.findMany({
       where: {

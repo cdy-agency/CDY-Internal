@@ -53,6 +53,16 @@ export class RetainersController {
     return { data, message: 'Retainers retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('lookup')
+  @RequirePermission('finance.retainers.lookup', 'read')
+  @ApiOperation({
+    summary: 'Lookup retainers for pickers (minimal fields; active & unlinked by default)',
+  })
+  async lookup(@Query('q') query = '') {
+    const data = await this.retainersService.lookup(query);
+    return { data, message: 'Retainers found', statusCode: HttpStatus.OK };
+  }
+
   @Get('summary')
   @RequirePermission('finance.retainers', 'read')
   @ApiOperation({ summary: 'MRR summary' })

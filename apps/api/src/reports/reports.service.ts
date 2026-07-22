@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PlReportFiltersDto } from './dto/pl-report-filters.dto';
 import { AgeingReportFiltersDto } from './dto/ageing-report-filters.dto';
 import { ExpenseReportFiltersDto } from './dto/expense-report-filters.dto';
+import { invoiceRemainingBalance } from '../common/invoice-balance.util';
 
 export interface PlPeriodData {
   totalRevenue: number;
@@ -440,22 +441,28 @@ export class ReportsService {
           where: { deletedAt: null },
           select: { amount: true },
         },
+        creditNotes: {
+          where: { deletedAt: null },
+          select: { amount: true, status: true },
+        },
         client: { select: { companyName: true, contactName: true } },
       },
       orderBy: { dueDate: 'asc' },
     });
 
-    const invoicesWithBalance = unpaidInvoices.map((inv) => {
-      const paid = inv.payments.reduce(
-        (s, p) => s + this.toNumber(p.amount),
-        0,
-      );
-      const remaining = this.toNumber(inv.total) - paid;
-      const daysOverdue = Math.floor(
-        (now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      return { ...inv, remaining, daysOverdue };
-    });
+    const invoicesWithBalance = unpaidInvoices
+      .map((inv) => {
+        const remaining = invoiceRemainingBalance({
+          total: inv.total,
+          payments: inv.payments,
+          creditNotes: inv.creditNotes,
+        });
+        const daysOverdue = Math.floor(
+          (now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        return { ...inv, remaining, daysOverdue };
+      })
+      .filter((inv) => inv.remaining > 0.001);
 
     const buckets = {
       current: invoicesWithBalance.filter((i) => i.daysOverdue <= 0),

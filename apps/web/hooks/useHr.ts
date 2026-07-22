@@ -85,6 +85,31 @@ export function useEmployees(filters: EmployeeFilters = {}) {
   });
 }
 
+export interface EmployeeLookupResult {
+  id: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string | null;
+  email: string;
+  employeeCode: string;
+  departmentName: string | null;
+}
+
+/** Picker directory — requires hr.employees.lookup, not full HR access */
+export function useEmployeeLookup(query = '') {
+  return useQuery({
+    queryKey: ['hr', 'employees', 'lookup', query],
+    queryFn: async (): Promise<EmployeeLookupResult[]> => {
+      const trimmed = query.trim();
+      const qs = trimmed ? `?q=${encodeURIComponent(trimmed)}` : '';
+      const res = await api.get<ApiResponse<EmployeeLookupResult[]>>(
+        `/hr/employees/lookup${qs}`,
+      );
+      return res.data.data;
+    },
+  });
+}
+
 export function useEmployee(id: string) {
   return useQuery({
     queryKey: ['hr', 'employees', id],

@@ -260,10 +260,10 @@ export function useClient(id: string) {
 
 export function useClientSearch(query: string) {
   return useQuery({
-    queryKey: ['crm', 'clients', 'search', query],
+    queryKey: ['crm', 'clients', 'lookup', query],
     queryFn: async (): Promise<ClientSearchResult[]> => {
       const res = await api.get<ApiResponse<ClientSearchResult[]>>(
-        `/crm/clients/search?q=${encodeURIComponent(query)}`,
+        `/crm/clients/lookup?q=${encodeURIComponent(query)}`,
       );
       return res.data.data;
     },

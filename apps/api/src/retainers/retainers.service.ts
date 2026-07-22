@@ -114,6 +114,50 @@ export class RetainersService {
     }));
   }
 
+  /**
+   * Minimal picker results for linking retainers (e.g. marketing client setup).
+   * Does not expose invoices, amendments, or full contract management fields.
+   */
+  async lookup(query: string, opts?: { unlinkedOnly?: boolean }) {
+    const term = query.trim();
+    if (term.length < 2) return [];
+
+    const retainers = await this.prisma.retainerContract.findMany({
+      where: {
+        status: RetainerStatus.ACTIVE,
+        deletedAt: null,
+        ...(opts?.unlinkedOnly !== false && { marketingClient: null }),
+        OR: [
+          { serviceName: { contains: term, mode: 'insensitive' } },
+          { client: { companyName: { contains: term, mode: 'insensitive' } } },
+          { client: { contactName: { contains: term, mode: 'insensitive' } } },
+        ],
+      },
+      take: 15,
+      select: {
+        id: true,
+        serviceName: true,
+        amount: true,
+        currency: true,
+        status: true,
+        clientId: true,
+        client: { select: { companyName: true, contactName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return retainers.map((r) => ({
+      id: r.id,
+      serviceName: r.serviceName,
+      amount: Number(r.amount),
+      currency: r.currency,
+      status: r.status,
+      clientId: r.clientId,
+      clientName: r.client.companyName,
+      contactName: r.client.contactName,
+    }));
+  }
+
   async findOne(id: string) {
     const retainer = await this.prisma.retainerContract.findUnique({
       where: { id },

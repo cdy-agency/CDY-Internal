@@ -76,6 +76,16 @@ export class EmployeesController {
     return { data, message: 'Employees retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('lookup')
+  @RequirePermission('hr.employees.lookup', 'read')
+  @ApiOperation({
+    summary: 'Lookup employees for pickers (name/title only; lookup permission)',
+  })
+  async lookup(@Query('q') query = '') {
+    const data = await this.employeesService.lookup(query);
+    return { data, message: 'Employees found', statusCode: HttpStatus.OK };
+  }
+
   @Post()
   @RequirePermission('hr.employees', 'write')
   @ApiOperation({ summary: 'Create employee' })

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import { invoiceRemainingBalance } from '@/lib/invoice-balance';
 import type { ApiResponse, InvoiceDetail } from '@cdy/shared';
 import { PaymentMethod } from '@cdy/shared';
 import type { AxiosError } from 'axios';
@@ -42,7 +43,14 @@ export function RecordPaymentModal({
   const [loading, setLoading] = useState(false);
 
   const alreadyPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = invoice.total - alreadyPaid;
+  const credited = invoice.creditNotes
+    .filter((cn) => cn.status !== 'VOID')
+    .reduce((sum, cn) => sum + cn.amount, 0);
+  const remaining = invoiceRemainingBalance({
+    total: invoice.total,
+    payments: invoice.payments,
+    creditNotes: invoice.creditNotes,
+  });
 
   const [amount, setAmount] = useState(String(remaining));
   const [paidAt, setPaidAt] = useState(todayString());
@@ -141,13 +149,13 @@ export function RecordPaymentModal({
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-[480px] rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl"
+          className="flex w-full max-w-[480px] max-h-[90vh] flex-col rounded-xl border border-cdy-navy-border bg-cdy-navy-light shadow-xl"
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
           aria-labelledby="record-payment-title"
         >
-          <div className="mb-6 flex items-center justify-between">
+          <div className="flex shrink-0 items-center justify-between border-b border-cdy-navy-border px-6 py-4">
             <h2
               id="record-payment-title"
               className="text-lg font-semibold text-cdy-white"
@@ -164,107 +172,115 @@ export function RecordPaymentModal({
             </button>
           </div>
 
-          <div className="mb-5 space-y-1 rounded-lg border border-cdy-navy-border bg-cdy-navy/50 p-4 text-sm">
-            <div className="flex justify-between text-cdy-muted">
-              <span>Invoice total:</span>
-              <span className="text-cdy-white">{fmt(invoice.total)}</span>
-            </div>
-            {alreadyPaid > 0 && (
+          <div className="overflow-y-auto px-6 py-5">
+            <div className="mb-5 space-y-1 rounded-lg border border-cdy-navy-border bg-cdy-navy/50 p-4 text-sm">
               <div className="flex justify-between text-cdy-muted">
-                <span>Already paid:</span>
-                <span className="text-cdy-white">{fmt(alreadyPaid)}</span>
+                <span>Invoice total:</span>
+                <span className="text-cdy-white">{fmt(invoice.total)}</span>
               </div>
-            )}
-            <div className="flex justify-between font-medium">
-              <span className="text-cdy-muted">Remaining:</span>
-              <span className="text-cdy-red">{fmt(remaining)}</span>
+              {alreadyPaid > 0 && (
+                <div className="flex justify-between text-cdy-muted">
+                  <span>Already paid:</span>
+                  <span className="text-cdy-white">{fmt(alreadyPaid)}</span>
+                </div>
+              )}
+              {credited > 0 && (
+                <div className="flex justify-between text-cdy-muted">
+                  <span>Credited:</span>
+                  <span className="text-cdy-white">-{fmt(credited)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-medium">
+                <span className="text-cdy-muted">Remaining:</span>
+                <span className="text-cdy-red">{fmt(remaining)}</span>
+              </div>
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={remaining}
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  required
+                />
+                {amountError && (
+                  <p className="text-xs text-[var(--cdy-danger)]">{amountError}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paidAt">Payment Date</Label>
+                <Input
+                  id="paidAt"
+                  type="date"
+                  value={paidAt}
+                  max={todayString()}
+                  onChange={(e) => setPaidAt(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment Method *</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {PAYMENT_METHODS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setMethod(opt.value)}
+                      className={`rounded-lg border p-2.5 text-center text-sm transition-colors ${
+                        method === opt.value
+                          ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                          : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reference">Reference # (optional)</Label>
+                <Input
+                  id="reference"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="TXN-12345"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <textarea
+                  id="notes"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="flex w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-2 focus:ring-cdy-red"
+                  placeholder="Additional notes..."
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || Boolean(amountError)}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Record Payment'
+                )}
+              </Button>
+            </form>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={remaining}
-                value={amount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                required
-              />
-              {amountError && (
-                <p className="text-xs text-[var(--cdy-danger)]">{amountError}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paidAt">Payment Date</Label>
-              <Input
-                id="paidAt"
-                type="date"
-                value={paidAt}
-                max={todayString()}
-                onChange={(e) => setPaidAt(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Payment Method *</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {PAYMENT_METHODS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setMethod(opt.value)}
-                    className={`rounded-lg border p-2.5 text-center text-sm transition-colors ${
-                      method === opt.value
-                        ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
-                        : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reference">Reference # (optional)</Label>
-              <Input
-                id="reference"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="TXN-12345"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <textarea
-                id="notes"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="flex w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-2 focus:ring-cdy-red"
-                placeholder="Additional notes..."
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || Boolean(amountError)}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Record Payment'
-              )}
-            </Button>
-          </form>
         </div>
       </div>
     </>

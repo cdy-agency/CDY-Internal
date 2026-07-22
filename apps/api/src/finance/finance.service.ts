@@ -523,9 +523,20 @@ export class FinanceService {
 
     const result = await this.prisma.$queryRaw<BalanceResult[]>`
       SELECT COALESCE(SUM(
-        i.total - COALESCE(
-          (SELECT SUM(p.amount) FROM "Payment" p
-           WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL),
+        GREATEST(
+          i.total
+            - COALESCE(
+                (SELECT SUM(p.amount) FROM "Payment" p
+                 WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL),
+                0
+              )
+            - COALESCE(
+                (SELECT SUM(cn.amount) FROM "CreditNote" cn
+                 WHERE cn."invoiceId" = i.id
+                   AND cn."deletedAt" IS NULL
+                   AND cn.status <> 'VOID'),
+                0
+              ),
           0
         )
       ), 0) AS total
@@ -546,11 +557,23 @@ export class FinanceService {
 
     const result = await this.prisma.$queryRaw<BalanceResult[]>`
       SELECT COALESCE(SUM(
-        i.total - COALESCE(
-          (SELECT SUM(p.amount) FROM "Payment" p
-           WHERE p."invoiceId" = i.id
-             AND p."deletedAt" IS NULL
-             ${asOf ? Prisma.sql`AND p."paidAt" <= ${asOf}` : Prisma.empty}),
+        GREATEST(
+          i.total
+            - COALESCE(
+                (SELECT SUM(p.amount) FROM "Payment" p
+                 WHERE p."invoiceId" = i.id
+                   AND p."deletedAt" IS NULL
+                   ${asOf ? Prisma.sql`AND p."paidAt" <= ${asOf}` : Prisma.empty}),
+                0
+              )
+            - COALESCE(
+                (SELECT SUM(cn.amount) FROM "CreditNote" cn
+                 WHERE cn."invoiceId" = i.id
+                   AND cn."deletedAt" IS NULL
+                   AND cn.status <> 'VOID'
+                   ${asOf ? Prisma.sql`AND cn."issuedAt" <= ${asOf}` : Prisma.empty}),
+                0
+              ),
           0
         )
       ), 0) AS total
@@ -778,9 +801,18 @@ export class FinanceService {
         ), 0) AS "totalCollected",
         COALESCE(SUM(
           CASE WHEN i.status NOT IN ('PAID', 'WRITTEN_OFF', 'DRAFT') THEN
-            i.total - COALESCE(
-              (SELECT SUM(p.amount) FROM "Payment" p
-               WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL), 0)
+            GREATEST(
+              i.total
+                - COALESCE(
+                    (SELECT SUM(p.amount) FROM "Payment" p
+                     WHERE p."invoiceId" = i.id AND p."deletedAt" IS NULL), 0)
+                - COALESCE(
+                    (SELECT SUM(cn.amount) FROM "CreditNote" cn
+                     WHERE cn."invoiceId" = i.id
+                       AND cn."deletedAt" IS NULL
+                       AND cn.status <> 'VOID'), 0),
+              0
+            )
           ELSE 0 END
         ), 0) AS outstanding
       FROM "Client" c

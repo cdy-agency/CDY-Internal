@@ -13,6 +13,10 @@ import { ReceiptEmailService } from './receipt-email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditContext } from '../common/audit/audit.context';
+import {
+  invoiceRemainingBalance,
+  isInvoiceFullySettled,
+} from '../common/invoice-balance.util';
 import { NotificationType, Role } from '@prisma/client';
 
 export interface SerializedPayment {
@@ -58,6 +62,7 @@ export class PaymentsService {
         where: { id: invoiceId, deletedAt: null },
         include: {
           payments: { where: { deletedAt: null } },
+          creditNotes: { where: { deletedAt: null } },
         },
       });
 
@@ -81,11 +86,11 @@ export class PaymentsService {
         );
       }
 
-      const alreadyPaid = invoice.payments.reduce(
-        (sum, p) => sum + Number(p.amount),
-        0,
-      );
-      const remaining = Number(invoice.total) - alreadyPaid;
+      const remaining = invoiceRemainingBalance({
+        total: invoice.total,
+        payments: invoice.payments,
+        creditNotes: invoice.creditNotes,
+      });
 
       if (dto.amount > remaining + 0.001) {
         throw new BadRequestException(
@@ -110,8 +115,11 @@ export class PaymentsService {
         },
       });
 
-      const newTotalPaid = alreadyPaid + dto.amount;
-      const isFullyPaid = newTotalPaid >= Number(invoice.total) - 0.001;
+      const isFullyPaid = isInvoiceFullySettled({
+        total: invoice.total,
+        payments: [...invoice.payments, payment],
+        creditNotes: invoice.creditNotes,
+      });
       const newStatus = isFullyPaid
         ? InvoiceStatus.PAID
         : InvoiceStatus.PARTIALLY_PAID;
@@ -124,6 +132,7 @@ export class PaymentsService {
         },
         include: {
           payments: { where: { deletedAt: null } },
+          creditNotes: { where: { deletedAt: null } },
         },
       });
 
@@ -140,11 +149,11 @@ export class PaymentsService {
       });
     }
 
-    const alreadyPaid = result.invoice.payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
-    const remaining = Number(result.invoice.total) - alreadyPaid;
+    const remaining = invoiceRemainingBalance({
+      total: result.invoice.total,
+      payments: result.invoice.payments,
+      creditNotes: result.invoice.creditNotes,
+    });
 
     this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
       type: NotificationType.PAYMENT_RECEIVED,
@@ -173,7 +182,7 @@ export class PaymentsService {
 
   private async sendReceiptAsync(
     invoice: Prisma.InvoiceGetPayload<{
-      include: { payments: true };
+      include: { payments: true; creditNotes: true };
     }>,
     payment: Payment,
     invoiceId: string,

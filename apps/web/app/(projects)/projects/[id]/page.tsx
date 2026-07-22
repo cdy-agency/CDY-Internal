@@ -38,7 +38,7 @@ import { ProjectApprovalsPanel } from '@/components/projects/ProjectApprovalsPan
 import { ProjectActivityPanel } from '@/components/projects/ProjectActivityPanel';
 import { CompleteProjectModal } from '@/components/projects/CompleteProjectModal';
 import { CsvImportModal } from '@/components/projects/CsvImportModal';
-import { useEmployees } from '@/hooks/useHr';
+import { useEmployeeLookup } from '@/hooks/useHr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -181,7 +181,7 @@ export default function ProjectDetailPage(): JSX.Element {
   const { data: tasks } = useProjectTasks(projectId);
   const { data: selectedTask } = useTask(projectId, selectedTaskId ?? '');
   const { data: milestones } = useMilestones(projectId);
-  const { data: employees } = useEmployees();
+  const { data: employees } = useEmployeeLookup();
 
   const createTask = useCreateTask();
   const updateStatus = useUpdateTaskStatus();

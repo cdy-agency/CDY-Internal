@@ -10,7 +10,7 @@ import {
   useCreateProject,
   useCreateMilestone,
 } from '@/hooks/useProjects';
-import { useEmployees } from '@/hooks/useHr';
+import { useEmployeeLookup } from '@/hooks/useHr';
 import { ClientSearch } from '@/components/crm/ClientSearch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +54,7 @@ export default function NewProjectPage(): JSX.Element {
   const [tab, setTab] = useState<Tab>('info');
   const createProject = useCreateProject();
   const createMilestone = useCreateMilestone();
-  const { data: employees } = useEmployees();
+  const { data: employees } = useEmployeeLookup();
 
   const [client, setClient] = useState<ClientSearchResult | null>(null);
   const [form, setForm] = useState({
@@ -101,9 +101,18 @@ export default function NewProjectPage(): JSX.Element {
     setMilestones((m) => m.filter((_, i) => i !== index));
   }
 
+  const isSoftwareDev = form.serviceType === 'software_dev';
+
   async function handleSubmit(): Promise<void> {
     if (!form.name || !form.serviceType || !form.managerId || !form.startDate) {
       toast.error('Please complete all required fields');
+      return;
+    }
+    if (isSoftwareDev && !client?.id) {
+      toast.error(
+        'Select a client — Software Development projects also create a Software module project',
+      );
+      setTab('info');
       return;
     }
     try {
@@ -135,7 +144,11 @@ export default function NewProjectPage(): JSX.Element {
         });
       }
 
-      toast.success(`Project ${project.projectCode} created.`);
+      toast.success(
+        isSoftwareDev
+          ? `Project ${project.projectCode} created — Software project also set up.`
+          : `Project ${project.projectCode} created.`,
+      );
       router.push(`/projects/${project.id}`);
     } catch {
       /* interceptor */
@@ -198,8 +211,13 @@ export default function NewProjectPage(): JSX.Element {
               />
             </div>
             <div>
-              <Label>Client</Label>
+              <Label>Client{isSoftwareDev ? ' *' : ''}</Label>
               <ClientSearch value={client} onChange={setClient} />
+              {isSoftwareDev && (
+                <p className="mt-1 text-xs text-cdy-muted">
+                  Required for Software Development — also creates a linked project in the Software module.
+                </p>
+              )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

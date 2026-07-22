@@ -60,7 +60,10 @@ export function hasModuleAccess(
   if (!permissions) return false;
   const prefix = `${module}.`;
   return Object.entries(permissions).some(
-    ([key, val]) => (key === module || key.startsWith(prefix)) && (val.canRead || val.canWrite),
+    ([key, val]) =>
+      !key.endsWith('.lookup') &&
+      (key === module || key.startsWith(prefix)) &&
+      (val.canRead || val.canWrite),
   );
 }
 
@@ -112,10 +115,11 @@ export function resolveLandingPath(
 // useRouteAccessGuard (client-side gate that also covers in-module route
 // changes and permission changes mid-session). A rule with `module` grants
 // access on ANY read/write permission under that module prefix (e.g.
-// module:'hr' matches hr.employees, hr.attendance, …) — used as a catch-all
-// for pages with no narrower requirement. A rule with `feature + action`
-// requires that exact permission. Order matters: `.find()` returns the
-// first match, so more specific patterns must precede broader ones.
+// module:'hr' matches hr.employees, hr.attendance, …) EXCEPT `*.lookup`
+// features, which are picker-only and must not unlock module navigation.
+// A rule with `feature + action` requires that exact permission. Order matters:
+// `.find()` returns the first match, so more specific patterns must precede
+// broader ones.
 export type RouteRule =
   | { pattern: RegExp; module: string; feature?: never; action?: never }
   | { pattern: RegExp; feature: string; action: 'read' | 'write'; module?: never };

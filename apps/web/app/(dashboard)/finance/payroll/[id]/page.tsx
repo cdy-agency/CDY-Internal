@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { usePayrollRun, useMarkPayrollItemPaid } from '@/hooks/usePayroll';
+import { useFinanceSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
@@ -167,13 +168,20 @@ export default function PayrollDetailPage(): JSX.Element {
   const id = params.id as string;
 
   const { data: run, isLoading } = usePayrollRun(id);
+  const { data: settings } = useFinanceSettings();
   const markPaidMutation = useMarkPayrollItemPaid(id);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [adjustItem, setAdjustItem] = useState<PayrollLineItem | null>(null);
   const [processing, setProcessing] = useState(false);
   const [locking, setLocking] = useState(false);
   const [confirmProcess, setConfirmProcess] = useState(false);
-  const taxRate = 20;
+  const parsedTaxRate = Number(settings?.payroll_tax_rate);
+  const taxRate =
+    settings?.payroll_tax_rate != null &&
+    settings.payroll_tax_rate !== '' &&
+    Number.isFinite(parsedTaxRate)
+      ? parsedTaxRate
+      : 20;
 
   useEffect(() => {
     void api
