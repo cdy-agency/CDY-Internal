@@ -1,6 +1,7 @@
 -- CreateTable
 CREATE TABLE "ProjectReport" (
     "id" TEXT NOT NULL,
+    "deletedAt" TIMESTAMP(3),
     "projectId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -15,6 +16,9 @@ CREATE INDEX "ProjectReport_projectId_idx" ON "ProjectReport"("projectId");
 
 -- CreateIndex
 CREATE INDEX "ProjectReport_type_idx" ON "ProjectReport"("type");
+
+-- CreateIndex
+CREATE INDEX "ProjectReport_deletedAt_idx" ON "ProjectReport"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Project_status_createdAt_idx" ON "Project"("status", "createdAt");
