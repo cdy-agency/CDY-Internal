@@ -189,7 +189,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { pattern: /^\/it/, module: 'it' },                                // any it.* permission
 
   // ── Marketing ────────────────────────────────────────────────────────
-  { pattern: /^\/marketing\/[^/]+/, feature: 'marketing.content', action: 'read' },
+  { pattern: /^\/marketing\/calendar/, feature: 'marketing.content', action: 'read' },
+  { pattern: /^\/marketing\/[^/]+/, feature: 'marketing.content', action: 'read' }, // client detail
   { pattern: /^\/marketing$/, feature: 'marketing.clients', action: 'read' }, // Overview
   { pattern: /^\/marketing/, module: 'marketing' },
 

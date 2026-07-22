@@ -14,7 +14,7 @@ export class MarketingController {
   ) {}
 
   @Get('summary')
-  @RequirePermission('marketing.reports', 'read')
+  @RequirePermission('marketing.clients', 'read')
   async getAllSummary(@Query('month') month: string) {
     const m =
       month ??

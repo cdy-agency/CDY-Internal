@@ -95,7 +95,7 @@ export class ContentController {
   }
 
   @Get('summary')
-  @RequirePermission('marketing.reports', 'read')
+  @RequirePermission('marketing.content', 'read')
   async getSummary(
     @Param('clientId') clientId: string,
     @Query('month') month: string,

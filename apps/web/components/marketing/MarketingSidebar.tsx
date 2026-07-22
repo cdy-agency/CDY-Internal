@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
   Building2,
   CalendarDays,
   LogOut,
@@ -19,19 +18,12 @@ import { usePermissions } from '@/context/PermissionContext';
 interface NavItem {
   label: string;
   href: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof Building2;
   feature: string;
   exact?: boolean;
 }
 
 const navItems: NavItem[] = [
-  {
-    label: 'Overview',
-    href: '/marketing',
-    icon: LayoutDashboard,
-    feature: 'marketing.clients',
-    exact: true,
-  },
   {
     label: 'Clients',
     href: '/marketing',
