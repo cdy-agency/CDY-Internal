@@ -1,342 +1,117 @@
--- AlterTable
-ALTER TABLE "AttendanceRecord" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "BankStatement" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "BrandingProject" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "BrandingScopeItem" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "BrandingSupplier" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "BudgetIncreaseRequest" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Bug" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "CampaignInfluencer" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "CommissionRecord" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "CommissionRule" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "DailyActivityLog" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Deliverable" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "DeliverableApproval" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Department" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "DesignSubmission" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "DevSprint" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Influencer" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "InfluencerCampaign" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "LeadActivity" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "LeaveRequest" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "LeaveType" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "MaintenanceLog" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "MarketingClient" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Milestone" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Notification" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "OnboardingChecklist" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "PaymentPlan" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "PaymentPlanItem" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "PayrollRun" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "PerformanceReview" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "ProjectBudget" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "ProjectFile" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "ProjectMember" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "ProjectReport" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Proposal" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "RequirementDoc" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "RetainerContract" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SalesAgent" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SalesCampaign" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SalesTarget" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SavedFilter" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SoftwareProject" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "SprintItem" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "TaxPayment" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "TaxRate" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "Venture" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "WeeklyReport" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- AlterTable
-ALTER TABLE "roles" ADD COLUMN     "deletedAt" TIMESTAMP(3);
-
--- CreateIndex
-CREATE INDEX "AttendanceRecord_deletedAt_idx" ON "AttendanceRecord"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BalanceSheetEntry_deletedAt_idx" ON "BalanceSheetEntry"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BankStatement_deletedAt_idx" ON "BankStatement"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Bill_deletedAt_idx" ON "Bill"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BrandingProject_deletedAt_idx" ON "BrandingProject"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BrandingScopeItem_deletedAt_idx" ON "BrandingScopeItem"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BrandingSupplier_deletedAt_idx" ON "BrandingSupplier"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "BudgetIncreaseRequest_deletedAt_idx" ON "BudgetIncreaseRequest"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Bug_deletedAt_idx" ON "Bug"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "CampaignInfluencer_deletedAt_idx" ON "CampaignInfluencer"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "CashFlowAdjustment_deletedAt_idx" ON "CashFlowAdjustment"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Client_deletedAt_idx" ON "Client"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "CommissionRecord_deletedAt_idx" ON "CommissionRecord"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "CommissionRule_deletedAt_idx" ON "CommissionRule"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "ContentItem_deletedAt_idx" ON "ContentItem"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "CreditNote_deletedAt_idx" ON "CreditNote"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "DailyActivityLog_deletedAt_idx" ON "DailyActivityLog"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Deliverable_deletedAt_idx" ON "Deliverable"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "DeliverableApproval_deletedAt_idx" ON "DeliverableApproval"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Department_deletedAt_idx" ON "Department"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "DesignSubmission_deletedAt_idx" ON "DesignSubmission"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "DevSprint_deletedAt_idx" ON "DevSprint"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "DirectIncome_deletedAt_idx" ON "DirectIncome"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Employee_deletedAt_idx" ON "Employee"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Expense_deletedAt_idx" ON "Expense"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Influencer_deletedAt_idx" ON "Influencer"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "InfluencerCampaign_deletedAt_idx" ON "InfluencerCampaign"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Invoice_deletedAt_idx" ON "Invoice"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Lead_deletedAt_idx" ON "Lead"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "LeadActivity_deletedAt_idx" ON "LeadActivity"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "LeaveRequest_deletedAt_idx" ON "LeaveRequest"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "LeaveType_deletedAt_idx" ON "LeaveType"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "MaintenanceLog_deletedAt_idx" ON "MaintenanceLog"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "MarketingClient_deletedAt_idx" ON "MarketingClient"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Milestone_deletedAt_idx" ON "Milestone"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Notification_deletedAt_idx" ON "Notification"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "OnboardingChecklist_deletedAt_idx" ON "OnboardingChecklist"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Payment_deletedAt_idx" ON "Payment"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "PaymentPlan_deletedAt_idx" ON "PaymentPlan"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "PaymentPlanItem_deletedAt_idx" ON "PaymentPlanItem"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "PayrollRun_deletedAt_idx" ON "PayrollRun"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "PerformanceReview_deletedAt_idx" ON "PerformanceReview"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Project_deletedAt_idx" ON "Project"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "ProjectBudget_deletedAt_idx" ON "ProjectBudget"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "ProjectFile_deletedAt_idx" ON "ProjectFile"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "ProjectMember_deletedAt_idx" ON "ProjectMember"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "ProjectReport_deletedAt_idx" ON "ProjectReport"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Proposal_deletedAt_idx" ON "Proposal"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "RequirementDoc_deletedAt_idx" ON "RequirementDoc"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "RetainerContract_deletedAt_idx" ON "RetainerContract"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SalesAgent_deletedAt_idx" ON "SalesAgent"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SalesCampaign_deletedAt_idx" ON "SalesCampaign"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SalesTarget_deletedAt_idx" ON "SalesTarget"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SavedFilter_deletedAt_idx" ON "SavedFilter"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SoftwareProject_deletedAt_idx" ON "SoftwareProject"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "SprintItem_deletedAt_idx" ON "SprintItem"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Task_deletedAt_idx" ON "Task"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "TaskComment_deletedAt_idx" ON "TaskComment"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "TaxPayment_deletedAt_idx" ON "TaxPayment"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "TaxRate_deletedAt_idx" ON "TaxRate"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "Venture_deletedAt_idx" ON "Venture"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "VentureExpense_deletedAt_idx" ON "VentureExpense"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "VentureIncome_deletedAt_idx" ON "VentureIncome"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "WeeklyReport_deletedAt_idx" ON "WeeklyReport"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "roles_deletedAt_idx" ON "roles"("deletedAt");
-
+-- Soft-delete columns + indexes (idempotent for re-runs / partial failures)
+
+ALTER TABLE "AttendanceRecord" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "BankStatement" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "BrandingProject" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "BrandingScopeItem" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "BrandingSupplier" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "BudgetIncreaseRequest" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Bug" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "CampaignInfluencer" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "CommissionRecord" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "CommissionRule" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "DailyActivityLog" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Deliverable" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "DeliverableApproval" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Department" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "DesignSubmission" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "DevSprint" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Influencer" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "InfluencerCampaign" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "LeadActivity" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "LeaveRequest" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "LeaveType" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "MaintenanceLog" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "MarketingClient" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Milestone" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Notification" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "OnboardingChecklist" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "PaymentPlan" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "PaymentPlanItem" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "PayrollRun" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "PerformanceReview" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "ProjectBudget" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "ProjectFile" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "ProjectMember" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "ProjectReport" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Proposal" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "RequirementDoc" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "RetainerContract" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SalesAgent" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SalesCampaign" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SalesTarget" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SavedFilter" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SoftwareProject" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SprintItem" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "TaxPayment" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "TaxRate" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Venture" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "WeeklyReport" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+ALTER TABLE "roles" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+
+CREATE INDEX IF NOT EXISTS "AttendanceRecord_deletedAt_idx" ON "AttendanceRecord"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BalanceSheetEntry_deletedAt_idx" ON "BalanceSheetEntry"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BankStatement_deletedAt_idx" ON "BankStatement"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Bill_deletedAt_idx" ON "Bill"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BrandingProject_deletedAt_idx" ON "BrandingProject"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BrandingScopeItem_deletedAt_idx" ON "BrandingScopeItem"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BrandingSupplier_deletedAt_idx" ON "BrandingSupplier"("deletedAt");
+CREATE INDEX IF NOT EXISTS "BudgetIncreaseRequest_deletedAt_idx" ON "BudgetIncreaseRequest"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Bug_deletedAt_idx" ON "Bug"("deletedAt");
+CREATE INDEX IF NOT EXISTS "CampaignInfluencer_deletedAt_idx" ON "CampaignInfluencer"("deletedAt");
+CREATE INDEX IF NOT EXISTS "CashFlowAdjustment_deletedAt_idx" ON "CashFlowAdjustment"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Client_deletedAt_idx" ON "Client"("deletedAt");
+CREATE INDEX IF NOT EXISTS "CommissionRecord_deletedAt_idx" ON "CommissionRecord"("deletedAt");
+CREATE INDEX IF NOT EXISTS "CommissionRule_deletedAt_idx" ON "CommissionRule"("deletedAt");
+CREATE INDEX IF NOT EXISTS "ContentItem_deletedAt_idx" ON "ContentItem"("deletedAt");
+CREATE INDEX IF NOT EXISTS "CreditNote_deletedAt_idx" ON "CreditNote"("deletedAt");
+CREATE INDEX IF NOT EXISTS "DailyActivityLog_deletedAt_idx" ON "DailyActivityLog"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Deliverable_deletedAt_idx" ON "Deliverable"("deletedAt");
+CREATE INDEX IF NOT EXISTS "DeliverableApproval_deletedAt_idx" ON "DeliverableApproval"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Department_deletedAt_idx" ON "Department"("deletedAt");
+CREATE INDEX IF NOT EXISTS "DesignSubmission_deletedAt_idx" ON "DesignSubmission"("deletedAt");
+CREATE INDEX IF NOT EXISTS "DevSprint_deletedAt_idx" ON "DevSprint"("deletedAt");
+CREATE INDEX IF NOT EXISTS "DirectIncome_deletedAt_idx" ON "DirectIncome"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Employee_deletedAt_idx" ON "Employee"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Expense_deletedAt_idx" ON "Expense"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Influencer_deletedAt_idx" ON "Influencer"("deletedAt");
+CREATE INDEX IF NOT EXISTS "InfluencerCampaign_deletedAt_idx" ON "InfluencerCampaign"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Invoice_deletedAt_idx" ON "Invoice"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Lead_deletedAt_idx" ON "Lead"("deletedAt");
+CREATE INDEX IF NOT EXISTS "LeadActivity_deletedAt_idx" ON "LeadActivity"("deletedAt");
+CREATE INDEX IF NOT EXISTS "LeaveRequest_deletedAt_idx" ON "LeaveRequest"("deletedAt");
+CREATE INDEX IF NOT EXISTS "LeaveType_deletedAt_idx" ON "LeaveType"("deletedAt");
+CREATE INDEX IF NOT EXISTS "MaintenanceLog_deletedAt_idx" ON "MaintenanceLog"("deletedAt");
+CREATE INDEX IF NOT EXISTS "MarketingClient_deletedAt_idx" ON "MarketingClient"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Milestone_deletedAt_idx" ON "Milestone"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Notification_deletedAt_idx" ON "Notification"("deletedAt");
+CREATE INDEX IF NOT EXISTS "OnboardingChecklist_deletedAt_idx" ON "OnboardingChecklist"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Payment_deletedAt_idx" ON "Payment"("deletedAt");
+CREATE INDEX IF NOT EXISTS "PaymentPlan_deletedAt_idx" ON "PaymentPlan"("deletedAt");
+CREATE INDEX IF NOT EXISTS "PaymentPlanItem_deletedAt_idx" ON "PaymentPlanItem"("deletedAt");
+CREATE INDEX IF NOT EXISTS "PayrollRun_deletedAt_idx" ON "PayrollRun"("deletedAt");
+CREATE INDEX IF NOT EXISTS "PerformanceReview_deletedAt_idx" ON "PerformanceReview"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Project_deletedAt_idx" ON "Project"("deletedAt");
+CREATE INDEX IF NOT EXISTS "ProjectBudget_deletedAt_idx" ON "ProjectBudget"("deletedAt");
+CREATE INDEX IF NOT EXISTS "ProjectFile_deletedAt_idx" ON "ProjectFile"("deletedAt");
+CREATE INDEX IF NOT EXISTS "ProjectMember_deletedAt_idx" ON "ProjectMember"("deletedAt");
+CREATE INDEX IF NOT EXISTS "ProjectReport_deletedAt_idx" ON "ProjectReport"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Proposal_deletedAt_idx" ON "Proposal"("deletedAt");
+CREATE INDEX IF NOT EXISTS "RequirementDoc_deletedAt_idx" ON "RequirementDoc"("deletedAt");
+CREATE INDEX IF NOT EXISTS "RetainerContract_deletedAt_idx" ON "RetainerContract"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SalesAgent_deletedAt_idx" ON "SalesAgent"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SalesCampaign_deletedAt_idx" ON "SalesCampaign"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SalesTarget_deletedAt_idx" ON "SalesTarget"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SavedFilter_deletedAt_idx" ON "SavedFilter"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SoftwareProject_deletedAt_idx" ON "SoftwareProject"("deletedAt");
+CREATE INDEX IF NOT EXISTS "SprintItem_deletedAt_idx" ON "SprintItem"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Task_deletedAt_idx" ON "Task"("deletedAt");
+CREATE INDEX IF NOT EXISTS "TaskComment_deletedAt_idx" ON "TaskComment"("deletedAt");
+CREATE INDEX IF NOT EXISTS "TaxPayment_deletedAt_idx" ON "TaxPayment"("deletedAt");
+CREATE INDEX IF NOT EXISTS "TaxRate_deletedAt_idx" ON "TaxRate"("deletedAt");
+CREATE INDEX IF NOT EXISTS "User_deletedAt_idx" ON "User"("deletedAt");
+CREATE INDEX IF NOT EXISTS "Venture_deletedAt_idx" ON "Venture"("deletedAt");
+CREATE INDEX IF NOT EXISTS "VentureExpense_deletedAt_idx" ON "VentureExpense"("deletedAt");
+CREATE INDEX IF NOT EXISTS "VentureIncome_deletedAt_idx" ON "VentureIncome"("deletedAt");
+CREATE INDEX IF NOT EXISTS "WeeklyReport_deletedAt_idx" ON "WeeklyReport"("deletedAt");
+CREATE INDEX IF NOT EXISTS "roles_deletedAt_idx" ON "roles"("deletedAt");
