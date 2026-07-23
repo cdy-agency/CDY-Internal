@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EXPENSE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
+import { useProjectLookup } from '@/hooks/useProjects';
 import type { ApiResponse, ExpenseRecord } from '@cdy/shared';
 import { ExpenseCategory } from '@cdy/shared';
 import type { AxiosError } from 'axios';
@@ -38,6 +39,7 @@ export function ExpenseDrawer({
   expense,
 }: ExpenseDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
+  const { data: projects } = useProjectLookup();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -293,13 +295,21 @@ export function ExpenseDrawer({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="projectId">Project ID (optional)</Label>
-              <Input
+              <Label htmlFor="projectId">Project (optional)</Label>
+              <select
                 id="projectId"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 disabled={isReadOnly}
-              />
+                className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              >
+                <option value="">No project</option>
+                {projects?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.projectCode} — {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {!isEdit && (

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSalesAgents, useUpdateClient } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import type { ClientRecord } from '@cdy/shared';
 
 interface EditClientDrawerProps {
@@ -23,7 +23,7 @@ export function EditClientDrawer({
 }: EditClientDrawerProps): JSX.Element | null {
   const updateClient = useUpdateClient();
   const { data: agents = [] } = useSalesAgents();
-  const { data: ventures = [] } = useVentures();
+  const { data: ventures = [] } = useVentureLookup();
 
   const [form, setForm] = useState({
     companyName: '',

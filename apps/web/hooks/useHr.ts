@@ -224,6 +224,24 @@ export function useDepartments() {
   });
 }
 
+export interface DepartmentLookupResult {
+  id: string;
+  name: string;
+}
+
+/** Picker list — requires hr.departments.lookup */
+export function useDepartmentLookup() {
+  return useQuery({
+    queryKey: ['hr', 'departments', 'lookup'],
+    queryFn: async (): Promise<DepartmentLookupResult[]> => {
+      const res = await api.get<ApiResponse<DepartmentLookupResult[]>>(
+        '/hr/departments/lookup',
+      );
+      return res.data.data;
+    },
+  });
+}
+
 export function useCreateDepartment() {
   const queryClient = useQueryClient();
   return useMutation({

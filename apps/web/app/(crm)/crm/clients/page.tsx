@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useClients, useDeleteClient, exportClientsCsv } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -46,7 +46,7 @@ export default function ClientsListPage(): JSX.Element {
     sourceFilter || undefined,
     ventureFilter || undefined,
   );
-  const { data: ventures = [] } = useVentures();
+  const { data: ventures = [] } = useVentureLookup();
   const deleteClient = useDeleteClient();
 
   async function handleExport(): Promise<void> {

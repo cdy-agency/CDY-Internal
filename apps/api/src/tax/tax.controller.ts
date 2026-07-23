@@ -37,6 +37,14 @@ export class TaxController {
     return { data, message: 'Tax rates retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('rates/lookup')
+  @RequirePermission('finance.tax.lookup', 'read')
+  @ApiOperation({ summary: 'Lookup active tax rates for pickers' })
+  async lookupRates() {
+    const data = await this.taxService.lookupRates();
+    return { data, message: 'Tax rates found', statusCode: HttpStatus.OK };
+  }
+
   @Post('rates')
   @RequirePermission('finance.tax', 'write')
   @ApiOperation({ summary: 'Create tax rate' })

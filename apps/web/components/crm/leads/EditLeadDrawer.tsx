@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUpdateLead, useSalesAgents } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 
 const SERVICE_OPTIONS = [
   { value: 'marketing', label: 'Marketing' },
@@ -30,7 +30,7 @@ interface EditLeadDrawerProps {
 
 export function EditLeadDrawer({ open, lead, onClose }: EditLeadDrawerProps): JSX.Element | null {
   const { data: agents } = useSalesAgents();
-  const { data: ventures } = useVentures();
+  const { data: ventures } = useVentureLookup();
   const activeVentures = (ventures ?? []).filter((v) => v.isActive);
   const updateLead = useUpdateLead();
 

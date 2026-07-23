@@ -47,6 +47,31 @@ export class VenturesService {
     });
   }
 
+  /** Minimal picker results — id/name/color only */
+  async lookup(query = '') {
+    const term = query.trim();
+    return this.prisma.venture.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        ...(term.length >= 1 && {
+          OR: [
+            { name: { contains: term, mode: 'insensitive' as const } },
+            { description: { contains: term, mode: 'insensitive' as const } },
+          ],
+        }),
+      },
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        isActive: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async findOne(id: string) {
     const venture = await this.prisma.venture.findUnique({
       where: { id },

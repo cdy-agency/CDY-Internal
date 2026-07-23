@@ -30,6 +30,14 @@ export class VenturesController {
     return { data, statusCode: HttpStatus.OK };
   }
 
+  @Get('lookup')
+  @RequirePermission('ventures.lookup', 'read')
+  @ApiOperation({ summary: 'Lookup ventures for pickers (id/name only)' })
+  async lookup(@Query('q') query = '') {
+    const data = await this.venturesService.lookup(query);
+    return { data, message: 'Ventures found', statusCode: HttpStatus.OK };
+  }
+
   @Get('summary')
   @RequirePermission('ventures.view', 'read')
   @ApiOperation({ summary: 'Combined summary for all ventures' })

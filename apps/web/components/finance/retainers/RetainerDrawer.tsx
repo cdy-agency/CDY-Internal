@@ -6,8 +6,8 @@ import { X, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
-import { useTaxRates } from '@/hooks/useTax';
-import { useVentures } from '@/hooks/useVentures';
+import { useTaxRateLookup } from '@/hooks/useTax';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,8 +26,8 @@ const CURRENCIES = ['RWF'];
 
 export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
-  const { data: taxRates } = useTaxRates();
-  const { data: ventures } = useVentures();
+  const { data: taxRates } = useTaxRateLookup();
+  const { data: ventures } = useVentureLookup();
   const activeVentures = (ventures ?? []).filter((v) => v.isActive);
   const [loading, setLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);

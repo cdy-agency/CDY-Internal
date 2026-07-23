@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateClient, useSalesAgents } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 
 const CLIENT_TYPE_OPTIONS = [
   { value: 'COMPANY',    label: '🏢 Company',    desc: 'Business, NGO, organisation' },
@@ -52,7 +52,7 @@ export function AddClientDrawer({
 }: AddClientDrawerProps): JSX.Element | null {
   const createClient = useCreateClient();
   const { data: agents = [] } = useSalesAgents();
-  const { data: ventures = [] } = useVentures();
+  const { data: ventures = [] } = useVentureLookup();
 
   const [form, setForm] = useState({
     clientType: 'COMPANY',

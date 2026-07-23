@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { FileText, Plus } from 'lucide-react';
 import { useInvoices } from '@/hooks/useInvoices';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { EmptyState } from '@/components/finance/EmptyState';
@@ -34,7 +34,7 @@ export default function InvoicesPage(): JSX.Element {
   const [editInvoice, setEditInvoice] = useState<InvoiceRecord | null>(null);
 
   const { data, isLoading, isError } = useInvoices(filters);
-  const { data: ventures } = useVentures();
+  const { data: ventures } = useVentureLookup();
 
   function toggleStatus(status: InvoiceStatus): void {
     setFilters((prev) => {

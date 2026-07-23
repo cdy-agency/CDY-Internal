@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 import { EmploymentType } from '@cdy/shared';
 import {
   useAvailableUsers,
-  useDepartments,
-  useEmployees,
+  useDepartmentLookup,
+  useEmployeeLookup,
   useCreateEmployee,
 } from '@/hooks/useHr';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,8 @@ export default function NewEmployeePage(): JSX.Element {
   const [tab, setTab] = useState<Tab>('account');
   const createEmployee = useCreateEmployee();
   const { data: availableUsers } = useAvailableUsers();
-  const { data: departments } = useDepartments();
-  const { data: employees } = useEmployees();
+  const { data: departments } = useDepartmentLookup();
+  const { data: employees } = useEmployeeLookup();
 
   const [form, setForm] = useState({
     userId: '',

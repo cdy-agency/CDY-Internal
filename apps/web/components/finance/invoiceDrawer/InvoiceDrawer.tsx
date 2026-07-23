@@ -15,6 +15,7 @@ import type { ApiResponse, ClientSearchResult, InvoiceDetail, InvoiceRecord } fr
 import { InvoiceStatus } from '@cdy/shared';
 import { ClientSearch } from '@/components/crm/ClientSearch';
 import { AddClientDrawer } from '@/components/crm/clients/AddClientDrawer';
+import { useProjectLookup } from '@/hooks/useProjects';
 
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -48,6 +49,7 @@ export function InvoiceDrawer({
   invoice,
 }: InvoiceDrawerProps): JSX.Element | null {
   const queryClient = useQueryClient();
+  const { data: projects } = useProjectLookup();
   const [submitAction, setSubmitAction] = useState<'draft' | 'send' | null>(null);
   const [statusText, setStatusText] = useState('');
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
@@ -267,12 +269,20 @@ export function InvoiceDrawer({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="projectId">Project ID (optional)</Label>
-                <Input
+                <Label htmlFor="projectId">Project (optional)</Label>
+                <select
                   id="projectId"
                   {...register('projectId')}
                   disabled={isReadOnly}
-                />
+                  className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cdy-red"
+                >
+                  <option value="">No project</option>
+                  {projects?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.projectCode} — {p.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>

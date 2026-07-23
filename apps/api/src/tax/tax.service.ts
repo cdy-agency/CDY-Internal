@@ -77,6 +77,30 @@ export class TaxService {
     return rates.map((r) => this.serializeRate(r));
   }
 
+  /** Active rates for form pickers — no remittance/report data */
+  async lookupRates() {
+    const rates = await this.prisma.taxRate.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        ratePercent: true,
+        country: true,
+        serviceType: true,
+        isActive: true,
+      },
+    });
+    return rates.map((r) => ({
+      id: r.id,
+      name: r.name,
+      ratePercent: Number(r.ratePercent),
+      country: r.country,
+      serviceType: r.serviceType,
+      isActive: r.isActive,
+    }));
+  }
+
   async createTaxRate(dto: CreateTaxRateDto, userId: string) {
     if (dto.ratePercent < 0 || dto.ratePercent > 100) {
       throw new BadRequestException('Rate must be between 0 and 100');

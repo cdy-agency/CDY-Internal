@@ -36,6 +36,28 @@ export function useVentures(includeInactive = false) {
   });
 }
 
+export interface VentureLookupResult {
+  id: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+}
+
+/** Picker list — requires ventures.lookup, not full ventures.view */
+export function useVentureLookup(query = '') {
+  return useQuery({
+    queryKey: ['ventures', 'lookup', query],
+    queryFn: async (): Promise<VentureLookupResult[]> => {
+      const qs = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+      const response = await api.get<ApiResponse<VentureLookupResult[]>>(
+        `/ventures/lookup${qs}`,
+      );
+      return response.data.data;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useAllVenturesSummary(filters: VentureSummaryFilters) {
   return useQuery({
     queryKey: ['ventures', 'summary', filters],

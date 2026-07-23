@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { usePlReport } from '@/hooks/useReports';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { ReportFilterBar } from '@/components/finance/reports/ReportFilterBar';
 import { ReportTable, type ReportSection } from '@/components/finance/reports/ReportTable';
 import { EmptyReport } from '@/components/finance/reports/EmptyReport';
@@ -33,7 +33,7 @@ export default function ProfitAndLossPage(): JSX.Element {
   const [ventureView, setVentureView] = useState('cdy-main');
   const [pdfLoading, setPdfLoading] = useState(false);
 
-  const { data: ventures } = useVentures();
+  const { data: ventures } = useVentureLookup();
 
   const filters = {
     from,

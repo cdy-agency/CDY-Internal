@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { useExpenses } from '@/hooks/useExpenses';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { ExpenseDrawer } from '@/components/finance/expenses/ExpenseDrawer';
 import { ExpenseCategoryBadge, EXPENSE_CATEGORIES } from '@/components/finance/expenses/ExpenseCategoryBadge';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
@@ -26,7 +26,7 @@ export default function ExpensesPage(): JSX.Element {
   const [editExpense, setEditExpense] = useState<ExpenseRecord | null>(null);
 
   const { data, isLoading, isError } = useExpenses(filters);
-  const { data: ventures } = useVentures();
+  const { data: ventures } = useVentureLookup();
 
   function openCreate(): void {
     setEditExpense(null);

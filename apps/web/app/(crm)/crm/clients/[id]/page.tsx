@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { Pencil } from 'lucide-react';
 import { InvoiceStatus, type ClientSource } from '@cdy/shared';
 import { useClient } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import { formatCurrency } from '@/lib/utils';
 import { ventureColorHex } from '@/lib/ventureUtils';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
@@ -46,7 +46,7 @@ function VentureTagPopover({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: ventures = [] } = useVentures();
+  const { data: ventures = [] } = useVentureLookup();
   const [selected, setSelected] = useState(currentVentureId ?? '');
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

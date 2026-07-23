@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateLead, useSalesAgents } from '@/hooks/useCrm';
-import { useVentures } from '@/hooks/useVentures';
+import { useVentureLookup } from '@/hooks/useVentures';
 import {
   calculateLeadScore,
   getScoreBand,
@@ -33,7 +33,7 @@ interface AddLeadDrawerProps {
 
 export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Element | null {
   const { data: agents } = useSalesAgents();
-  const { data: ventures } = useVentures();
+  const { data: ventures } = useVentureLookup();
   const activeVentures = (ventures ?? []).filter((v) => v.isActive);
   const createLead = useCreateLead();
 

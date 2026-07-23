@@ -30,6 +30,15 @@ export class DepartmentsService {
     }));
   }
 
+  /** Minimal picker results — id/name only */
+  async lookup() {
+    return this.prisma.department.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async create(dto: CreateDepartmentDto) {
     return this.prisma.department.create({ data: dto });
   }

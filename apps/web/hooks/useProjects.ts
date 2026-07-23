@@ -83,6 +83,29 @@ export function useProjects(filters: ProjectFilters = {}) {
   });
 }
 
+export interface ProjectLookupResult {
+  id: string;
+  projectCode: string;
+  name: string;
+  status: string;
+  serviceType: string;
+  clientName: string | null;
+}
+
+/** Picker list — requires projects.lookup */
+export function useProjectLookup(query = '') {
+  return useQuery({
+    queryKey: ['projects', 'lookup', query],
+    queryFn: async (): Promise<ProjectLookupResult[]> => {
+      const qs = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
+      const res = await api.get<ApiResponse<ProjectLookupResult[]>>(
+        `/projects/lookup${qs}`,
+      );
+      return res.data.data;
+    },
+  });
+}
+
 export function useMyProjects() {
   return useQuery({
     queryKey: ['projects', 'my'],

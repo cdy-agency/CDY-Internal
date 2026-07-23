@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { LayoutGrid, List, Download, Plus, Trash2 } from 'lucide-react';
 import { EmployeeStatus } from '@cdy/shared';
 import type { EmployeeDirectoryRecord, EmployeeRecord } from '@cdy/shared';
-import { useEmployees, useDepartments, type EmployeeFilters } from '@/hooks/useHr';
+import { useEmployees, useDepartmentLookup, type EmployeeFilters } from '@/hooks/useHr';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +46,7 @@ export default function EmployeesPage(): JSX.Element {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: employees, isLoading } = useEmployees(applied);
-  const { data: departments } = useDepartments();
+  const { data: departments } = useDepartmentLookup();
   const queryClient = useQueryClient();
 
   function applyFilters(): void {

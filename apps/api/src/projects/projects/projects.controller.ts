@@ -77,6 +77,14 @@ export class ProjectsController {
     return { data, message: 'Projects retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('lookup')
+  @RequirePermission('projects.lookup', 'read')
+  @ApiOperation({ summary: 'Lookup projects for pickers (minimal fields)' })
+  async lookup(@Query('q') query = '') {
+    const data = await this.projectsService.lookup(query);
+    return { data, message: 'Projects found', statusCode: HttpStatus.OK };
+  }
+
   @Post()
   @RequirePermission('projects.all', 'write')
   @ApiOperation({ summary: 'Create project' })

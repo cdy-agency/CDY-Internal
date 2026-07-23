@@ -275,6 +275,45 @@ export class ProjectsService {
   }
 
   /**
+   * Minimal picker results for linking expenses/invoices to a project.
+   * Does not expose members, tasks, budgets, or financial detail.
+   */
+  async lookup(query = '') {
+    const term = query.trim();
+    const projects = await this.prisma.project.findMany({
+      where: {
+        deletedAt: null,
+        status: { in: [ProjectStatus.ACTIVE, ProjectStatus.ON_HOLD] },
+        ...(term.length >= 1 && {
+          OR: [
+            { name: { contains: term, mode: 'insensitive' as const } },
+            { projectCode: { contains: term, mode: 'insensitive' as const } },
+          ],
+        }),
+      },
+      take: 50,
+      select: {
+        id: true,
+        projectCode: true,
+        name: true,
+        status: true,
+        serviceType: true,
+        client: { select: { companyName: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return projects.map((p) => ({
+      id: p.id,
+      projectCode: p.projectCode,
+      name: p.name,
+      status: p.status,
+      serviceType: p.serviceType,
+      clientName: p.client?.companyName ?? null,
+    }));
+  }
+
+  /**
    * @param options.scopeToMemberUserId When set, only projects the given user
    * is a member of are returned (used by the "my projects" / projects.own
    * flow). When omitted, all projects are returned — the caller's route is

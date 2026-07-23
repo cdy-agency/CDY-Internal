@@ -24,6 +24,29 @@ export function useTaxRates() {
   });
 }
 
+export interface TaxRateLookupResult {
+  id: string;
+  name: string;
+  ratePercent: number;
+  country: string;
+  serviceType: string | null;
+  isActive: boolean;
+}
+
+/** Picker list — requires finance.tax.lookup */
+export function useTaxRateLookup() {
+  return useQuery({
+    queryKey: ['tax', 'rates', 'lookup'],
+    queryFn: async (): Promise<TaxRateLookupResult[]> => {
+      const response = await api.get<ApiResponse<TaxRateLookupResult[]>>(
+        '/tax/rates/lookup',
+      );
+      return response.data.data;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function useTaxReport(filters: TaxReportFilters) {
   return useQuery({
     queryKey: ['tax', 'report', filters],

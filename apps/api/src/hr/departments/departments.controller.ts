@@ -27,6 +27,14 @@ export class DepartmentsController {
     return { data, message: 'Departments retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('lookup')
+  @RequirePermission('hr.departments.lookup', 'read')
+  @ApiOperation({ summary: 'Lookup departments for pickers (id/name only)' })
+  async lookup() {
+    const data = await this.departmentsService.lookup();
+    return { data, message: 'Departments found', statusCode: HttpStatus.OK };
+  }
+
   @Post()
   @RequirePermission('hr.employees', 'write')
   @ApiOperation({ summary: 'Create department' })
