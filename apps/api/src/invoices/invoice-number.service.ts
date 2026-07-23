@@ -13,9 +13,16 @@ export class InvoiceNumberService {
     const prefix = `CDY-${year}-`;
     const key = `invoice:${year}`;
 
-    const nextSequence = await this.nextSequence(key, async (tx) =>
-      this.maxNumericSuffix(tx, 'Invoice', 'invoiceNumber', prefix, 3),
-    );
+    const nextSequence = await this.nextSequence(key, async (tx) => {
+      const rows = await tx.invoice.findMany({
+        where: { invoiceNumber: { startsWith: prefix } },
+        select: { invoiceNumber: true },
+      });
+      return this.maxSuffixFromNumbers(
+        rows.map((r) => r.invoiceNumber),
+        prefix,
+      );
+    });
 
     const invoiceNumber = `${prefix}${String(nextSequence).padStart(4, '0')}`;
     this.logger.debug(`Generated invoice number: ${invoiceNumber}`);
@@ -27,9 +34,16 @@ export class InvoiceNumberService {
     const prefix = `CDY-CN-${year}-`;
     const key = `credit-note:${year}`;
 
-    const nextSequence = await this.nextSequence(key, async (tx) =>
-      this.maxNumericSuffix(tx, 'CreditNote', 'creditNoteNumber', prefix, 4),
-    );
+    const nextSequence = await this.nextSequence(key, async (tx) => {
+      const rows = await tx.creditNote.findMany({
+        where: { creditNoteNumber: { startsWith: prefix } },
+        select: { creditNoteNumber: true },
+      });
+      return this.maxSuffixFromNumbers(
+        rows.map((r) => r.creditNoteNumber),
+        prefix,
+      );
+    });
 
     const number = `${prefix}${String(nextSequence).padStart(4, '0')}`;
     this.logger.debug(`Generated credit note number: ${number}`);
@@ -73,30 +87,15 @@ export class InvoiceNumberService {
     });
   }
 
-  /**
-   * Highest numeric suffix for documents with the given prefix.
-   * Uses numeric cast so ordering is correct past string-sort edge cases.
-   */
-  private async maxNumericSuffix(
-    tx: Prisma.TransactionClient,
-    table: 'Invoice' | 'CreditNote',
-    column: 'invoiceNumber' | 'creditNoteNumber',
-    prefix: string,
-    splitPartIndex: number,
-  ): Promise<number> {
-    // Table/column names are fixed literals from our call sites — not user input.
-    const tableSql = table === 'Invoice' ? '"Invoice"' : '"CreditNote"';
-    const columnSql =
-      column === 'invoiceNumber' ? '"invoiceNumber"' : '"creditNoteNumber"';
-
-    const rows = await tx.$queryRawUnsafe<Array<{ max: number | null }>>(
-      `SELECT COALESCE(MAX(CAST(NULLIF(split_part(${columnSql}, '-', $1), '') AS INTEGER)), 0) AS max
-       FROM ${tableSql}
-       WHERE ${columnSql} LIKE $2`,
-      splitPartIndex,
-      `${prefix}%`,
-    );
-
-    return Number(rows[0]?.max ?? 0);
+  /** Highest numeric suffix after `prefix` (e.g. CDY-2026-0042 → 42). */
+  private maxSuffixFromNumbers(numbers: string[], prefix: string): number {
+    let max = 0;
+    for (const value of numbers) {
+      if (!value.startsWith(prefix)) continue;
+      const suffix = value.slice(prefix.length);
+      const parsed = parseInt(suffix, 10);
+      if (!Number.isNaN(parsed) && parsed > max) max = parsed;
+    }
+    return max;
   }
 }
