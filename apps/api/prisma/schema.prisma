@@ -107,6 +107,16 @@ model ItAuditLog {
   @@map("it_audit_logs")
 }
 
+/// Atomic counters for document numbers (invoices, credit notes).
+/// `generate()` increments under an advisory lock so concurrent creates
+/// never share the same number — the previous "read max then insert later"
+/// pattern released the lock before the invoice row existed (P2002 races).
+model NumberSequence {
+  id        String   @id // e.g. "invoice:2026", "credit-note:2026"
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
 model Invoice {
   id                 String            @id @default(cuid())
   invoiceNumber      String            @unique
