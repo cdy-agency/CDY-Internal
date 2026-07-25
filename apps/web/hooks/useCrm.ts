@@ -154,6 +154,35 @@ export function useSalesAgents() {
   });
 }
 
+export type OverdueLeadRow = {
+  leadId: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  stage: PipelineStage;
+  estimatedValue: number | null;
+  currency: string;
+  qualityScore: number | null;
+  assignedTo: string | null;
+  assignedToName: string | null;
+  nextAction: string;
+  nextActionDate: string;
+  daysOverdue: number;
+  createdAt: string;
+};
+
+export function useOverdueLeads() {
+  return useQuery({
+    queryKey: ['crm', 'leads', 'overdue'],
+    queryFn: async (): Promise<OverdueLeadRow[]> => {
+      const res = await api.get<ApiResponse<OverdueLeadRow[]>>(
+        '/crm/leads/overdue',
+      );
+      return res.data.data;
+    },
+  });
+}
+
 export function useClients(filters: {
   search?: string;
   source?: string;

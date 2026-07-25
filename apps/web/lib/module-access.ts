@@ -127,6 +127,7 @@ export type RouteRule =
 export const ROUTE_PERMISSIONS: RouteRule[] = [
   // ── CRM ──────────────────────────────────────────────────────────────
   { pattern: /^\/crm\/pipeline/, feature: 'crm.pipeline', action: 'read' },
+  { pattern: /^\/crm\/overdue/, feature: 'crm.leads', action: 'read' },
   { pattern: /^\/crm\/leads/, feature: 'crm.leads', action: 'read' },
   { pattern: /^\/crm\/proposals/, feature: 'crm.proposals', action: 'read' },
   { pattern: /^\/crm\/clients/, feature: 'crm.clients', action: 'read' },

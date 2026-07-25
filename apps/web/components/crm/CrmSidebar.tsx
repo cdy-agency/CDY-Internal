@@ -14,6 +14,7 @@ import {
   X,
   Settings2,
   ClipboardList,
+  AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const navItems = [
   { label: 'Overview', href: '/crm', icon: LayoutDashboard, feature: 'crm.pipeline' },
   { label: 'Pipeline', href: '/crm/pipeline', icon: Kanban, feature: 'crm.pipeline' },
   { label: 'Leads', href: '/crm/leads', icon: UserSearch, feature: 'crm.leads' },
+  { label: 'Overdue', href: '/crm/overdue', icon: AlertTriangle, feature: 'crm.leads' },
   { label: 'Proposals', href: '/crm/proposals', icon: FileText, feature: 'crm.proposals' },
   { label: 'Clients', href: '/crm/clients', icon: Building2, feature: 'crm.clients' },
   { label: 'Reports', href: '/crm/reports', icon: BarChart3, feature: 'crm.reports' },

@@ -155,11 +155,21 @@ export class CrmSummaryService {
         where: {
           nextActionDate: { lt: now },
           nextAction: { not: null },
-          lead: { deletedAt: null },
+          lead: {
+            deletedAt: null,
+            stage: {
+              notIn: [PipelineStage.CLOSED_WON, PipelineStage.CLOSED_LOST],
+            },
+          },
         },
-        include: { lead: { select: { id: true, companyName: true, contactName: true } } },
+        include: {
+          lead: {
+            select: { id: true, companyName: true, contactName: true },
+          },
+        },
         orderBy: { nextActionDate: 'asc' },
-        take: 10,
+        take: 20,
+        distinct: ['leadId'],
       }),
       this.prisma.proposal.count({
         where: {

@@ -171,8 +171,14 @@ function AgentView({ month }: { month: string }): JSX.Element {
       )}
 
       {/* Overdue follow-ups */}
-      {(data?.overdueItems.length ?? 0) > 0 && (
-        <SectionCard title="Overdue follow-ups">
+      <SectionCard
+        title={`Overdue follow-ups${
+          data?.overdueFollowUps ? ` (${data.overdueFollowUps})` : ''
+        }`}
+      >
+        {(data?.overdueItems.length ?? 0) === 0 ? (
+          <p className="text-sm text-cdy-muted">No overdue follow-ups.</p>
+        ) : (
           <div className="space-y-2">
             {data!.overdueItems.map((item) => (
               <Link
@@ -189,9 +195,15 @@ function AgentView({ month }: { month: string }): JSX.Element {
                 </span>
               </Link>
             ))}
+            <Link
+              href="/crm/overdue"
+              className="mt-2 inline-block text-sm text-cdy-red hover:underline"
+            >
+              View all overdue leads →
+            </Link>
           </div>
-        </SectionCard>
-      )}
+        )}
+      </SectionCard>
     </div>
   );
 }
@@ -332,6 +344,43 @@ function TeamView({
           />
         </SectionCard>
       </div>
+
+      {/* Overdue leads */}
+      <SectionCard
+        title={`Overdue follow-ups${
+          summary?.leadsWithOverdueFollowUp
+            ? ` (${summary.leadsWithOverdueFollowUp})`
+            : ''
+        }`}
+      >
+        {(summary?.overdueFollowUps.length ?? 0) === 0 ? (
+          <p className="text-sm text-cdy-muted">No overdue follow-ups.</p>
+        ) : (
+          <div className="space-y-2">
+            {summary!.overdueFollowUps.map((item) => (
+              <Link
+                key={`${item.leadId}-${item.nextActionDate}`}
+                href={`/crm/leads/${item.leadId}`}
+                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm hover:bg-cdy-navy"
+              >
+                <span className="font-medium text-cdy-white">
+                  {item.companyName}
+                </span>
+                <span className="shrink-0 text-amber-400">
+                  {item.nextAction} — due{' '}
+                  {format(new Date(item.nextActionDate), 'MMM d')}
+                </span>
+              </Link>
+            ))}
+            <Link
+              href="/crm/overdue"
+              className="mt-2 inline-block text-sm text-cdy-red hover:underline"
+            >
+              View all overdue leads →
+            </Link>
+          </div>
+        )}
+      </SectionCard>
 
       {/* Leaderboard + Leads by source */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

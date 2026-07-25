@@ -624,6 +624,95 @@ export class LeadsService {
     return findCrmAssignableUsers(this.prisma);
   }
 
+  async findOverdueLeads(userId: string) {
+    const canViewAll = await this.canViewAllCrm(userId);
+    const now = new Date();
+
+    const activities = await this.prisma.leadActivity.findMany({
+      where: {
+        nextActionDate: { lt: now },
+        nextAction: { not: null },
+        lead: {
+          deletedAt: null,
+          stage: { notIn: CLOSED_STAGES },
+          ...(!canViewAll ? { assignedTo: userId } : {}),
+        },
+      },
+      include: {
+        lead: {
+          select: {
+            id: true,
+            companyName: true,
+            contactName: true,
+            email: true,
+            stage: true,
+            estimatedValue: true,
+            currency: true,
+            assignedTo: true,
+            qualityScore: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { nextActionDate: 'asc' },
+    });
+
+    // One row per lead — keep the oldest overdue follow-up
+    const byLead = new Map<string, (typeof activities)[number]>();
+    for (const activity of activities) {
+      const existing = byLead.get(activity.leadId);
+      if (
+        !existing ||
+        (activity.nextActionDate &&
+          existing.nextActionDate &&
+          activity.nextActionDate < existing.nextActionDate)
+      ) {
+        byLead.set(activity.leadId, activity);
+      }
+    }
+
+    const rows = [...byLead.values()];
+    const nameMap = await this.resolveUserNames(
+      rows.map((r) => r.lead.assignedTo),
+    );
+
+    return rows
+      .sort(
+        (a, b) =>
+          (a.nextActionDate?.getTime() ?? 0) -
+          (b.nextActionDate?.getTime() ?? 0),
+      )
+      .map((activity) => {
+        const due = activity.nextActionDate ?? now;
+        return {
+          leadId: activity.lead.id,
+          companyName:
+            activity.lead.companyName ?? activity.lead.contactName,
+          contactName: activity.lead.contactName,
+          email: activity.lead.email,
+          stage: activity.lead.stage,
+          estimatedValue: activity.lead.estimatedValue
+            ? Number(activity.lead.estimatedValue)
+            : null,
+          currency: activity.lead.currency,
+          qualityScore: activity.lead.qualityScore,
+          assignedTo: activity.lead.assignedTo,
+          assignedToName: activity.lead.assignedTo
+            ? nameMap.get(activity.lead.assignedTo) ?? null
+            : null,
+          nextAction: activity.nextAction ?? '',
+          nextActionDate: due.toISOString(),
+          daysOverdue: Math.max(
+            0,
+            Math.floor(
+              (now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+            ),
+          ),
+          createdAt: activity.lead.createdAt.toISOString(),
+        };
+      });
+  }
+
   private async assertAssignableUser(userId: string): Promise<void> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, deletedAt: null },

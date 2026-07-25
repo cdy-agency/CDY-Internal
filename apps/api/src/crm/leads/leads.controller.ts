@@ -82,6 +82,14 @@ export class LeadsController {
     return { data, message: 'Agents retrieved', statusCode: HttpStatus.OK };
   }
 
+  @Get('overdue')
+  @RequirePermission('crm.leads', 'read')
+  @ApiOperation({ summary: 'List open leads with overdue follow-ups' })
+  async findOverdue(@CurrentUser() user: JwtPayload) {
+    const data = await this.leadsService.findOverdueLeads(user.sub);
+    return { data, message: 'Overdue leads retrieved', statusCode: HttpStatus.OK };
+  }
+
   @Post('bulk/assign')
   @RequirePermission('crm.leads', 'write')
   @ApiOperation({ summary: 'Bulk assign leads to agent' })
