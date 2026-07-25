@@ -51,8 +51,16 @@ export class ClientsController {
     @Query('search') search?: string,
     @Query('source') source?: ClientSource,
     @Query('ventureId') ventureId?: string,
+    @Query('assignedTo') assignedTo?: string,
+    @Query('createdBy') createdBy?: string,
   ) {
-    const data = await this.clientsService.findAll(search, source, ventureId);
+    const data = await this.clientsService.findAll(
+      search,
+      source,
+      ventureId,
+      assignedTo,
+      createdBy,
+    );
     return { data, message: 'Clients retrieved', statusCode: HttpStatus.OK };
   }
 

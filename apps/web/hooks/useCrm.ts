@@ -55,6 +55,7 @@ export interface LeadFilters {
   stage?: PipelineStage;
   search?: string;
   assignedTo?: string;
+  createdBy?: string;
   source?: LeadSource;
   serviceInterest?: string;
   minScore?: number;
@@ -71,6 +72,7 @@ function leadFiltersToParams(filters: LeadFilters): URLSearchParams {
   if (filters.stage) params.set('stage', filters.stage);
   if (filters.search) params.set('search', filters.search);
   if (filters.assignedTo) params.set('assignedTo', filters.assignedTo);
+  if (filters.createdBy) params.set('createdBy', filters.createdBy);
   if (filters.source) params.set('source', filters.source);
   if (filters.serviceInterest) params.set('serviceInterest', filters.serviceInterest);
   if (filters.minScore != null) params.set('minScore', String(filters.minScore));
@@ -106,6 +108,7 @@ export function useLead(id: string) {
         proposals: ProposalRecord[];
         stageHistory: PipelineStageHistoryRecord[];
         overdueFollowUp: LeadOverdueFollowUp | null;
+        client?: ClientRecord | null;
       }
     > => {
       const res = await api.get<
@@ -115,6 +118,7 @@ export function useLead(id: string) {
             proposals: ProposalRecord[];
             stageHistory: PipelineStageHistoryRecord[];
             overdueFollowUp: LeadOverdueFollowUp | null;
+            client?: ClientRecord | null;
           }
         >
       >(`/crm/leads/${id}`);
@@ -138,14 +142,23 @@ export function useSalesAgents() {
   });
 }
 
-export function useClients(search?: string, source?: string, ventureId?: string) {
+export function useClients(filters: {
+  search?: string;
+  source?: string;
+  ventureId?: string;
+  assignedTo?: string;
+  createdBy?: string;
+} = {}) {
+  const { search, source, ventureId, assignedTo, createdBy } = filters;
   return useQuery({
-    queryKey: ['crm', 'clients', search, source, ventureId],
+    queryKey: ['crm', 'clients', search, source, ventureId, assignedTo, createdBy],
     queryFn: async (): Promise<ClientRecord[]> => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (source) params.set('source', source);
       if (ventureId !== undefined) params.set('ventureId', ventureId);
+      if (assignedTo) params.set('assignedTo', assignedTo);
+      if (createdBy) params.set('createdBy', createdBy);
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await api.get<ApiResponse<ClientRecord[]>>(`/crm/clients${qs}`);
       return res.data.data;

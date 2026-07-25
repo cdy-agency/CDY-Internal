@@ -84,7 +84,13 @@ export class ClientsService {
     return client;
   }
 
-  async findAll(search?: string, source?: ClientSource, ventureId?: string) {
+  async findAll(
+    search?: string,
+    source?: ClientSource,
+    ventureId?: string,
+    assignedTo?: string,
+    createdBy?: string,
+  ) {
     const clients = await this.prisma.client.findMany({
       where: {
         deletedAt: null,
@@ -92,6 +98,8 @@ export class ClientsService {
         ...(ventureId !== undefined && {
           ventureId: ventureId === 'none' ? null : ventureId,
         }),
+        ...(assignedTo && { assignedTo }),
+        ...(createdBy && { createdBy }),
         ...(search && {
           OR: [
             { companyName: { contains: search, mode: 'insensitive' } },
@@ -161,8 +169,30 @@ export class ClientsService {
       );
     }
 
+    const userIds = [
+      ...new Set(
+        clients
+          .flatMap((c) => [c.assignedTo, c.createdBy])
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const users =
+      userIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, firstName: true, lastName: true },
+          })
+        : [];
+    const nameMap = new Map(
+      users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]),
+    );
+
     return clients.map((client) => ({
       ...client,
+      assignedToName: client.assignedTo
+        ? nameMap.get(client.assignedTo) ?? null
+        : null,
+      createdByName: nameMap.get(client.createdBy) ?? null,
       financeSummary: {
         totalInvoiced: invoicedMap.get(client.id)?.totalInvoiced ?? 0,
         invoiceCount: invoicedMap.get(client.id)?.invoiceCount ?? 0,

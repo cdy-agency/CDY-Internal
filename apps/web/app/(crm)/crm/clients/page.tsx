@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { useClients, useDeleteClient, exportClientsCsv } from '@/hooks/useCrm';
+import { useClients, useDeleteClient, useSalesAgents, exportClientsCsv } from '@/hooks/useCrm';
 import { useVentureLookup } from '@/hooks/useVentures';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -36,17 +36,22 @@ export default function ClientsListPage(): JSX.Element {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<ClientSource | ''>('');
   const [ventureFilter, setVentureFilter] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [createdBy, setCreatedBy] = useState('');
   const [exporting, setExporting] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [editClient, setEditClient] = useState<ClientRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(
     null,
   );
-  const { data: clients, isLoading } = useClients(
-    search || undefined,
-    sourceFilter || undefined,
-    ventureFilter || undefined,
-  );
+  const { data: clients, isLoading } = useClients({
+    search: search || undefined,
+    source: sourceFilter || undefined,
+    ventureId: ventureFilter || undefined,
+    assignedTo: assignedTo || undefined,
+    createdBy: createdBy || undefined,
+  });
+  const { data: agents } = useSalesAgents();
   const { data: ventures = [] } = useVentureLookup();
   const deleteClient = useDeleteClient();
 
@@ -119,6 +124,30 @@ export default function ClientsListPage(): JSX.Element {
             ))}
           </select>
         )}
+        <select
+          value={assignedTo}
+          onChange={(e) => setAssignedTo(e.target.value)}
+          className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+        >
+          <option value="">Assigned to — all</option>
+          {agents?.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.firstName} {a.lastName}
+            </option>
+          ))}
+        </select>
+        <select
+          value={createdBy}
+          onChange={(e) => setCreatedBy(e.target.value)}
+          className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+        >
+          <option value="">Created by — anyone</option>
+          {agents?.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.firstName} {a.lastName}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading && <p className="text-cdy-muted">Loading clients...</p>}
@@ -133,8 +162,9 @@ export default function ClientsListPage(): JSX.Element {
               <th className="px-4 py-3">Venture</th>
               <th className="px-4 py-3">Invoiced</th>
               <th className="px-4 py-3">Outstanding</th>
+              <th className="px-4 py-3">Assigned</th>
+              <th className="px-4 py-3">Created by</th>
               <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -182,10 +212,13 @@ export default function ClientsListPage(): JSX.Element {
                     {formatCurrency(client.financeSummary?.outstanding ?? 0)}
                   </td>
                   <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
-                    {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
+                    {client.assignedToName ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
-                    {format(new Date(client.updatedAt), 'MMM d, yyyy h:mm a')}
+                    {client.createdByName ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -225,7 +258,7 @@ export default function ClientsListPage(): JSX.Element {
             })}
             {!isLoading && !clients?.length && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-cdy-muted">
+                <td colSpan={10} className="px-4 py-6 text-center text-cdy-muted">
                   No clients found.
                 </td>
               </tr>

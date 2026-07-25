@@ -21,6 +21,10 @@ export class LeadFiltersDto {
 
   @IsOptional()
   @IsString()
+  createdBy?: string;
+
+  @IsOptional()
+  @IsString()
   serviceInterest?: string;
 
   @IsOptional()

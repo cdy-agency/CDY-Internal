@@ -190,6 +190,7 @@ export default function LeadDetailPage(): JSX.Element {
       kind: 'activity',
       title: `${activity.type} — ${activity.summary}`,
       detail: [
+        activity.performedByName ? `By: ${activity.performedByName}` : '',
         activity.outcome ? `Outcome: ${activity.outcome}` : '',
         activity.nextAction
           ? `Next: ${activity.nextAction}${
@@ -309,33 +310,82 @@ export default function LeadDetailPage(): JSX.Element {
                 View client →
               </Link>
             )}
-            <div className="mt-4 grid gap-2 text-sm text-cdy-muted sm:grid-cols-2">
-              <p>Email: {lead.email}</p>
-              <p>Phone: {lead.phone ?? '—'}</p>
-              <p>Service: {lead.serviceInterest.replace('_', ' ')}</p>
-              <p>Source: {lead.source.replace('_', ' ')}</p>
-              <p>
-                Value:{' '}
-                {lead.estimatedValue != null
-                  ? formatCurrency(Number(lead.estimatedValue), lead.currency)
-                  : '—'}
-              </p>
-              <p>Created: {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}</p>
+            <div className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+              <InfoRow label="Contact type" value={lead.leadType === 'INDIVIDUAL' ? 'Person' : 'Company'} />
+              <InfoRow label="Contact name" value={lead.contactName} />
+              {lead.leadType !== 'INDIVIDUAL' && (
+                <InfoRow label="Company" value={lead.companyName ?? '—'} />
+              )}
+              <InfoRow label="Email" value={lead.email} />
+              <InfoRow label="Phone" value={lead.phone ?? '—'} />
+              <InfoRow label="Country" value={lead.country} />
+              <InfoRow
+                label="Service interest"
+                value={lead.serviceInterest ? lead.serviceInterest.replace(/_/g, ' ') : '—'}
+              />
+              <InfoRow label="Venture" value={lead.ventureName ?? '—'} />
+              <InfoRow label="Source" value={lead.source.replace(/_/g, ' ')} />
+              <InfoRow
+                label="Estimated value"
+                value={
+                  lead.estimatedValue != null
+                    ? formatCurrency(Number(lead.estimatedValue), lead.currency)
+                    : '—'
+                }
+              />
+              <InfoRow label="Currency" value={lead.currency} />
+              <InfoRow label="Stage" value={lead.stage.replace(/_/g, ' ')} />
+              <InfoRow
+                label="Quality score"
+                value={`${lead.qualityScore ?? 0} — ${scoreBandLabel(band)}`}
+              />
+              <InfoRow label="Assigned to" value={lead.assignedToName ?? '—'} />
+              <InfoRow label="Created by" value={lead.createdByName ?? '—'} />
+              <InfoRow
+                label="Created"
+                value={format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}
+              />
+              <InfoRow
+                label="Last updated"
+                value={format(new Date(lead.updatedAt), 'MMM d, yyyy h:mm a')}
+              />
               {(lead.convertedAt || isClosed) && (
-                <p>
-                  Closed:{' '}
-                  {format(
+                <InfoRow
+                  label="Closed"
+                  value={`${format(
                     new Date(lead.convertedAt ?? lead.updatedAt),
                     'MMM d, yyyy h:mm a',
-                  )}
-                  {lead.stage === PipelineStage.CLOSED_WON
-                    ? ' (Won)'
-                    : lead.stage === PipelineStage.CLOSED_LOST
-                      ? ' (Lost)'
-                      : ''}
-                </p>
+                  )}${
+                    lead.stage === PipelineStage.CLOSED_WON
+                      ? ' (Won)'
+                      : lead.stage === PipelineStage.CLOSED_LOST
+                        ? ' (Lost)'
+                        : ''
+                  }`}
+                />
+              )}
+              {lead.lostReason && (
+                <InfoRow label="Lost reason" value={lead.lostReason} />
+              )}
+              {lead.clientId && (
+                <InfoRow
+                  label="Linked client"
+                  value={
+                    lead.client
+                      ? (lead.client.companyName ?? lead.client.contactName)
+                      : lead.clientId
+                  }
+                />
               )}
             </div>
+            {lead.notes && (
+              <div className="mt-4 rounded-md border border-cdy-navy-border bg-cdy-navy p-3">
+                <p className="text-xs uppercase text-cdy-dim">Notes</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-cdy-white">
+                  {lead.notes}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
@@ -634,6 +684,21 @@ export default function LeadDetailPage(): JSX.Element {
         lead={editOpen ? lead : null}
         onClose={() => setEditOpen(false)}
       />
+    </div>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}): JSX.Element {
+  return (
+    <div>
+      <p className="text-xs text-cdy-dim">{label}</p>
+      <p className="text-cdy-white">{value}</p>
     </div>
   );
 }

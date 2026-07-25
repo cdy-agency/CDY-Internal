@@ -196,6 +196,7 @@ export class LeadsService {
     return {
       deletedAt: null,
       ...agentFilter,
+      ...(filters.createdBy && { createdBy: filters.createdBy }),
       ...(filters.stage && { stage: filters.stage }),
       ...(filters.source && { source: filters.source }),
       ...(filters.serviceInterest && { serviceInterest: filters.serviceInterest }),
@@ -225,9 +226,21 @@ export class LeadsService {
     };
   }
 
+  private async resolveUserNames(
+    userIds: Array<string | null | undefined>,
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return new Map();
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    return new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
+  }
+
   async findAll(filters: LeadFiltersDto, userId: string) {
     const canViewAll = await this.canViewAllCrm(userId);
-    return this.prisma.lead.findMany({
+    const leads = await this.prisma.lead.findMany({
       where: this.buildWhereClause(filters, userId, canViewAll),
       include: {
         activities: {
@@ -243,6 +256,19 @@ export class LeadsService {
       },
       orderBy: [{ updatedAt: 'desc' }],
     });
+
+    const nameMap = await this.resolveUserNames(
+      leads.flatMap((l) => [l.assignedTo, l.createdBy]),
+    );
+
+    return leads.map((lead) => ({
+      ...lead,
+      assignedToName: lead.assignedTo
+        ? nameMap.get(lead.assignedTo) ?? null
+        : null,
+      createdByName: nameMap.get(lead.createdBy) ?? null,
+      ventureName: lead.venture?.name ?? null,
+    }));
   }
 
   async findOne(id: string, userId: string) {
@@ -270,17 +296,12 @@ export class LeadsService {
       orderBy: { movedAt: 'desc' },
     });
 
-    const moverIds = [...new Set(stageHistory.map((h) => h.movedBy))];
-    const movers =
-      moverIds.length > 0
-        ? await this.prisma.user.findMany({
-            where: { id: { in: moverIds } },
-            select: { id: true, firstName: true, lastName: true },
-          })
-        : [];
-    const moverMap = new Map(
-      movers.map((m) => [m.id, `${m.firstName} ${m.lastName}`]),
-    );
+    const nameMap = await this.resolveUserNames([
+      lead.assignedTo,
+      lead.createdBy,
+      ...stageHistory.map((h) => h.movedBy),
+      ...lead.activities.map((a) => a.performedBy),
+    ]);
 
     const latestWithFollowUp = lead.activities.find(
       (a) => a.nextActionDate && a.nextAction,
@@ -304,9 +325,18 @@ export class LeadsService {
 
     return {
       ...lead,
+      assignedToName: lead.assignedTo
+        ? nameMap.get(lead.assignedTo) ?? null
+        : null,
+      createdByName: nameMap.get(lead.createdBy) ?? null,
+      ventureName: lead.venture?.name ?? null,
+      activities: lead.activities.map((a) => ({
+        ...a,
+        performedByName: nameMap.get(a.performedBy) ?? 'Unknown',
+      })),
       stageHistory: stageHistory.map((h) => ({
         ...h,
-        movedByName: moverMap.get(h.movedBy) ?? 'Unknown',
+        movedByName: nameMap.get(h.movedBy) ?? 'Unknown',
       })),
       overdueFollowUp,
     };

@@ -1306,11 +1306,13 @@ export interface LeadRecord {
   stage: PipelineStage;
   qualityScore: number | null;
   assignedTo: string | null;
+  assignedToName?: string | null;
   clientId: string | null;
   notes: string | null;
   lostReason: string | null;
   convertedAt: string | null;
   createdBy: string;
+  createdByName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1325,6 +1327,7 @@ export interface LeadActivityRecord {
   nextActionDate: string | null;
   duration: number | null;
   performedBy: string;
+  performedByName?: string | null;
   performedAt: string;
   createdAt: string;
 }
@@ -1370,9 +1373,11 @@ export interface ClientRecord {
   industry: string | null;
   notes: string | null;
   assignedTo: string | null;
+  assignedToName?: string | null;
   source: ClientSource;
   leadId: string | null;
   createdBy: string;
+  createdByName?: string | null;
   createdAt: string;
   updatedAt: string;
   // Service tracking

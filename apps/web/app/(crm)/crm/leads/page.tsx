@@ -79,6 +79,7 @@ export default function LeadsListPage(): JSX.Element {
       stage: saved.stage as PipelineStage | undefined,
       search: saved.search as string | undefined,
       assignedTo: saved.assignedTo as string | undefined,
+      createdBy: saved.createdBy as string | undefined,
       source: saved.source as LeadSource | undefined,
       serviceInterest: saved.serviceInterest as string | undefined,
       minScore: saved.minScore as number | undefined,
@@ -217,7 +218,7 @@ export default function LeadsListPage(): JSX.Element {
             </select>
           </div>
           <div>
-            <label className="text-xs text-cdy-muted">Assigned agent</label>
+            <label className="text-xs text-cdy-muted">Assigned to</label>
             <select
               className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
               value={filters.assignedTo ?? ''}
@@ -226,6 +227,23 @@ export default function LeadsListPage(): JSX.Element {
               }
             >
               <option value="">All agents</option>
+              {agents?.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.firstName} {a.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Created by</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.createdBy ?? ''}
+              onChange={(e) =>
+                setFilters({ ...filters, createdBy: e.target.value || undefined })
+              }
+            >
+              <option value="">Anyone</option>
               {agents?.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.firstName} {a.lastName}
@@ -364,6 +382,8 @@ export default function LeadsListPage(): JSX.Element {
               <th className="px-4 py-3">Stage</th>
               <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3 text-right">Value</th>
+              <th className="px-4 py-3">Assigned</th>
+              <th className="px-4 py-3">Created by</th>
               <th className="px-4 py-3">Created</th>
               <th className="px-4 py-3">Closed</th>
             </tr>
@@ -413,6 +433,12 @@ export default function LeadsListPage(): JSX.Element {
                     {lead.estimatedValue != null
                       ? formatCurrency(Number(lead.estimatedValue), lead.currency)
                       : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {lead.assignedToName ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {lead.createdByName ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
                     {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}
