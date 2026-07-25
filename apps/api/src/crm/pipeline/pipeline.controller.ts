@@ -6,6 +6,7 @@ import {
   JwtPayload,
 } from '../../auth/decorators/current-user.decorator';
 import { PipelineService } from './pipeline.service';
+import { LeadFiltersDto } from '../leads/dto/lead-filters.dto';
 import { ConversionFiltersDto } from './dto/conversion-filters.dto';
 
 @ApiTags('crm-pipeline')
@@ -17,8 +18,11 @@ export class PipelineController {
   @Get()
   @RequirePermission('crm.pipeline', 'read')
   @ApiOperation({ summary: 'Get kanban pipeline board data' })
-  async getBoard(@CurrentUser() user: JwtPayload) {
-    const data = await this.pipelineService.getBoard(user.sub);
+  async getBoard(
+    @CurrentUser() user: JwtPayload,
+    @Query() filters: LeadFiltersDto,
+  ) {
+    const data = await this.pipelineService.getBoard(user.sub, filters);
     return { data, message: 'Pipeline retrieved', statusCode: HttpStatus.OK };
   }
 

@@ -41,11 +41,15 @@ export function useCrmSummary() {
   });
 }
 
-export function usePipelineBoard() {
+export function usePipelineBoard(filters: LeadFilters = {}) {
   return useQuery({
-    queryKey: ['crm', 'pipeline'],
+    queryKey: ['crm', 'pipeline', filters],
     queryFn: async (): Promise<PipelineColumn[]> => {
-      const res = await api.get<ApiResponse<PipelineColumn[]>>('/crm/pipeline');
+      const params = leadFiltersToParams(filters);
+      const qs = params.toString();
+      const res = await api.get<ApiResponse<PipelineColumn[]>>(
+        `/crm/pipeline${qs ? `?${qs}` : ''}`,
+      );
       return res.data.data;
     },
   });

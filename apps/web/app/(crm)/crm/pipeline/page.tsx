@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   DndContext,
@@ -15,17 +14,26 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { PipelineStage } from '@cdy/shared';
+import { LeadSource, PipelineStage } from '@cdy/shared';
 import type { LeadRecord } from '@cdy/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/PermissionGate';
-import { usePipelineBoard, useMoveLeadStage } from '@/hooks/useCrm';
+import {
+  usePipelineBoard,
+  useMoveLeadStage,
+  useSalesAgents,
+  type LeadFilters,
+} from '@/hooks/useCrm';
 import { AddLeadDrawer } from '@/components/crm/leads/AddLeadDrawer';
 import { EditLeadDrawer } from '@/components/crm/leads/EditLeadDrawer';
 import { LeadCard } from '@/components/crm/pipeline/LeadCard';
 import { CloseDealModal } from '@/components/crm/pipeline/CloseDealModal';
 import { formatCurrency } from '@/lib/utils';
+import { SERVICE_TYPE_OPTIONS } from '@/lib/reportDates';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
+const EMPTY_FILTERS: LeadFilters = {};
 
 const STAGE_LABELS: Record<PipelineStage, string> = {
   [PipelineStage.NEW]: 'New',
@@ -84,18 +92,30 @@ function DraggableLead({
 }
 
 export default function PipelinePage(): JSX.Element {
-  const { data: columns, isLoading } = usePipelineBoard();
+  const [filters, setFilters] = useState<LeadFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<LeadFilters>(EMPTY_FILTERS);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const { data: columns, isLoading } = usePipelineBoard(appliedFilters);
+  const { data: agents } = useSalesAgents();
   const moveStage = useMoveLeadStage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [closeLeadId, setCloseLeadId] = useState<string | null>(null);
   const [closeModalOpen, setCloseModalOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
-  const [search, setSearch] = useState('');
   const [editLead, setEditLead] = useState<LeadRecord | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
+
+  function applyFilters(): void {
+    setAppliedFilters({ ...filters });
+  }
+
+  function resetFilters(): void {
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+  }
 
   function handleDragStart(event: DragStartEvent): void {
     const lead = columns
@@ -127,21 +147,6 @@ export default function PipelinePage(): JSX.Element {
       .catch(() => undefined);
   }
 
-  const filteredColumns = columns?.map((col) => ({
-    ...col,
-    leads: col.leads
-      .filter((lead) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return (
-          (lead.companyName ?? '').toLowerCase().includes(q) ||
-          lead.contactName.toLowerCase().includes(q) ||
-          lead.email.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => (b.qualityScore ?? 0) - (a.qualityScore ?? 0)),
-  }));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -156,18 +161,284 @@ export default function PipelinePage(): JSX.Element {
         </PermissionGate>
       </div>
 
-      <Input
-        placeholder="Search leads..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-xs"
-      />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[220px] flex-1">
+          <label className="text-xs text-cdy-muted">Search</label>
+          <Input
+            placeholder="Company, contact, or email..."
+            value={filters.search ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, search: e.target.value || undefined })
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') applyFilters();
+            }}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created from</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={filters.dateFrom ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, dateFrom: e.target.value || undefined })
+            }
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created to</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={filters.dateTo ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, dateTo: e.target.value || undefined })
+            }
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Sort by</label>
+          <select
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            value={filters.sortBy ?? 'updatedAt'}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                sortBy: (e.target.value as LeadFilters['sortBy']) || 'updatedAt',
+              })
+            }
+          >
+            <option value="updatedAt">Last updated</option>
+            <option value="createdAt">Date created</option>
+            <option value="estimatedValue">Value</option>
+            <option value="companyName">Name</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Order</label>
+          <select
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            value={filters.sortOrder ?? 'desc'}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                sortOrder: (e.target.value as 'asc' | 'desc') || 'desc',
+              })
+            }
+          >
+            <option value="desc">Newest first</option>
+            <option value="asc">Oldest first</option>
+          </select>
+        </div>
+        <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={applyFilters}>
+          Search
+        </Button>
+      </div>
+
+      <button
+        type="button"
+        className="flex items-center gap-2 text-sm text-cdy-muted hover:text-cdy-white"
+        onClick={() => setAdvancedOpen(!advancedOpen)}
+      >
+        {advancedOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        Advanced filters
+      </button>
+
+      {advancedOpen && (
+        <div className="grid gap-4 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="text-xs text-cdy-muted">Source</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.source ?? ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  source: (e.target.value as LeadSource) || undefined,
+                })
+              }
+            >
+              <option value="">All</option>
+              {Object.values(LeadSource).map((s) => (
+                <option key={s} value={s}>
+                  {s.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Assigned to</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.assignedTo ?? ''}
+              onChange={(e) =>
+                setFilters({ ...filters, assignedTo: e.target.value || undefined })
+              }
+            >
+              <option value="">All agents</option>
+              {agents?.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.firstName} {a.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Created by</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.createdBy ?? ''}
+              onChange={(e) =>
+                setFilters({ ...filters, createdBy: e.target.value || undefined })
+              }
+            >
+              <option value="">Anyone</option>
+              {agents?.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.firstName} {a.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Service type</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.serviceInterest ?? ''}
+              onChange={(e) =>
+                setFilters({ ...filters, serviceInterest: e.target.value || undefined })
+              }
+            >
+              <option value="">All</option>
+              {SERVICE_TYPE_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Lead kind</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.leadKind ?? ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  leadKind: (e.target.value as 'venture' | 'service') || undefined,
+                })
+              }
+            >
+              <option value="">All</option>
+              <option value="venture">Venture</option>
+              <option value="service">Service (not venture)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Contact type</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.leadType ?? ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  leadType:
+                    (e.target.value as 'COMPANY' | 'INDIVIDUAL') || undefined,
+                })
+              }
+            >
+              <option value="">All</option>
+              <option value="COMPANY">Company</option>
+              <option value="INDIVIDUAL">Person (not company)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Score range</label>
+            <div className="mt-1 flex gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={filters.minScore ?? ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    minScore: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+              />
+              <Input
+                type="number"
+                placeholder="Max"
+                value={filters.maxScore ?? ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    maxScore: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Value range</label>
+            <div className="mt-1 flex gap-2">
+              <Input
+                type="number"
+                placeholder="From"
+                value={filters.minValue ?? ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    minValue: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+              />
+              <Input
+                type="number"
+                placeholder="To"
+                value={filters.maxValue ?? ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    maxValue: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div className="flex items-end">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-cdy-muted">
+              <input
+                type="checkbox"
+                checked={Boolean(filters.hasOverdueFollowUp)}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    hasOverdueFollowUp: e.target.checked || undefined,
+                  })
+                }
+              />
+              Only show leads with overdue follow-ups
+            </label>
+          </div>
+          <div className="flex flex-wrap items-end gap-2 md:col-span-2 lg:col-span-3">
+            <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={applyFilters}>
+              Apply filters
+            </Button>
+            <Button variant="outline" onClick={resetFilters}>
+              Reset
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isLoading && <p className="text-cdy-muted">Loading pipeline...</p>}
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {filteredColumns?.map((column) => (
+          {columns?.map((column) => (
             <DroppableColumn
               key={column.stage}
               id={column.stage}

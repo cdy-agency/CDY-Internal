@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../../cache/cache.service';
 import { CacheKeys } from '../../common/cache-keys';
 import { LeadsService } from '../leads/leads.service';
+import { LeadFiltersDto } from '../leads/dto/lead-filters.dto';
 import { ConversionFiltersDto } from './dto/conversion-filters.dto';
 
 const CONVERSION_CACHE_PREFIX = 'crm:conversion:';
@@ -47,8 +48,8 @@ export class PipelineService {
     private readonly cache: CacheService,
   ) {}
 
-  getBoard(userId: string) {
-    return this.leadsService.getPipelineBoard(userId);
+  getBoard(userId: string, filters: LeadFiltersDto = {}) {
+    return this.leadsService.getPipelineBoard(userId, filters);
   }
 
   async getConversionReport(

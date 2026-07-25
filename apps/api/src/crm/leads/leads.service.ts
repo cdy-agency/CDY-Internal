@@ -427,15 +427,16 @@ export class LeadsService {
     return lead;
   }
 
-  async getPipelineBoard(userId: string) {
+  async getPipelineBoard(userId: string, filters: LeadFiltersDto = {}) {
     const canViewAll = await this.canViewAllCrm(userId);
-    const agentFilter = !canViewAll ? { assignedTo: userId } : {};
+    // Pipeline always shows open stages only — ignore stage filter from UI.
+    const { stage: _ignoredStage, ...rest } = filters;
+    const where = this.buildWhereClause(rest, userId, canViewAll);
 
     const leads = await this.prisma.lead.findMany({
       where: {
-        deletedAt: null,
+        ...where,
         stage: { notIn: CLOSED_STAGES },
-        ...agentFilter,
       },
       include: {
         activities: {
@@ -443,7 +444,7 @@ export class LeadsService {
           take: 1,
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: this.resolveLeadOrderBy(filters),
     });
 
     return ACTIVE_PIPELINE_STAGES.map((stage) => {
