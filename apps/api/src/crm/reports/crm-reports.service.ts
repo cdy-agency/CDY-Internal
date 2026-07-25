@@ -7,15 +7,12 @@ import {
 } from '@prisma/client';
 import { format, startOfMonth } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RbacService } from '../../rbac/rbac.service';
+import { findCrmAssignableUsers } from '../common/crm-assignees.util';
 import { SalesReportFiltersDto } from './dto/sales-report-filters.dto';
 
 @Injectable()
 export class CrmReportsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly rbac: RbacService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getSalesPerformanceReport(filters: SalesReportFiltersDto) {
     const from = filters.from
@@ -24,20 +21,7 @@ export class CrmReportsService {
     const to = filters.to ? new Date(filters.to) : new Date();
     const monthKey = format(from, 'yyyy-MM');
 
-    // Feature-based: report on every user who can own commissions, so custom
-    // "sales agent"-style roles are included rather than only the seeded key.
-    const agentIds = await this.rbac.findUserIdsWithFeature(
-      'finance.commissions.own',
-      'read',
-    );
-    const agents = await this.prisma.user.findMany({
-      where: {
-        id: { in: agentIds },
-        isActive: true,
-        deletedAt: null,
-      },
-      include: { role: true },
-    });
+    const agents = await findCrmAssignableUsers(this.prisma);
 
     const agentStats = await Promise.all(
       agents.map(async (agent) => {
@@ -60,6 +44,14 @@ export class CrmReportsService {
             assignedTo: agent.id,
             stage: PipelineStage.CLOSED_LOST,
             updatedAt: { gte: from, lte: to },
+          },
+        });
+
+        const leadsCreated = await this.prisma.lead.count({
+          where: {
+            createdBy: agent.id,
+            createdAt: { gte: from, lte: to },
+            deletedAt: null,
           },
         });
 
@@ -116,6 +108,7 @@ export class CrmReportsService {
           agentName: `${agent.firstName} ${agent.lastName}`,
           email: agent.email,
           performance: {
+            leadsCreated,
             dealsWon: closedWon.length,
             dealsLost: closedLost,
             totalRevenue,

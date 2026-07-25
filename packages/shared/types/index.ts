@@ -1472,6 +1472,7 @@ export interface AgentDashboard {
   performance: {
     revenueWon: number;
     dealsWon: number;
+    leadsCreated: number;
     revenueProgress: number | null;
     dealsProgress: number | null;
   };
@@ -1481,6 +1482,13 @@ export interface AgentDashboard {
     estimatedValue: number | null;
     convertedAt: string | null;
     serviceInterest: string;
+  }>;
+  createdLeads: Array<{
+    id: string;
+    companyName: string;
+    stage: string;
+    estimatedValue: number | null;
+    createdAt: string;
   }>;
   pipeline: {
     openLeads: number;
@@ -1526,7 +1534,7 @@ export interface SalesTargetRecord {
 
 export interface MonthlyTargetPerformance extends SalesTargetRecord {
   agentName: string;
-  actual: { dealsWon: number; revenueWon: number };
+  actual: { dealsWon: number; revenueWon: number; leadsCreated: number };
   revenueProgress: number;
   dealsProgress: number;
   commissionTotal: number;
@@ -1626,6 +1634,7 @@ export interface SalesPerformanceReport {
     agentName: string;
     email: string;
     performance: {
+      leadsCreated: number;
       dealsWon: number;
       dealsLost: number;
       totalRevenue: number;

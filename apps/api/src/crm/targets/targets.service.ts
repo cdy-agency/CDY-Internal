@@ -7,6 +7,7 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
+import { findCrmAssignableUsers } from '../common/crm-assignees.util';
 import { SetTargetDto } from './dto/set-target.dto';
 import { UpdateTargetDto } from './dto/update-target.dto';
 
@@ -94,6 +95,11 @@ export class TargetsService {
     const monthStart = startOfMonth(parseMonth(month));
     const monthEnd = endOfMonth(monthStart);
 
+    const agents = await findCrmAssignableUsers(this.prisma);
+    const agentNameMap = new Map(
+      agents.map((a) => [a.id, `${a.firstName} ${a.lastName}`]),
+    );
+
     const performance = await this.prisma.lead.groupBy({
       by: ['assignedTo'],
       where: {
@@ -117,23 +123,16 @@ export class TargetsService {
         ]),
     );
 
-    const agentIds = [
-      ...new Set([
-        ...targets.map((t) => t.agentId),
-        ...Object.keys(perfByAgent),
-      ]),
-    ];
-
-    const agents =
-      agentIds.length > 0
-        ? await this.prisma.user.findMany({
-            where: { id: { in: agentIds } },
-            select: { id: true, firstName: true, lastName: true },
-          })
-        : [];
-
-    const agentNameMap = new Map(
-      agents.map((a) => [a.id, `${a.firstName} ${a.lastName}`]),
+    const createdByAgent = await this.prisma.lead.groupBy({
+      by: ['createdBy'],
+      where: {
+        createdAt: { gte: monthStart, lte: monthEnd },
+        deletedAt: null,
+      },
+      _count: { id: true },
+    });
+    const leadsCreatedByAgent = Object.fromEntries(
+      createdByAgent.map((row) => [row.createdBy, row._count.id]),
     );
 
     const commissions = await this.prisma.commissionRecord.findMany({
@@ -154,12 +153,8 @@ export class TargetsService {
       );
     }
 
-    const targetAgentIds = new Set(targets.map((t) => t.agentId));
-    const allAgentIds = [
-      ...new Set([...targetAgentIds, ...Object.keys(perfByAgent)]),
-    ];
-
-    return allAgentIds.map((agentId) => {
+    return agents.map((agent) => {
+      const agentId = agent.id;
       const target = targets.find((t) => t.agentId === agentId) ?? null;
       const actual = perfByAgent[agentId] ?? { dealsWon: 0, revenueWon: 0 };
       const revenueTarget = target ? Number(target.revenueTarget) : 0;
@@ -178,7 +173,10 @@ export class TargetsService {
           updatedAt: null,
         }),
         agentName: agentNameMap.get(agentId) ?? 'Unknown',
-        actual,
+        actual: {
+          ...actual,
+          leadsCreated: leadsCreatedByAgent[agentId] ?? 0,
+        },
         revenueProgress:
           revenueTarget > 0
             ? Math.round((actual.revenueWon / revenueTarget) * 100)
@@ -227,6 +225,32 @@ export class TargetsService {
         },
         deletedAt: null,
       },
+    });
+
+    const leadsCreated = await this.prisma.lead.count({
+      where: {
+        createdBy: agentId,
+        createdAt: { gte: monthStart, lte: monthEnd },
+        deletedAt: null,
+      },
+    });
+
+    const createdLeads = await this.prisma.lead.findMany({
+      where: {
+        createdBy: agentId,
+        createdAt: { gte: monthStart, lte: monthEnd },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        companyName: true,
+        contactName: true,
+        stage: true,
+        estimatedValue: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
     });
 
     const pipelineValue = await this.prisma.lead.aggregate({
@@ -331,6 +355,7 @@ export class TargetsService {
       performance: {
         revenueWon,
         dealsWon: closedDeals.length,
+        leadsCreated,
         revenueProgress: target
           ? Math.round(
               (revenueWon / Number(target.revenueTarget)) * 100,
@@ -341,6 +366,15 @@ export class TargetsService {
           : null,
       },
       closedDeals,
+      createdLeads: createdLeads.map((lead) => ({
+        id: lead.id,
+        companyName: lead.companyName ?? lead.contactName,
+        stage: lead.stage,
+        estimatedValue: lead.estimatedValue
+          ? Number(lead.estimatedValue)
+          : null,
+        createdAt: lead.createdAt.toISOString(),
+      })),
       pipeline: {
         openLeads,
         pipelineValue: Number(pipelineValue._sum.estimatedValue ?? 0),

@@ -30,6 +30,10 @@ import { CrmSettingsService } from '../settings/crm-settings.service';
 import { ClientServiceService } from '../clients/client-service.service';
 import { getClientDisplayName } from '../clients/client.utils';
 import { CrmActor } from '../common/crm-actor.interface';
+import {
+  CRM_EXCLUDED_ASSIGNEE_ROLES,
+  findCrmAssignableUsers,
+} from '../common/crm-assignees.util';
 import { buildCsvRow } from '../common/csv.util';
 import { format } from 'date-fns';
 import { CacheKeys } from '../../common/cache-keys';
@@ -564,36 +568,17 @@ export class LeadsService {
   }
 
   async findSalesAgents() {
-    // Assignable owners: every active user except IT administrators.
-    return this.prisma.user.findMany({
-      where: {
-        isActive: true,
-        deletedAt: null,
-        role: { key: { not: 'IT_ADMINISTRATOR' } },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-      },
-      orderBy: { firstName: 'asc' },
-    });
+    return findCrmAssignableUsers(this.prisma);
   }
 
   private async assertAssignableUser(userId: string): Promise<void> {
     const user = await this.prisma.user.findFirst({
-      where: {
-        id: userId,
-        isActive: true,
-        deletedAt: null,
-        role: { key: { not: 'IT_ADMINISTRATOR' } },
-      },
-      select: { id: true },
+      where: { id: userId, deletedAt: null },
+      select: { id: true, role: { select: { key: true } } },
     });
-    if (!user) {
+    if (!user || CRM_EXCLUDED_ASSIGNEE_ROLES.has(user.role.key)) {
       throw new BadRequestException(
-        'Lead can only be assigned to an active non-IT user',
+        'Lead can only be assigned to a non-IT user',
       );
     }
   }

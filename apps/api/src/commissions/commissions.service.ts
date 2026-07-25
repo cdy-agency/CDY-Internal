@@ -22,7 +22,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditContext } from '../common/audit/audit.context';
 import { NotificationType } from '@prisma/client';
-import { RbacService } from '../rbac/rbac.service';
+import { findCrmAssignableUsers } from '../crm/common/crm-assignees.util';
 
 @Injectable()
 export class CommissionsService {
@@ -32,31 +32,10 @@ export class CommissionsService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly auditService: AuditService,
-    private readonly rbac: RbacService,
   ) {}
 
   async findSalesAgents() {
-    // "Sales agents" = users who can own commission records (capability-based,
-    // so custom roles with the same feature are included, not just the key).
-    const agentIds = await this.rbac.findUserIdsWithFeature(
-      'finance.commissions.own',
-      'read',
-    );
-    const agents = await this.prisma.user.findMany({
-      where: {
-        id: { in: agentIds },
-        isActive: true,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-      },
-      orderBy: { firstName: 'asc' },
-    });
-    return agents;
+    return findCrmAssignableUsers(this.prisma);
   }
 
   async createRule(dto: CreateCommissionRuleDto, createdBy: string) {

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useAgentDashboard } from '@/hooks/useCrm';
 import { formatCurrency } from '@/lib/utils';
 import { MetricCard } from '@/components/finance/MetricCard';
-import { Trophy, TrendingUp, Kanban, AlertTriangle, DollarSign } from 'lucide-react';
+import { Trophy, TrendingUp, Kanban, AlertTriangle, DollarSign, UserPlus } from 'lucide-react';
 
 function progressBarColor(pct: number): string {
   if (pct >= 80) return 'bg-emerald-500';
@@ -53,6 +53,15 @@ export function AgentDashboardView({ month }: AgentDashboardViewProps): JSX.Elem
           }
           icon={Trophy}
           iconColor="bg-emerald-500/10 text-[var(--cdy-success)]"
+          isLoading={isLoading}
+        />
+        <MetricCard
+          label="Leads Created"
+          value={String(data?.performance.leadsCreated ?? 0)}
+          delta={0}
+          deltaLabel="this month"
+          icon={UserPlus}
+          iconColor="bg-blue-500/10 text-[var(--cdy-info)]"
           isLoading={isLoading}
         />
         <MetricCard
@@ -109,6 +118,47 @@ export function AgentDashboardView({ month }: AgentDashboardViewProps): JSX.Elem
               className={`h-full transition-all ${progressBarColor(revenueProgress)}`}
               style={{ width: `${Math.min(revenueProgress, 100)}%` }}
             />
+          </div>
+        </div>
+      )}
+
+      {data && (data.createdLeads?.length ?? 0) > 0 && (
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <h2 className="mb-4 font-medium text-cdy-white">Leads created this month</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                  <th className="px-2 py-2">Lead</th>
+                  <th className="px-2 py-2">Stage</th>
+                  <th className="px-2 py-2">Value</th>
+                  <th className="px-2 py-2">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.createdLeads.map((lead) => (
+                  <tr key={lead.id} className="border-b border-cdy-navy-border/50">
+                    <td className="px-2 py-2">
+                      <Link
+                        href={`/crm/leads/${lead.id}`}
+                        className="text-cdy-white hover:text-cdy-red"
+                      >
+                        {lead.companyName}
+                      </Link>
+                    </td>
+                    <td className="px-2 py-2 text-cdy-muted">
+                      {lead.stage.replace(/_/g, ' ')}
+                    </td>
+                    <td className="px-2 py-2 text-cdy-white">
+                      {formatCurrency(Number(lead.estimatedValue ?? 0))}
+                    </td>
+                    <td className="px-2 py-2 text-cdy-muted">
+                      {format(new Date(lead.createdAt), 'MMM d, yyyy')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

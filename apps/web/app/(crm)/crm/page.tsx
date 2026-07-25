@@ -350,6 +350,9 @@ function TeamView({
                       <span className="font-medium text-cdy-white">
                         {row.agentName}
                       </span>
+                      <span className="text-xs text-cdy-dim">
+                        {row.actual.leadsCreated ?? 0} leads
+                      </span>
                     </span>
                     <span className="font-mono text-cdy-muted">
                       {formatCurrency(row.actual.revenueWon)}

@@ -153,13 +153,14 @@ export default function CommissionRulesPage(): JSX.Element {
   } | null>(null);
 
   const { data: agents } = useQuery({
-    queryKey: ['commissions', 'agents'],
+    queryKey: ['commissions', 'assignees'],
     queryFn: async () => {
       const res = await api.get<
         ApiResponse<{ id: string; firstName: string; lastName: string }[]>
       >('/commissions/agents');
       return res.data.data;
     },
+    staleTime: 0,
   });
 
   async function deactivate(): Promise<void> {

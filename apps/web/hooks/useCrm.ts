@@ -126,13 +126,15 @@ export function useLead(id: string) {
 
 export function useSalesAgents() {
   return useQuery({
-    queryKey: ['crm', 'agents'],
+    // Bump key so clients refetch after assignee list expanded beyond commission agents
+    queryKey: ['crm', 'assignees'],
     queryFn: async () => {
       const res = await api.get<
         ApiResponse<Array<{ id: string; firstName: string; lastName: string; email: string }>>
       >('/crm/leads/agents');
       return res.data.data;
     },
+    staleTime: 0,
   });
 }
 

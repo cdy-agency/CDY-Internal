@@ -154,6 +154,12 @@ export default function SalesPerformancePage(): JSX.Element {
                       progress={dealsPct}
                     />
                     <div>
+                      <p className="text-xs text-cdy-muted">Leads Created</p>
+                      <p className="text-lg font-semibold text-cdy-white">
+                        {agent.performance.leadsCreated ?? 0}
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-xs text-cdy-muted">Conversion Rate</p>
                       <p className="text-lg font-semibold text-cdy-white">
                         {agent.performance.conversionRate}%

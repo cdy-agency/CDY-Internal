@@ -165,6 +165,7 @@ export function TeamDashboardView({
               <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                 <th className="px-2 py-2">Rank</th>
                 <th className="px-2 py-2">Agent</th>
+                <th className="px-2 py-2">Leads Created</th>
                 <th className="px-2 py-2">Deals Won</th>
                 <th className="px-2 py-2">Revenue</th>
                 <th className="px-2 py-2">vs Target</th>
@@ -176,6 +177,9 @@ export function TeamDashboardView({
                 <tr key={row.agentId} className="border-b border-cdy-navy-border/50">
                   <td className="px-2 py-2 text-cdy-muted">{idx + 1}</td>
                   <td className="px-2 py-2 text-cdy-white">{row.agentName}</td>
+                  <td className="px-2 py-2 text-cdy-white">
+                    {row.actual.leadsCreated ?? 0}
+                  </td>
                   <td className="px-2 py-2 text-cdy-white">{row.actual.dealsWon}</td>
                   <td className="px-2 py-2 text-cdy-white">
                     {formatCurrency(row.actual.revenueWon)}
