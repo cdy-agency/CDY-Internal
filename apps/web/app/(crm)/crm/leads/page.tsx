@@ -82,6 +82,8 @@ export default function LeadsListPage(): JSX.Element {
       createdBy: saved.createdBy as string | undefined,
       source: saved.source as LeadSource | undefined,
       serviceInterest: saved.serviceInterest as string | undefined,
+      leadType: saved.leadType as LeadFilters['leadType'],
+      leadKind: saved.leadKind as LeadFilters['leadKind'],
       minScore: saved.minScore as number | undefined,
       maxScore: saved.maxScore as number | undefined,
       minValue: saved.minValue as number | undefined,
@@ -89,6 +91,8 @@ export default function LeadsListPage(): JSX.Element {
       dateFrom: saved.dateFrom as string | undefined,
       dateTo: saved.dateTo as string | undefined,
       hasOverdueFollowUp: saved.hasOverdueFollowUp as boolean | undefined,
+      sortBy: saved.sortBy as LeadFilters['sortBy'],
+      sortOrder: saved.sortOrder as LeadFilters['sortOrder'],
     };
     setFilters(next);
     setAppliedFilters(next);
@@ -159,12 +163,82 @@ export default function LeadsListPage(): JSX.Element {
         </div>
       )}
 
-      <Input
-        placeholder="Search leads..."
-        value={filters.search ?? ''}
-        onChange={(e) => setFilters({ ...filters, search: e.target.value || undefined })}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[220px] flex-1">
+          <label className="text-xs text-cdy-muted">Search</label>
+          <Input
+            placeholder="Company, contact, or email..."
+            value={filters.search ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, search: e.target.value || undefined })
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') applyFilters();
+            }}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created from</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={filters.dateFrom ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, dateFrom: e.target.value || undefined })
+            }
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created to</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={filters.dateTo ?? ''}
+            onChange={(e) =>
+              setFilters({ ...filters, dateTo: e.target.value || undefined })
+            }
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Sort by</label>
+          <select
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            value={filters.sortBy ?? 'updatedAt'}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                sortBy: (e.target.value as LeadFilters['sortBy']) || 'updatedAt',
+              })
+            }
+          >
+            <option value="updatedAt">Last updated</option>
+            <option value="createdAt">Date created</option>
+            <option value="convertedAt">Date closed</option>
+            <option value="estimatedValue">Value</option>
+            <option value="companyName">Name</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Order</label>
+          <select
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+            value={filters.sortOrder ?? 'desc'}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                sortOrder: (e.target.value as 'asc' | 'desc') || 'desc',
+              })
+            }
+          >
+            <option value="desc">Newest first</option>
+            <option value="asc">Oldest first</option>
+          </select>
+        </div>
+        <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={applyFilters}>
+          Search
+        </Button>
+      </div>
 
       <button
         type="button"
@@ -266,6 +340,41 @@ export default function LeadsListPage(): JSX.Element {
                   {o.label}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Lead kind</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.leadKind ?? ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  leadKind: (e.target.value as 'venture' | 'service') || undefined,
+                })
+              }
+            >
+              <option value="">All</option>
+              <option value="venture">Venture</option>
+              <option value="service">Service (not venture)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-cdy-muted">Contact type</label>
+            <select
+              className="mt-1 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+              value={filters.leadType ?? ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  leadType:
+                    (e.target.value as 'COMPANY' | 'INDIVIDUAL') || undefined,
+                })
+              }
+            >
+              <option value="">All</option>
+              <option value="COMPANY">Company</option>
+              <option value="INDIVIDUAL">Person (not company)</option>
             </select>
           </div>
           <div>

@@ -38,6 +38,14 @@ export default function ClientsListPage(): JSX.Element {
   const [ventureFilter, setVentureFilter] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [createdBy, setCreatedBy] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'updatedAt' | 'companyName'>(
+    'createdAt',
+  );
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [clientType, setClientType] = useState<'COMPANY' | 'INDIVIDUAL' | ''>('');
+  const [clientKind, setClientKind] = useState<'venture' | 'service' | ''>('');
   const [exporting, setExporting] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [editClient, setEditClient] = useState<ClientRecord | null>(null);
@@ -50,6 +58,12 @@ export default function ClientsListPage(): JSX.Element {
     ventureId: ventureFilter || undefined,
     assignedTo: assignedTo || undefined,
     createdBy: createdBy || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    sortBy,
+    sortOrder,
+    clientType: clientType || undefined,
+    clientKind: clientKind || undefined,
   });
   const { data: agents } = useSalesAgents();
   const { data: ventures = [] } = useVentureLookup();
@@ -93,17 +107,85 @@ export default function ClientsListPage(): JSX.Element {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by company, contact, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[220px] flex-1">
+          <label className="text-xs text-cdy-muted">Search</label>
+          <Input
+            placeholder="Company, contact, or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created from</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Created to</label>
+          <Input
+            type="date"
+            className="mt-1"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Sort by</label>
+          <select
+            value={sortBy}
+            onChange={(e) =>
+              setSortBy(e.target.value as 'createdAt' | 'updatedAt' | 'companyName')
+            }
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+          >
+            <option value="createdAt">Date created</option>
+            <option value="updatedAt">Last updated</option>
+            <option value="companyName">Name</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-cdy-muted">Order</label>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            className="mt-1 h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+          >
+            <option value="desc">Newest first</option>
+            <option value="asc">Oldest first</option>
+          </select>
+        </div>
+        <select
+          value={clientKind}
+          onChange={(e) =>
+            setClientKind(e.target.value as 'venture' | 'service' | '')
+          }
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+        >
+          <option value="">Kind — all</option>
+          <option value="venture">Venture</option>
+          <option value="service">Service (not venture)</option>
+        </select>
+        <select
+          value={clientType}
+          onChange={(e) =>
+            setClientType(e.target.value as 'COMPANY' | 'INDIVIDUAL' | '')
+          }
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+        >
+          <option value="">Type — all</option>
+          <option value="COMPANY">Company</option>
+          <option value="INDIVIDUAL">Person (not company)</option>
+        </select>
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value as ClientSource | '')}
-          className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
         >
           {SOURCE_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>
@@ -115,7 +197,7 @@ export default function ClientsListPage(): JSX.Element {
           <select
             value={ventureFilter}
             onChange={(e) => setVentureFilter(e.target.value)}
-            className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+            className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
           >
             <option value="">All ventures</option>
             <option value="none">No venture</option>
@@ -127,7 +209,7 @@ export default function ClientsListPage(): JSX.Element {
         <select
           value={assignedTo}
           onChange={(e) => setAssignedTo(e.target.value)}
-          className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
         >
           <option value="">Assigned to — all</option>
           {agents?.map((a) => (
@@ -139,7 +221,7 @@ export default function ClientsListPage(): JSX.Element {
         <select
           value={createdBy}
           onChange={(e) => setCreatedBy(e.target.value)}
-          className="rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+          className="h-10 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
         >
           <option value="">Created by — anyone</option>
           {agents?.map((a) => (

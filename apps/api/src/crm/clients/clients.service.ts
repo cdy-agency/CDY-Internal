@@ -84,22 +84,66 @@ export class ClientsService {
     return client;
   }
 
-  async findAll(
-    search?: string,
-    source?: ClientSource,
-    ventureId?: string,
-    assignedTo?: string,
-    createdBy?: string,
-  ) {
+  async findAll(filters: {
+    search?: string;
+    source?: ClientSource;
+    ventureId?: string;
+    assignedTo?: string;
+    createdBy?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sortBy?: 'createdAt' | 'updatedAt' | 'companyName';
+    sortOrder?: 'asc' | 'desc';
+    clientType?: 'COMPANY' | 'INDIVIDUAL';
+    clientKind?: 'venture' | 'service';
+  } = {}) {
+    const {
+      search,
+      source,
+      ventureId,
+      assignedTo,
+      createdBy,
+      dateFrom,
+      dateTo,
+      sortBy = 'companyName',
+      sortOrder = 'asc',
+      clientType,
+      clientKind,
+    } = filters;
+
+    const createdAtFilter: { gte?: Date; lte?: Date } = {};
+    if (dateFrom) createdAtFilter.gte = new Date(dateFrom);
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      createdAtFilter.lte = end;
+    }
+
+    const orderBy:
+      | { createdAt: 'asc' | 'desc' }
+      | { updatedAt: 'asc' | 'desc' }
+      | { companyName: 'asc' | 'desc' } =
+      sortBy === 'createdAt'
+        ? { createdAt: sortOrder }
+        : sortBy === 'updatedAt'
+          ? { updatedAt: sortOrder }
+          : { companyName: sortOrder };
+
     const clients = await this.prisma.client.findMany({
       where: {
         deletedAt: null,
         ...(source && { source }),
-        ...(ventureId !== undefined && {
+        ...(ventureId !== undefined && ventureId !== '' && {
           ventureId: ventureId === 'none' ? null : ventureId,
         }),
         ...(assignedTo && { assignedTo }),
         ...(createdBy && { createdBy }),
+        ...(clientType && { clientType }),
+        ...(clientKind === 'venture' && { ventureId: { not: null } }),
+        ...(clientKind === 'service' && { ventureId: null }),
+        ...(Object.keys(createdAtFilter).length > 0 && {
+          createdAt: createdAtFilter,
+        }),
         ...(search && {
           OR: [
             { companyName: { contains: search, mode: 'insensitive' } },
@@ -111,7 +155,7 @@ export class ClientsService {
       include: {
         venture: { select: { id: true, name: true, color: true } },
       },
-      orderBy: { companyName: 'asc' },
+      orderBy,
     });
 
     if (clients.length === 0) {
@@ -381,7 +425,7 @@ export class ClientsService {
   }
 
   async exportToCsv(search?: string): Promise<string> {
-    const clients = await this.findAll(search);
+    const clients = await this.findAll({ search });
 
     const managerIds = [
       ...new Set(clients.map((c) => c.assignedTo).filter(Boolean)),

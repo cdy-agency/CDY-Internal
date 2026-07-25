@@ -58,6 +58,8 @@ export interface LeadFilters {
   createdBy?: string;
   source?: LeadSource;
   serviceInterest?: string;
+  leadType?: 'COMPANY' | 'INDIVIDUAL';
+  leadKind?: 'venture' | 'service';
   minScore?: number;
   maxScore?: number;
   minValue?: number;
@@ -65,6 +67,8 @@ export interface LeadFilters {
   dateFrom?: string;
   dateTo?: string;
   hasOverdueFollowUp?: boolean;
+  sortBy?: 'createdAt' | 'updatedAt' | 'convertedAt' | 'estimatedValue' | 'companyName';
+  sortOrder?: 'asc' | 'desc';
 }
 
 function leadFiltersToParams(filters: LeadFilters): URLSearchParams {
@@ -75,6 +79,8 @@ function leadFiltersToParams(filters: LeadFilters): URLSearchParams {
   if (filters.createdBy) params.set('createdBy', filters.createdBy);
   if (filters.source) params.set('source', filters.source);
   if (filters.serviceInterest) params.set('serviceInterest', filters.serviceInterest);
+  if (filters.leadType) params.set('leadType', filters.leadType);
+  if (filters.leadKind) params.set('leadKind', filters.leadKind);
   if (filters.minScore != null) params.set('minScore', String(filters.minScore));
   if (filters.maxScore != null) params.set('maxScore', String(filters.maxScore));
   if (filters.minValue != null) params.set('minValue', String(filters.minValue));
@@ -82,6 +88,8 @@ function leadFiltersToParams(filters: LeadFilters): URLSearchParams {
   if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('dateTo', filters.dateTo);
   if (filters.hasOverdueFollowUp) params.set('hasOverdueFollowUp', 'true');
+  if (filters.sortBy) params.set('sortBy', filters.sortBy);
+  if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
   return params;
 }
 
@@ -148,17 +156,28 @@ export function useClients(filters: {
   ventureId?: string;
   assignedTo?: string;
   createdBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: 'createdAt' | 'updatedAt' | 'companyName';
+  sortOrder?: 'asc' | 'desc';
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  clientKind?: 'venture' | 'service';
 } = {}) {
-  const { search, source, ventureId, assignedTo, createdBy } = filters;
   return useQuery({
-    queryKey: ['crm', 'clients', search, source, ventureId, assignedTo, createdBy],
+    queryKey: ['crm', 'clients', filters],
     queryFn: async (): Promise<ClientRecord[]> => {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (source) params.set('source', source);
-      if (ventureId !== undefined) params.set('ventureId', ventureId);
-      if (assignedTo) params.set('assignedTo', assignedTo);
-      if (createdBy) params.set('createdBy', createdBy);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.source) params.set('source', filters.source);
+      if (filters.ventureId !== undefined) params.set('ventureId', filters.ventureId);
+      if (filters.assignedTo) params.set('assignedTo', filters.assignedTo);
+      if (filters.createdBy) params.set('createdBy', filters.createdBy);
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      if (filters.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+      if (filters.clientType) params.set('clientType', filters.clientType);
+      if (filters.clientKind) params.set('clientKind', filters.clientKind);
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await api.get<ApiResponse<ClientRecord[]>>(`/crm/clients${qs}`);
       return res.data.data;

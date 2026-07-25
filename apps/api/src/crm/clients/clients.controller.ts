@@ -53,14 +53,26 @@ export class ClientsController {
     @Query('ventureId') ventureId?: string,
     @Query('assignedTo') assignedTo?: string,
     @Query('createdBy') createdBy?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('sortBy') sortBy?: 'createdAt' | 'updatedAt' | 'companyName',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    @Query('clientType') clientType?: 'COMPANY' | 'INDIVIDUAL',
+    @Query('clientKind') clientKind?: 'venture' | 'service',
   ) {
-    const data = await this.clientsService.findAll(
+    const data = await this.clientsService.findAll({
       search,
       source,
       ventureId,
       assignedTo,
       createdBy,
-    );
+      dateFrom,
+      dateTo,
+      sortBy,
+      sortOrder,
+      clientType,
+      clientKind,
+    });
     return { data, message: 'Clients retrieved', statusCode: HttpStatus.OK };
   }
 

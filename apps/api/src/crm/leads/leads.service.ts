@@ -200,6 +200,9 @@ export class LeadsService {
       ...(filters.stage && { stage: filters.stage }),
       ...(filters.source && { source: filters.source }),
       ...(filters.serviceInterest && { serviceInterest: filters.serviceInterest }),
+      ...(filters.leadType && { leadType: filters.leadType }),
+      ...(filters.leadKind === 'venture' && { ventureId: { not: null } }),
+      ...(filters.leadKind === 'service' && { ventureId: null }),
       ...(Object.keys(qualityScoreFilter).length > 0 && {
         qualityScore: qualityScoreFilter,
       }),
@@ -238,6 +241,25 @@ export class LeadsService {
     return new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
   }
 
+  private resolveLeadOrderBy(
+    filters: LeadFiltersDto,
+  ): Prisma.LeadOrderByWithRelationInput[] {
+    const direction = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (filters.sortBy) {
+      case 'createdAt':
+        return [{ createdAt: direction }];
+      case 'convertedAt':
+        return [{ convertedAt: direction }, { createdAt: 'desc' }];
+      case 'estimatedValue':
+        return [{ estimatedValue: direction }, { createdAt: 'desc' }];
+      case 'companyName':
+        return [{ companyName: direction }, { contactName: direction }];
+      case 'updatedAt':
+      default:
+        return [{ updatedAt: direction === 'asc' ? 'asc' : 'desc' }];
+    }
+  }
+
   async findAll(filters: LeadFiltersDto, userId: string) {
     const canViewAll = await this.canViewAllCrm(userId);
     const leads = await this.prisma.lead.findMany({
@@ -254,7 +276,7 @@ export class LeadsService {
         },
         venture: { select: { id: true, name: true } },
       },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: this.resolveLeadOrderBy(filters),
     });
 
     const nameMap = await this.resolveUserNames(
@@ -918,7 +940,7 @@ export class LeadsService {
       include: {
         activities: { orderBy: { performedAt: 'desc' }, take: 1 },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: this.resolveLeadOrderBy(filters),
     });
 
     const agentIds = [
