@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsEnum,
   IsNumber,
+  IsDateString,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -62,4 +63,9 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** Optional lead creation date (YYYY-MM-DD or ISO). Defaults to now. */
+  @IsOptional()
+  @IsDateString()
+  createdAt?: string;
 }

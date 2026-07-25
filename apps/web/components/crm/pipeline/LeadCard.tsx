@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Pencil } from 'lucide-react';
-import type { LeadRecord } from '@cdy/shared';
+import { PipelineStage, type LeadRecord } from '@cdy/shared';
 import { formatCurrency } from '@/lib/utils';
 import {
   getScoreBand,
@@ -72,6 +72,19 @@ export function LeadCard({ lead, draggable, onDragStart, onEdit }: LeadCardProps
       <p className="mt-1 text-xs text-cdy-muted">
         {lead.serviceInterest.replace('_', ' ')} · {lead.source.replace('_', ' ')}
       </p>
+      <p className="mt-1 text-xs text-cdy-muted">
+        Created {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}
+      </p>
+      {(lead.stage === PipelineStage.CLOSED_WON ||
+        lead.stage === PipelineStage.CLOSED_LOST) && (
+        <p className="mt-1 text-xs text-cdy-muted">
+          Closed{' '}
+          {format(
+            new Date(lead.convertedAt ?? lead.updatedAt),
+            'MMM d, yyyy h:mm a',
+          )}
+        </p>
+      )}
       {latestActivity && (
         <p className="mt-3 border-t border-cdy-navy-border pt-2 text-xs text-cdy-muted">
           {latestActivity.summary} —{' '}

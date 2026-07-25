@@ -320,6 +320,21 @@ export default function LeadDetailPage(): JSX.Element {
                   ? formatCurrency(Number(lead.estimatedValue), lead.currency)
                   : '—'}
               </p>
+              <p>Created: {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}</p>
+              {(lead.convertedAt || isClosed) && (
+                <p>
+                  Closed:{' '}
+                  {format(
+                    new Date(lead.convertedAt ?? lead.updatedAt),
+                    'MMM d, yyyy h:mm a',
+                  )}
+                  {lead.stage === PipelineStage.CLOSED_WON
+                    ? ' (Won)'
+                    : lead.stage === PipelineStage.CLOSED_LOST
+                      ? ' (Lost)'
+                      : ''}
+                </p>
+              )}
             </div>
           </div>
 

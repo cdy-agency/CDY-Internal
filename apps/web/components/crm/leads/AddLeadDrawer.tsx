@@ -26,6 +26,14 @@ const SERVICE_OPTIONS = [
 
 const SOURCE_OPTIONS = Object.values(LeadSource);
 
+function todayDateInput(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 interface AddLeadDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -50,6 +58,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
   const [estimatedValue, setEstimatedValue] = useState('');
   const [currency, setCurrency] = useState('RWF');
   const [assignedTo, setAssignedTo] = useState('');
+  const [createdAt, setCreatedAt] = useState(todayDateInput);
   const [notes, setNotes] = useState('');
 
   const score = useMemo(
@@ -75,6 +84,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
       setEstimatedValue('');
       setNotes('');
       setVentureId('');
+      setCreatedAt(todayDateInput());
     }
   }, [open]);
 
@@ -96,6 +106,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
         estimatedValue: estimatedValue ? Number(estimatedValue) : undefined,
         currency,
         assignedTo: assignedTo || undefined,
+        createdAt: createdAt || undefined,
         notes: notes || undefined,
       });
       toast.success(`Lead added — ${companyName || contactName}`);
@@ -270,6 +281,16 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <Label>Date created</Label>
+            <Input
+              type="date"
+              value={createdAt}
+              max={todayDateInput()}
+              onChange={(e) => setCreatedAt(e.target.value)}
+              className="mt-1"
+            />
           </div>
           <div>
             <Label>Notes</Label>

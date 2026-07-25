@@ -76,7 +76,7 @@ export class LeadsController {
 
   @Get('agents')
   @RequirePermission('crm.leads', 'read')
-  @ApiOperation({ summary: 'List sales agents for assignment' })
+  @ApiOperation({ summary: 'List users available for lead assignment (excludes IT)' })
   async findAgents() {
     const data = await this.leadsService.findSalesAgents();
     return { data, message: 'Agents retrieved', statusCode: HttpStatus.OK };

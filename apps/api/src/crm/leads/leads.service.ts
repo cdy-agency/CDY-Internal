@@ -96,6 +96,11 @@ export class LeadsService {
   }
 
   async create(dto: CreateLeadDto, actor: CrmActor): Promise<Lead> {
+    const assigneeId = dto.assignedTo ?? actor.userId;
+    await this.assertAssignableUser(assigneeId);
+
+    const createdAt = this.resolveCreatedAt(dto.createdAt);
+
     const weights = await this.crmSettingsService.getScoreWeights();
     const qualityScore = this.leadScoringService.calculate({
       source: dto.source,
@@ -124,10 +129,11 @@ export class LeadsService {
         // access to it (buildWhereClause scopes them to assignedTo: userId,
         // which a null assignedTo never matches) and no commission can ever
         // be calculated when it closes.
-        assignedTo: dto.assignedTo ?? actor.userId,
+        assignedTo: assigneeId,
         notes: dto.notes,
         qualityScore,
         createdBy: actor.userId,
+        createdAt,
       },
     });
 
@@ -137,6 +143,7 @@ export class LeadsService {
         fromStage: null,
         toStage: PipelineStage.NEW,
         movedBy: actor.userId,
+        movedAt: createdAt,
       },
     });
 
@@ -308,6 +315,10 @@ export class LeadsService {
     actor?: CrmActor,
   ) {
     const existing = await this.findOne(id, userId);
+
+    if (dto.assignedTo) {
+      await this.assertAssignableUser(dto.assignedTo);
+    }
 
     const lead = await this.prisma.lead.update({
       where: { id },
@@ -553,17 +564,12 @@ export class LeadsService {
   }
 
   async findSalesAgents() {
-    // "Sales agents" = users who can own commission records (feature-based,
-    // so custom roles built like a sales agent are included automatically).
-    const agentIds = await this.rbac.findUserIdsWithFeature(
-      'finance.commissions.own',
-      'read',
-    );
+    // Assignable owners: every active user except IT administrators.
     return this.prisma.user.findMany({
       where: {
-        id: { in: agentIds },
         isActive: true,
         deletedAt: null,
+        role: { key: { not: 'IT_ADMINISTRATOR' } },
       },
       select: {
         id: true,
@@ -573,6 +579,48 @@ export class LeadsService {
       },
       orderBy: { firstName: 'asc' },
     });
+  }
+
+  private async assertAssignableUser(userId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        isActive: true,
+        deletedAt: null,
+        role: { key: { not: 'IT_ADMINISTRATOR' } },
+      },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new BadRequestException(
+        'Lead can only be assigned to an active non-IT user',
+      );
+    }
+  }
+
+  private resolveCreatedAt(value?: string): Date {
+    if (!value) return new Date();
+
+    // Date-only (YYYY-MM-DD) → local noon so the calendar day is stable across TZ.
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const date = dateOnly
+      ? new Date(
+          Number(dateOnly[1]),
+          Number(dateOnly[2]) - 1,
+          Number(dateOnly[3]),
+          12,
+          0,
+          0,
+        )
+      : new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('Invalid created date');
+    }
+    if (date.getTime() > Date.now()) {
+      throw new BadRequestException('Created date cannot be in the future');
+    }
+    return date;
   }
 
   private async handleDealClosed(
@@ -740,16 +788,7 @@ export class LeadsService {
       );
     }
 
-    const canOwnCommissions = await this.rbac.can(
-      agentId,
-      'finance.commissions.own',
-      'read',
-    );
-    if (!canOwnCommissions) {
-      throw new BadRequestException(
-        'Target user must be able to own commissions (a sales agent capability)',
-      );
-    }
+    await this.assertAssignableUser(agentId);
 
     const result = await this.prisma.lead.updateMany({
       where: {

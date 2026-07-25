@@ -217,11 +217,11 @@ export default function ClientDetailPage(): JSX.Element {
           View original lead →
         </Link>
       )}
-      {client.source !== 'PIPELINE' && (
-        <p className="text-xs text-cdy-muted">
-          Registered directly on {format(new Date(client.createdAt), 'MMM d, yyyy')}
-        </p>
-      )}
+      <p className="text-xs text-cdy-muted">
+        Created {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
+        {' · '}
+        Updated {format(new Date(client.updatedAt), 'MMM d, yyyy h:mm a')}
+      </p>
       {/* Links to auto-created service records */}
       <div className="flex flex-wrap gap-3">
         {client.softwareProjectId && (
@@ -278,6 +278,12 @@ export default function ClientDetailPage(): JSX.Element {
               <p>{client.phone ?? '—'}</p>
               <p>{client.country}</p>
               {client.website && <p>{client.website}</p>}
+              <p className="pt-2">
+                Created: {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
+              </p>
+              <p>
+                Updated: {format(new Date(client.updatedAt), 'MMM d, yyyy h:mm a')}
+              </p>
             </div>
           </div>
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
@@ -322,7 +328,7 @@ export default function ClientDetailPage(): JSX.Element {
             {client.leads?.map((lead) => (
               <li
                 key={lead.id}
-                className="flex items-center justify-between border-b border-cdy-navy-border/50 pb-2"
+                className="flex flex-wrap items-center justify-between gap-2 border-b border-cdy-navy-border/50 pb-2"
               >
                 <Link href={`/crm/leads/${lead.id}`} className="text-cdy-red hover:underline">
                   {lead.contactName}
@@ -332,6 +338,16 @@ export default function ClientDetailPage(): JSX.Element {
                   {lead.estimatedValue != null
                     ? formatCurrency(Number(lead.estimatedValue))
                     : '—'}
+                </span>
+                <span className="w-full text-xs text-cdy-muted sm:w-auto">
+                  Created {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}
+                  {lead.convertedAt && (
+                    <>
+                      {' · '}
+                      Closed{' '}
+                      {format(new Date(lead.convertedAt), 'MMM d, yyyy h:mm a')}
+                    </>
+                  )}
                 </span>
               </li>
             ))}

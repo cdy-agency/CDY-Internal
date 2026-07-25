@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 import { useClients, useDeleteClient, exportClientsCsv } from '@/hooks/useCrm';
 import { useVentureLookup } from '@/hooks/useVentures';
 import { Input } from '@/components/ui/input';
@@ -132,7 +133,8 @@ export default function ClientsListPage(): JSX.Element {
               <th className="px-4 py-3">Venture</th>
               <th className="px-4 py-3">Invoiced</th>
               <th className="px-4 py-3">Outstanding</th>
-              <th className="px-4 py-3">Client since</th>
+              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -179,8 +181,11 @@ export default function ClientsListPage(): JSX.Element {
                   <td className="px-4 py-3 text-cdy-muted">
                     {formatCurrency(client.financeSummary?.outstanding ?? 0)}
                   </td>
-                  <td className="px-4 py-3 text-cdy-muted">
-                    {new Date(client.createdAt).toLocaleDateString()}
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {format(new Date(client.updatedAt), 'MMM d, yyyy h:mm a')}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

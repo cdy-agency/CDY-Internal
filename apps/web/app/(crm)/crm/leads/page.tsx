@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { format } from 'date-fns';
 import {
   LeadSource,
   PipelineStage,
@@ -363,6 +364,8 @@ export default function LeadsListPage(): JSX.Element {
               <th className="px-4 py-3">Stage</th>
               <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3 text-right">Value</th>
+              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Closed</th>
             </tr>
           </thead>
           <tbody>
@@ -409,6 +412,17 @@ export default function LeadsListPage(): JSX.Element {
                   <td className="px-4 py-3 text-right text-cdy-white">
                     {lead.estimatedValue != null
                       ? formatCurrency(Number(lead.estimatedValue), lead.currency)
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}
+                  </td>
+                  <td className="px-4 py-3 text-cdy-muted whitespace-nowrap">
+                    {isClosed
+                      ? format(
+                          new Date(lead.convertedAt ?? lead.updatedAt),
+                          'MMM d, yyyy h:mm a',
+                        )
                       : '—'}
                   </td>
                 </tr>
