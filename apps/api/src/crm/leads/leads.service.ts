@@ -458,13 +458,18 @@ export class LeadsService {
         )
       : 0;
 
+    const isClosing =
+      dto.stage === PipelineStage.CLOSED_WON ||
+      dto.stage === PipelineStage.CLOSED_LOST;
+
     const updateData: Prisma.LeadUpdateInput = {
       stage: dto.stage,
+      // convertedAt is the close timestamp for both won and lost deals
+      ...(isClosing && { convertedAt: new Date() }),
       ...(dto.stage === PipelineStage.CLOSED_LOST && {
         lostReason: dto.lostReason,
       }),
       ...(dto.stage === PipelineStage.CLOSED_WON && {
-        convertedAt: new Date(),
         // Overwrite the (possibly stale) original estimate with the
         // confirmed final value entered at close time — this is what
         // handleDealClosed() uses for the invoice/retainer amount and
