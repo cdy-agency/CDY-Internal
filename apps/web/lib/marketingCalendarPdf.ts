@@ -1,3 +1,4 @@
+import { addDays, format, getISOWeek } from 'date-fns';
 import api from '@/lib/api';
 
 async function downloadBlob(url: string, filename: string): Promise<void> {
@@ -14,24 +15,30 @@ async function downloadBlob(url: string, filename: string): Promise<void> {
   window.URL.revokeObjectURL(objectUrl);
 }
 
-/** week: an ISO date (YYYY-MM-DD) anywhere in the target week; defaults to the current week. */
+/** e.g. "Week-31-Jul-27-to-Aug-02-2026" — mirrors CalendarPdfService.weekFilenamePart on the backend. */
+function weekFilenamePart(weekStart: Date): string {
+  const weekEnd = addDays(weekStart, 6);
+  const weekNumber = getISOWeek(weekStart);
+  return `Week-${weekNumber}-${format(weekStart, 'MMM-dd')}-to-${format(weekEnd, 'MMM-dd-yyyy')}`;
+}
+
 export async function downloadClientCalendarPdf(
   clientId: string,
   clientName: string,
-  week?: string,
+  weekStart: Date,
 ): Promise<void> {
-  const qs = week ? `?week=${week}` : '';
+  const week = format(weekStart, 'yyyy-MM-dd');
   const safeName = clientName.replace(/[^a-z0-9]+/gi, '-');
   await downloadBlob(
-    `/marketing/clients/${clientId}/calendar/pdf${qs}`,
-    `${safeName}-content-calendar.pdf`,
+    `/marketing/clients/${clientId}/calendar/pdf?week=${week}`,
+    `${safeName}-${weekFilenamePart(weekStart)}.pdf`,
   );
 }
 
-export async function downloadAllClientsCalendarPdf(week?: string): Promise<void> {
-  const qs = week ? `?week=${week}` : '';
+export async function downloadAllClientsCalendarPdf(weekStart: Date): Promise<void> {
+  const week = format(weekStart, 'yyyy-MM-dd');
   await downloadBlob(
-    `/marketing/calendar/pdf${qs}`,
-    `content-calendar${week ? `-${week}` : ''}.pdf`,
+    `/marketing/calendar/pdf?week=${week}`,
+    `Content-Calendar-${weekFilenamePart(weekStart)}.pdf`,
   );
 }

@@ -50,10 +50,11 @@ export class MarketingController {
   ): Promise<void> {
     const weekStart = resolveWeekStart(week);
     const buffer = await this.calendarPdfService.generateForAllClients(weekStart);
+    const weekPart = this.calendarPdfService.weekFilenamePart(weekStart);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="content-calendar-${weekStart.toISOString().slice(0, 10)}.pdf"`,
+      `attachment; filename="Content-Calendar-${weekPart}.pdf"`,
     );
     res.send(buffer);
   }

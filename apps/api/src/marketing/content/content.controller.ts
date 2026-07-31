@@ -85,10 +85,11 @@ export class ContentController {
       weekStart,
     );
     const safeName = clientName.replace(/[^a-z0-9]+/gi, '-');
+    const weekPart = this.calendarPdfService.weekFilenamePart(weekStart);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${safeName}-content-calendar.pdf"`,
+      `attachment; filename="${safeName}-${weekPart}.pdf"`,
     );
     res.send(buffer);
   }

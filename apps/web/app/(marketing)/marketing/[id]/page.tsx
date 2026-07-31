@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { format, getDaysInMonth, startOfMonth, getDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, LayoutGrid, List, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, LayoutGrid, List } from 'lucide-react';
 import {
   useMarketingClient,
   useContentCalendar,
@@ -13,6 +13,7 @@ import {
   useUpdateContentStatus,
 } from '@/hooks/useMarketing';
 import { downloadClientCalendarPdf } from '@/lib/marketingCalendarPdf';
+import { WeekPickerPopover } from '@/components/marketing/WeekPickerPopover';
 import { AddContentDrawer } from '@/components/marketing/AddContentDrawer';
 import { ContentItemSlideOver } from '@/components/marketing/ContentItemSlideOver';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
@@ -46,7 +47,6 @@ export default function ClientCalendarPage(): JSX.Element {
   const [addOpen, setAddOpen] = useState(false);
   const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined);
   const [slideOver, setSlideOver] = useState<ContentItemRecord | null>(null);
-  const [downloading, setDownloading] = useState(false);
 
   const { data: mc, isLoading: mcLoading } = useMarketingClient(clientId);
   const { data: calendar, isLoading: calendarLoading } = useContentCalendar(clientId, month);
@@ -60,15 +60,11 @@ export default function ClientCalendarPage(): JSX.Element {
     setAddOpen(true);
   }
 
-  async function handleDownload(): Promise<void> {
-    if (!mc) return;
-    setDownloading(true);
+  async function handleDownload(weekStart: Date): Promise<void> {
     try {
-      await downloadClientCalendarPdf(clientId, mc.client?.companyName ?? 'Client');
+      await downloadClientCalendarPdf(clientId, mc?.client?.companyName ?? 'Client', weekStart);
     } catch {
       toast.error('Failed to generate calendar PDF');
-    } finally {
-      setDownloading(false);
     }
   }
 
@@ -107,14 +103,7 @@ export default function ClientCalendarPage(): JSX.Element {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" disabled={downloading} onClick={() => void handleDownload()}>
-                {downloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Download Calendar
-              </Button>
+              <WeekPickerPopover onDownload={handleDownload} />
               <PermissionGate feature="marketing.content" action="write">
                 <Button onClick={() => openAdd()}>
                   <Plus className="h-4 w-4" />

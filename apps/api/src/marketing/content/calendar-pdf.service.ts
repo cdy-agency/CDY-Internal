@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ContentItem } from '@prisma/client';
-import { addDays, format } from 'date-fns';
+import { addDays, format, getISOWeek } from 'date-fns';
 import puppeteer, { Browser } from 'puppeteer';
 import { getPuppeteerLaunchOptions } from '../../common/puppeteer.config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -62,6 +62,14 @@ export class CalendarPdfService implements OnModuleDestroy {
       buckets[this.weekdayIndex(item.scheduledDate)].push(item);
     }
     return buckets;
+  }
+
+  /** e.g. "Week-31-Jul-27-to-Aug-02-2026" — used for both the PDF's on-page
+   * label and the downloaded filename, so they always agree with each other. */
+  weekFilenamePart(weekStart: Date): string {
+    const weekEnd = addDays(weekStart, 6);
+    const weekNumber = getISOWeek(weekStart);
+    return `Week-${weekNumber}-${format(weekStart, 'MMM-dd')}-to-${format(weekEnd, 'MMM-dd-yyyy')}`;
   }
 
   async generateForClient(
@@ -171,7 +179,8 @@ export class CalendarPdfService implements OnModuleDestroy {
 
   private renderDocument(sections: ClientCalendarData[], weekStart: Date): string {
     const weekEnd = addDays(weekStart, 6);
-    const weekLabel = `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
+    const weekNumber = getISOWeek(weekStart);
+    const weekLabel = `Week ${weekNumber} · ${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
 
     const pages = sections
       .map((section) => this.renderClientPage(section, weekLabel))

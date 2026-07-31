@@ -4,11 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDaysInMonth, startOfMonth, getDay } from 'date-fns';
 import { useGlobalContentCalendar } from '@/hooks/useMarketing';
 import { downloadAllClientsCalendarPdf } from '@/lib/marketingCalendarPdf';
-import { Button } from '@/components/ui/button';
+import { WeekPickerPopover } from '@/components/marketing/WeekPickerPopover';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import {
   currentMonth,
@@ -23,21 +23,17 @@ import type { GlobalContentItemRecord } from '@cdy/shared';
 export default function GlobalContentCalendarPage(): JSX.Element {
   const router = useRouter();
   const [month, setMonth] = useState(currentMonth());
-  const [downloading, setDownloading] = useState(false);
   const { data: calendar, isLoading } = useGlobalContentCalendar(month);
 
   function goToClient(item: GlobalContentItemRecord): void {
     router.push(`/marketing/${item.marketingClientId}`);
   }
 
-  async function handleDownload(): Promise<void> {
-    setDownloading(true);
+  async function handleDownload(weekStart: Date): Promise<void> {
     try {
-      await downloadAllClientsCalendarPdf();
+      await downloadAllClientsCalendarPdf(weekStart);
     } catch {
       toast.error('Failed to generate calendar PDF');
-    } finally {
-      setDownloading(false);
     }
   }
 
@@ -78,18 +74,11 @@ export default function GlobalContentCalendarPage(): JSX.Element {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-          <Button variant="outline" disabled={downloading} onClick={() => void handleDownload()}>
-            {downloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Download Calendar
-          </Button>
+          <WeekPickerPopover onDownload={handleDownload} />
         </div>
       </div>
       <p className="-mt-3 text-xs text-cdy-muted">
-        Downloads a printable weekly planning sheet (Mon–Sun) for every active client, for the current week.
+        Downloads a printable weekly planning sheet (Mon–Sun) for every active client, for the week you choose.
       </p>
 
       {isLoading && <InvoiceTableSkeleton />}
