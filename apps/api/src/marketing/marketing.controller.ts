@@ -1,8 +1,16 @@
-import { Controller, Get, Query, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Query, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Response } from 'express';
+import { startOfWeek, parseISO } from 'date-fns';
 import { MarketingSummaryService } from './summary/marketing-summary.service';
 import { ContentService } from './content/content.service';
+import { CalendarPdfService } from './content/calendar-pdf.service';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
+
+function resolveWeekStart(week?: string): Date {
+  const base = week ? parseISO(week) : new Date();
+  return startOfWeek(base, { weekStartsOn: 1 });
+}
 
 @ApiTags('marketing')
 @ApiBearerAuth()
@@ -11,6 +19,7 @@ export class MarketingController {
   constructor(
     private readonly summaryService: MarketingSummaryService,
     private readonly contentService: ContentService,
+    private readonly calendarPdfService: CalendarPdfService,
   ) {}
 
   @Get('summary')
@@ -31,5 +40,21 @@ export class MarketingController {
       `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const data = await this.contentService.getGlobalCalendar(m);
     return { data, statusCode: HttpStatus.OK };
+  }
+
+  @Get('calendar/pdf')
+  @RequirePermission('marketing.content', 'read')
+  async downloadGlobalCalendarPdf(
+    @Query('week') week: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
+    const weekStart = resolveWeekStart(week);
+    const buffer = await this.calendarPdfService.generateForAllClients(weekStart);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="content-calendar-${weekStart.toISOString().slice(0, 10)}.pdf"`,
+    );
+    res.send(buffer);
   }
 }

@@ -7,10 +7,14 @@ import {
   Body,
   Param,
   Query,
+  Res,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Response } from 'express';
+import { startOfWeek, parseISO } from 'date-fns';
 import { ContentService } from './content.service';
+import { CalendarPdfService } from './calendar-pdf.service';
 import {
   CreateContentItemDto,
   UpdateContentItemDto,
@@ -21,6 +25,11 @@ import { RequirePermission } from '../../auth/decorators/require-permission.deco
 import { CurrentUser, JwtPayload } from '../../auth/decorators/current-user.decorator';
 import { MarketingSummaryService } from '../summary/marketing-summary.service';
 
+function resolveWeekStart(week?: string): Date {
+  const base = week ? parseISO(week) : new Date();
+  return startOfWeek(base, { weekStartsOn: 1 });
+}
+
 @ApiTags('marketing')
 @ApiBearerAuth()
 @Controller('marketing/clients/:clientId')
@@ -28,6 +37,7 @@ export class ContentController {
   constructor(
     private readonly contentService: ContentService,
     private readonly summaryService: MarketingSummaryService,
+    private readonly calendarPdfService: CalendarPdfService,
   ) {}
 
   @Get('content')
@@ -60,6 +70,27 @@ export class ContentController {
     const m = month ?? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const data = await this.contentService.getCalendar(clientId, m);
     return { data, statusCode: HttpStatus.OK };
+  }
+
+  @Get('calendar/pdf')
+  @RequirePermission('marketing.content', 'read')
+  async downloadCalendarPdf(
+    @Param('clientId') clientId: string,
+    @Query('week') week: string | undefined,
+    @Res() res: Response,
+  ): Promise<void> {
+    const weekStart = resolveWeekStart(week);
+    const { buffer, clientName } = await this.calendarPdfService.generateForClient(
+      clientId,
+      weekStart,
+    );
+    const safeName = clientName.replace(/[^a-z0-9]+/gi, '-');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${safeName}-content-calendar.pdf"`,
+    );
+    res.send(buffer);
   }
 
   @Patch('content/:itemId')

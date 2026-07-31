@@ -4,6 +4,7 @@ import { MarketingClientsController } from './clients/marketing-clients.controll
 import { ContentController } from './content/content.controller';
 import { MarketingClientsService } from './clients/marketing-clients.service';
 import { ContentService } from './content/content.service';
+import { CalendarPdfService } from './content/calendar-pdf.service';
 import { MarketingSummaryService } from './summary/marketing-summary.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -17,6 +18,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
   providers: [
     MarketingClientsService,
     ContentService,
+    CalendarPdfService,
     MarketingSummaryService,
   ],
   exports: [MarketingSummaryService],

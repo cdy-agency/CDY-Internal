@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { getDaysInMonth, startOfMonth, getDay } from 'date-fns';
 import { useGlobalContentCalendar } from '@/hooks/useMarketing';
+import { downloadAllClientsCalendarPdf } from '@/lib/marketingCalendarPdf';
+import { Button } from '@/components/ui/button';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import {
   currentMonth,
@@ -20,10 +23,22 @@ import type { GlobalContentItemRecord } from '@cdy/shared';
 export default function GlobalContentCalendarPage(): JSX.Element {
   const router = useRouter();
   const [month, setMonth] = useState(currentMonth());
+  const [downloading, setDownloading] = useState(false);
   const { data: calendar, isLoading } = useGlobalContentCalendar(month);
 
   function goToClient(item: GlobalContentItemRecord): void {
     router.push(`/marketing/${item.marketingClientId}`);
+  }
+
+  async function handleDownload(): Promise<void> {
+    setDownloading(true);
+    try {
+      await downloadAllClientsCalendarPdf();
+    } catch {
+      toast.error('Failed to generate calendar PDF');
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -43,26 +58,39 @@ export default function GlobalContentCalendarPage(): JSX.Element {
             Every client&apos;s scheduled content in one place. Click a post to open its client.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light px-3 py-1.5">
-          <button
-            type="button"
-            onClick={() => setMonth(prevMonth(month))}
-            className="text-cdy-muted hover:text-cdy-white"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="min-w-36 text-center text-sm text-cdy-white">
-            {formatMonth(month)}
-          </span>
-          <button
-            type="button"
-            onClick={() => setMonth(nextMonth(month))}
-            className="text-cdy-muted hover:text-cdy-white"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light px-3 py-1.5">
+            <button
+              type="button"
+              onClick={() => setMonth(prevMonth(month))}
+              className="text-cdy-muted hover:text-cdy-white"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-36 text-center text-sm text-cdy-white">
+              {formatMonth(month)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMonth(nextMonth(month))}
+              className="text-cdy-muted hover:text-cdy-white"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <Button variant="outline" disabled={downloading} onClick={() => void handleDownload()}>
+            {downloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Download Calendar
+          </Button>
         </div>
       </div>
+      <p className="-mt-3 text-xs text-cdy-muted">
+        Downloads a printable weekly planning sheet (Mon–Sun) for every active client, for the current week.
+      </p>
 
       {isLoading && <InvoiceTableSkeleton />}
 
