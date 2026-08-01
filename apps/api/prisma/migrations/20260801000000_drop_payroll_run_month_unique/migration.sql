@@ -1,0 +1,17 @@
+-- PayrollRun.month was never meant to be unique: a single calendar month can
+-- have several draft payroll runs (e.g. a supplementary run for a
+-- late-joining employee), each scoped to a different set of employees.
+-- PayrollService.createRun() already enforces the real invariant — no
+-- employee can appear in two runs for the same month — via an explicit
+-- PayrollLineItem check, not a DB-level constraint on the run's month alone.
+--
+-- The original migration (20260613100000_sprint8_payroll_balance_sheet)
+-- created "PayrollRun_month_key" as a UNIQUE index, which blocks that
+-- intentional multi-run-per-month flow with a raw, unfriendly Prisma error
+-- ("A record with this month already exists") instead of the app's own
+-- clear validation message. This was already dropped by hand on some
+-- environments but never captured in a tracked migration, so it silently
+-- reappears anywhere migrations are applied from scratch (fresh DBs, CI,
+-- other environments) via the untouched history of the original migration.
+-- This migration makes the removal permanent and reproducible everywhere.
+DROP INDEX IF EXISTS "PayrollRun_month_key";
