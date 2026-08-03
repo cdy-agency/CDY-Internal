@@ -85,6 +85,7 @@ export enum ExpenseCategory {
   SUPPLIER = 'SUPPLIER',
   COMMISSION = 'COMMISSION',
   INFLUENCER_PAYMENT = 'INFLUENCER_PAYMENT',
+  LOAN = 'LOAN',
   OTHER = 'OTHER',
 }
 

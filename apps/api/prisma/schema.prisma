@@ -276,6 +276,7 @@ enum ExpenseCategory {
   SUPPLIER
   COMMISSION
   INFLUENCER_PAYMENT
+  LOAN
   OTHER
 }
 

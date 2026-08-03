@@ -36,6 +36,10 @@ const CATEGORY_CONFIG: Record<
     label: 'Influencer Payment',
     className: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
   },
+  [ExpenseCategory.LOAN]: {
+    label: 'Loan',
+    className: 'bg-red-500/10 text-red-400 border-red-500/30',
+  },
   [ExpenseCategory.OTHER]: {
     label: 'Other',
     className: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
@@ -79,5 +83,6 @@ export const FINANCE_CATEGORIES: { value: string; label: string }[] = [
   { value: 'SERVICES', label: 'Services / Consulting' },
   { value: 'SALES', label: 'Sales' },
   { value: 'RENTAL', label: 'Rental' },
+  { value: 'LOAN', label: 'Loan' },
   { value: 'OTHER', label: 'Other' },
 ];
