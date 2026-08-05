@@ -525,6 +525,84 @@
 
         <section class="card module" id="finance" data-accent="finance">
           <h2><i class="dot" data-accent="finance"></i>Finance &amp; Ventures</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>Overdue invoices flip automatically.</strong> A daily
+              job at 8:00 AM finds every Sent or Partially Paid invoice whose
+              due date has passed, bulk-flips it to Overdue, and notifies
+              Finance Managers — nobody marks an invoice overdue by hand.
+            </li>
+            <li>
+              <strong>Retainers bill themselves.</strong> A separate daily
+              job at 7:00 AM finds every Active retainer whose next billing
+              date has arrived, generates and emails an invoice (30-day due
+              date, tax computed from the retainer's tax rate), then advances
+              its next billing date. If a billing day (e.g. the 31st) doesn't
+              exist in the target month, it clamps to that month's last day
+              instead of skipping or erroring. If generation fails for one
+              retainer, that one is logged as an error and simply retried the
+              next day — it doesn't stop the rest of the batch.
+            </li>
+            <li>
+              <strong>Payroll gross pay is a snapshot, not live.</strong>
+              Creating a Draft payroll run sums each agent's currently
+              Approved commissions for that month and bakes that number into
+              the run's line items right then. Processing the run later does
+              <em>not</em> re-check commissions for pay purposes — it only
+              uses what was already baked in.
+              <div class="warn">
+                <strong>Known gap:</strong> a commission approved
+                <em>after</em> a Draft run is created but before it's
+                processed is <strong>not</strong> added to that employee's
+                gross pay — but processing the run still flips it to Paid
+                anyway (the status flip matches by agent + month + Approved,
+                not by the specific commissions that were actually
+                snapshotted). The fix, if needed, is a manual per-line-item
+                adjustment before processing.
+              </div>
+            </li>
+            <li>
+              <strong>Processing a Draft run</strong> generates and emails
+              each employee's payslip, flips their eligible commissions to
+              Paid, and books two P&amp;L expenses automatically: one Staff
+              expense (base salary + bonus, summed across the run) and one
+              Commission expense (commission, summed across the run) — both
+              tagged back to the run. Net pay is
+              <code>gross − (gross × tax rate) − other deductions</code>,
+              where gross is <code>base salary + commission + bonus</code>.
+              The run then moves Draft → Processed, and can optionally be
+              Locked afterward — a Locked run can no longer be adjusted or
+              deleted, making it the permanent record of what was actually
+              paid.
+            </li>
+            <li>
+              <strong>A venture's income/expense numbers</strong> are
+              computed live, not stored: income is Paid invoices (by paid
+              date) plus Direct Income entries in the period; expenses are
+              every Expense tagged to that venture, each counted at its
+              individual venture-share percentage (not necessarily 100%) —
+              net profit is simply income minus that share of expenses.
+            </li>
+            <li>
+              <strong>Bank reconciliation auto-matches on amount + date.</strong>
+              After a statement import, every unmatched line is checked
+              against Payments (for money in) or Expenses (for money out) for
+              an exact amount match within 2 days of the transaction date.
+              Anything that doesn't find an exact match stays Unmatched for a
+              human to resolve manually — there's no fuzzy or partial-amount
+              matching.
+            </li>
+            <li>
+              <strong>Tax owed</strong> is simply
+              <code>tax collected on Paid invoices this period − tax already remitted</code>
+              (input tax tracking isn't implemented, so it's always treated
+              as zero) — a positive result means money is still owed to the
+              tax authority.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -658,6 +736,64 @@
 
         <section class="card module" id="crm" data-accent="crm">
           <h2><i class="dot" data-accent="crm"></i>CRM</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>A lead defaults to its creator.</strong> If nobody is
+              explicitly assigned when a lead is created, the system assigns
+              it to whoever created it — so every lead always has an owner,
+              and that owner can earn commission on it. Leaving a lead
+              genuinely unowned isn't possible.
+            </li>
+            <li>
+              <strong>Pipeline stage moves in order:</strong> New → Contacted
+              → Proposal Sent → Negotiation → Closed Won/Closed Lost. Sending
+              a proposal auto-advances the lead to Proposal Sent; the client
+              accepting that proposal auto-advances it to Negotiation —
+              deliberately not straight to Closed Won — and notifies the
+              owner to close the deal manually. Closed Lost requires a reason
+              and is terminal; nothing can be moved again after it.
+            </li>
+            <li>
+              <strong>Closing a deal is the biggest single action in CRM.</strong>
+              Moving a lead to Closed Won requires entering the final deal
+              value (it doesn't have to match the original estimate) and,
+              optionally, correcting the client/contact info in the same
+              step. That single action then: creates a new Client record or
+              links to a matching existing one (syncing company/contact/phone
+              onto an existing match, but never overwriting its email, since
+              email is part of how the match is found); calculates the rep's
+              commission from the final deal value and their commission rule;
+              and either drafts a Retainer Contract or sets up the matching
+              delivery record (software project, branding project,
+              marketing/influencer campaign) depending on whether the lead
+              was venture-tagged or service-tagged.
+            </li>
+            <li>
+              <strong>Commission calculation:</strong> the system looks up a
+              standing Commission Rule for that agent — a service-specific
+              rule first, falling back to the agent's catch-all rule if one
+              exists — and computes
+              <code>final deal value × rate% ⁄ 100</code>. If no matching
+              rule exists at all, no commission record is created for that
+              deal. The resulting record starts Pending, and a manager moves
+              it Approved/Rejected (amounts can be manually adjusted with a
+              reason before approval); it's only marked Paid automatically
+              when that agent's payroll for the month is processed — see
+              <a href="#finance">Finance</a> for the timing gap that creates.
+            </li>
+          </ol>
+          <div class="warn">
+            <strong>"View All Records" is a pure scope switch.</strong> Agents
+            without <code>crm.all</code> only ever see leads/pipeline items/
+            proposals they own — this filtering happens on every list query,
+            not just the UI. <code>crm.clients</code> has no such owner
+            filter (everyone with client read sees every client), and
+            <code>crm.reports</code> is always company-wide regardless of
+            <code>crm.all</code>.
+          </div>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -707,6 +843,28 @@
 
         <section class="card module" id="sales" data-accent="sales">
           <h2><i class="dot" data-accent="sales"></i>Sales</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              A Sales Campaign is created against an existing CRM client with
+              a start/end date; it starts Active.
+            </li>
+            <li>
+              <strong>Deploying an agent</strong> attaches an HR employee to
+              an Active campaign with visit/lead/sales targets — it's blocked
+              if the campaign isn't Active or if that employee is already
+              deployed to it.
+            </li>
+            <li>
+              <strong>Marking a campaign Completed auto-generates a Draft
+              invoice</strong> in Finance if the campaign had a total cost
+              set, and notifies the Finance Manager to review and send it —
+              field sales revenue doesn't need a separate manual invoicing
+              step.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -732,6 +890,71 @@
 
         <section class="card module" id="hr" data-accent="hr">
           <h2><i class="dot" data-accent="hr"></i>HR</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>Onboarding is automatic, not a separate step.</strong>
+              Creating an employee record immediately creates a
+              <code>LeaveBalance</code> row for every active leave type and
+              auto-generates an Onboarding Checklist with 12 fixed default
+              items across four categories (Documentation, IT Setup, Team
+              Introduction, Training), each with a due date offset from the
+              employee's start date. There's no "start onboarding" action and
+              the list isn't customizable per hire. When the last item is
+              checked off, the checklist auto-flips to Completed.
+            </li>
+            <li>
+              <strong>Attendance is self-service check-in/check-out.</strong>
+              An employee checks in (creates today's record, status
+              Present) and checks out (computes working hours; under 4 hours
+              auto-downgrades the record to Half Day). Checking in twice in a
+              day is blocked.
+            </li>
+            <li>
+              <strong>Leave requests reduce the visible balance immediately
+              on submission</strong>, not on approval. Balance is recalculated
+              from scratch as
+              <code>entitled + carryOver − sum(approved) − sum(pending)</code>
+              every time a request is submitted, approved, rejected, or
+              cancelled — so a Pending request already eats into "remaining"
+              days, and rejecting or cancelling one restores the balance
+              automatically. Overlapping Pending/Approved requests for the
+              same employee are blocked at submission.
+            </li>
+            <li>
+              <strong>Performance reviews</strong> move
+              Draft → Manager Review → Acknowledged → Completed: a
+              reviewer opens the cycle, the employee submits a
+              self-assessment (jumping straight to Manager Review), the
+              manager rates 1–5 and adds notes (only possible while the
+              review is exactly in Manager Review), then the employee
+              acknowledges it to close it out. Each step notifies the next
+              person in the chain.
+            </li>
+            <li>
+              <strong>Sensitive fields are filtered in the service layer</strong>,
+              not hidden by CSS or blocked by a route. Every employee list/detail
+              response checks <code>hr.employees.sensitive</code> read per
+              request; without it, salary, salary effective date, national ID,
+              bank details, emergency contact, and notes are stripped from the
+              JSON entirely before it leaves the server — even an employee
+              viewing their own profile never gets these fields back from that
+              endpoint.
+            </li>
+          </ol>
+          <div class="warn">
+            <strong>Settings that don't do anything yet:</strong> HR Settings
+            lets you configure <code>working_days</code>,
+            <code>working_hours_per_day</code>, <code>leave_year_start</code>,
+            <code>carry_over_max_days</code>, and <code>probation_days</code> —
+            but none of them are read anywhere else in the system. Leave-day
+            counting hardcodes Mon–Fri, leave balances are always keyed to the
+            calendar year with no rollover job, and there's no probation
+            logic. They're stored and editable, but currently cosmetic — don't
+            assume changing them changes behavior.
+          </div>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -781,6 +1004,78 @@
 
         <section class="card module" id="projects" data-accent="projects">
           <h2><i class="dot" data-accent="projects"></i>Projects</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>Creating a project can spin up a second record.</strong>
+              If the service type is software development, a client is
+              mandatory and the system automatically creates a linked
+              Software Project in the Software module in the same action.
+              Every new project starts Active — there's no draft state — the
+              manager is auto-added as a project member, and if a total cost
+              and client are set, a Draft invoice is generated in the
+              background.
+            </li>
+            <li>
+              <strong>Status moves:</strong> Active ⇄ On Hold, Active →
+              Completed, and anything → Archived (archiving has no status
+              guard — it works from any state). <strong>Completing a project
+              is a soft gate, not a hard block:</strong> if any task isn't
+              Done, the API refuses — unless the request explicitly passes
+              "acknowledge incomplete tasks," which overrides it. So a PM can
+              knowingly close a project with loose ends.
+            </li>
+            <li>
+              <strong>Milestones are gated more strictly than projects.</strong>
+              A milestone can only be marked Completed once every task under
+              it is Done — there is no override/acknowledge flag here, unlike
+              project completion.
+            </li>
+            <li>
+              <strong>Tasks</strong> track every status change in a
+              <code>TaskStatusHistory</code> audit trail. Status transitions
+              are unrestricted (any status → any other), but moving a task to
+              Blocked automatically notifies the project manager. CSV import
+              expects columns
+              <code>title, description, milestoneName, assigneeEmail, priority, dueDate, estimatedHours</code>
+              — only the title is required; unmatched milestone names or
+              assignee emails don't fail the row, they just import without
+              that link and surface a per-row error in the response.
+            </li>
+            <li>
+              <strong>Deliverable Approvals</strong> are tied to a specific
+              task, not the milestone. Requesting approval notifies the
+              project manager (approval is manager-facing, not client-facing,
+              in this build). Rejecting requires a note and sets the task's
+              approval status to "changes requested" — the task's own
+              status/board column is untouched. <strong>Approving a task that
+              was flagged "requires approval" auto-marks that task Done</strong> —
+              approving a task that wasn't flagged that way only updates the
+              approval record, not the task status.
+            </li>
+            <li>
+              <strong>Status Report vs. Handover Report:</strong> the Status
+              Report is computed fresh on every page load (progress %, tasks
+              due in 14 days, blocked tasks, recent activity) — nothing is
+              saved. The Handover Report can only be generated once a project
+              is Completed; it's built once and permanently saved, and later
+              visits just re-fetch that saved snapshot rather than
+              recomputing it.
+            </li>
+            <li>
+              <strong>Project Budget</strong> is one-to-one with a project. A
+              daily background job compares total tagged expenses against the
+              approved budget: at or above the alert threshold (default 80%)
+              it notifies Operations Managers (at most once every 7 days);
+              over 100% it automatically blocks the budget. A blocked budget
+              only stops <em>new expenses</em> from being logged against that
+              project — it doesn't touch tasks or invoices. Unblocking
+              requires a Budget Increase Request to be approved, which raises
+              the ceiling and lifts the block in the same action.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -824,6 +1119,49 @@
 
         <section class="card module" id="it" data-accent="it">
           <h2><i class="dot" data-accent="it"></i>IT</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>Creating a role is two separate write actions.</strong>
+              "New Role" only inserts a bare role row — it grants nothing on
+              its own. Saving the permission matrix on that role's detail
+              page is a second call gated by a different permission
+              (<code>it.permissions</code> write). A role sits with zero
+              feature access between those two steps.
+            </li>
+            <li>
+              <strong>Permission changes take effect within one request —
+              no re-login needed.</strong> Every guarded API call re-checks
+              the caller's effective permission straight from the database,
+              backed by a short-lived (5 minute) server-side cache keyed per
+              user. Editing a role's permissions or reassigning a user to a
+              different role immediately clears that user's cache entry, so
+              the very next API call already sees the new permissions.
+            </li>
+            <li>
+              <strong>The JWT's permission claim is a UI convenience, not the
+              source of truth.</strong> The access token does carry an
+              encoded permission snapshot (used by frontend route gating),
+              but the backend never reads it to authorize a request — only
+              the DB-backed check above does. That means the API enforces new
+              permissions instantly, while the frontend's own menu/route
+              gating can lag until the user's token next refreshes.
+            </li>
+            <li>
+              Deactivating or role-changing the last active IT Administrator
+              is blocked outright — the system will not let you strand the
+              account with nobody left to administer it.
+            </li>
+          </ol>
+          <div class="warn">
+            The permission cache is an in-process memory store, not a shared
+            cache like Redis. In a multi-instance deployment, invalidating it
+            on one instance doesn't clear it on the others — they'd keep
+            serving the old permission set to already-connected users for up
+            to 5 minutes after a change.
+          </div>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -869,6 +1207,41 @@
 
         <section class="card module" id="software" data-accent="software">
           <h2><i class="dot" data-accent="software"></i>Software</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              A software project moves through a fixed phase sequence —
+              Requirements → Design → Development → QA → Deployment →
+              Maintenance — <strong>advanced manually</strong> by a delivery
+              lead clicking "Advance Phase," not automatically.
+            </li>
+            <li>
+              <strong>Each phase gates the next one differently:</strong>
+              leaving Requirements needs at least one requirements document
+              signed by the client; leaving Development needs the current
+              sprint to be Completed (not still Active); leaving QA needs
+              zero unresolved Critical bugs (unless QA is explicitly marked
+              skipped). Leaving Design has no enforced gate — an unapproved
+              design doesn't block advancing past it.
+            </li>
+            <li>
+              <strong>Deployment is the one exception to manual advancement:</strong>
+              recording a Deployment automatically jumps the project straight
+              to Maintenance as a side effect, and sets the maintenance
+              window to end exactly one year later. There's no built-in
+              action that ever moves a project from Maintenance to Completed.
+            </li>
+            <li>
+              <strong>Sprints</strong> only allow one Active sprint per
+              project at a time — starting a new one is blocked while another
+              is already Active. Sprint Items (the tasks inside a sprint
+              board) are a completely separate model from the general Project
+              task system — they don't sync, link, or share any data with
+              regular Tasks.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -894,6 +1267,48 @@
 
         <section class="card module" id="branding" data-accent="branding">
           <h2><i class="dot" data-accent="branding"></i>Branding</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              A branding project is made up of individual Scope Items (e.g.
+              "logo design"), each moving In Progress → Submitted →
+              Approved/Rejected → Delivered independently — there's no
+              overall project-status gate blocking work on any one item.
+            </li>
+            <li>
+              <strong>Submitting a design</strong> creates a versioned Design
+              Submission against a scope item. If that scope item already has
+              a submission awaiting review, submitting a new version
+              automatically supersedes the old one (auto-rejects it with a
+              "superseded by new version" note) rather than leaving two
+              pending reviews stacked up.
+            </li>
+            <li>
+              <strong>Client review</strong> approves or rejects a
+              submission — rejection requires written feedback. On
+              rejection, the designer simply submits again against the same
+              scope item; the next submission bumps the version number and
+              puts the scope item back to Submitted. There's no separate
+              "revision request" object — it's the same submit/review loop.
+            </li>
+            <li>
+              <strong>"Deliver" doesn't require every item to be approved
+              first.</strong> Marking a project delivered bulk-moves every
+              currently Approved scope item to Delivered — any items that
+              aren't approved yet are simply left behind, with a warning
+              listing how many were skipped, rather than blocking the whole
+              action.
+            </li>
+            <li>
+              A <strong>Supplier</strong> can only be assigned to a scope
+              item at the moment it's created — there's no way to change or
+              add a supplier to an existing scope item afterward. Supplier
+              assignment is a pure label: it doesn't change the approval flow
+              or gate anything differently from internally-produced work.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -919,6 +1334,41 @@
 
         <section class="card module" id="influencer" data-accent="influencer">
           <h2><i class="dot" data-accent="influencer"></i>Influencer</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              An Influencer Campaign is created against a client; setting its
+              budget automatically generates a Draft invoice in Finance, the
+              same auto-invoicing pattern used by Sales campaigns.
+            </li>
+            <li>
+              <strong>Assigning an influencer</strong> to an active campaign
+              records an agreed fee and one or more deliverables (specific
+              content the influencer owes, e.g. one Reel + two Stories).
+            </li>
+            <li>
+              <strong>Verifying a deliverable</strong> confirms the
+              influencer actually posted the required content and stamps who
+              verified it and when. Once at least one deliverable on an
+              assignment is verified, that influencer can no longer be
+              removed from the campaign — it locks the assignment in place
+              rather than letting a verified collaboration disappear.
+            </li>
+            <li>
+              <strong>Paying an influencer</strong> logs a one-time payment
+              that simultaneously books an Expense in Finance and marks the
+              assignment as paid — same pattern as the payroll flow, one
+              action updates both modules.
+            </li>
+            <li>
+              <strong>Completing a campaign</strong> doesn't block on loose
+              ends — it warns if any deliverables are still unverified or any
+              influencers still unpaid, but lets the manager close it out
+              anyway.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -944,6 +1394,42 @@
 
         <section class="card module" id="marketing" data-accent="marketing">
           <h2><i class="dot" data-accent="marketing"></i>Marketing</h2>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>A Marketing Client can only exist on top of an active
+              Retainer.</strong> Creating one requires picking an existing,
+              Active finance Retainer Contract — it's rejected outright if
+              the retainer isn't active or is already linked to a different
+              marketing client. This is what defines the marketing client's
+              service scope and billing amount; the marketing client itself
+              is a separate record from the CRM Client.
+            </li>
+            <li>
+              <strong>Content items</strong> move Draft → Ready → Approved →
+              Published, with Rejected and Cancelled as side branches at
+              various points — each scheduled post belongs to one Marketing
+              Client and carries its own content type (Post, Reel, Story,
+              Carousel, Video, Blog, Email, or Ad).
+            </li>
+            <li>
+              <strong>The content calendar has two views.</strong> Per-client
+              calendars live on each marketing client's page; a global
+              calendar aggregates every client's scheduled content into one
+              view so nobody has to click through clients one at a time to
+              see the week's full schedule.
+            </li>
+            <li>
+              <strong>PDF export is week-scoped.</strong> Downloading a
+              calendar (either a single client's or the global one) opens a
+              week picker; the generated PDF's filename embeds the ISO week
+              number and the exact date range covered, so downloaded files
+              from different weeks never collide or get confused with each
+              other.
+            </li>
+          </ol>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -975,6 +1461,18 @@
 
         <section class="card module" id="ceo" data-accent="ceo">
           <h2><i class="dot" data-accent="ceo"></i>CEO</h2>
+
+          <h3>How It Works</h3>
+          <p>
+            The dashboard's venture income/expense cards read the same
+            underlying data as the Ventures module itself: income is Paid
+            invoices (by paid date) plus Direct Income for the period, and
+            expenses are each venture-tagged Expense counted at its own
+            venture-share percentage — so the CEO dashboard and a venture's
+            own detail page always agree with each other, because they're
+            computed the same way rather than two parallel implementations.
+          </p>
+
           <div class="table-wrap">
             <table>
               <thead>
