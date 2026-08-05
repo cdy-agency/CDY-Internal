@@ -280,10 +280,57 @@ export class PayrollService {
       );
     }
 
+    // Re-sync each line item's commission against currently-APPROVED
+    // commission records right before finalizing pay. Gross pay is
+    // snapshotted when the run is created (DRAFT), but a commission can be
+    // approved any time between then and processing — without this resync,
+    // that commission would get marked PAID below without its amount ever
+    // having been included in the employee's gross pay. Line items a
+    // manager has manually adjusted are left untouched — their override is
+    // authoritative.
+    const taxRate = await this.getPayrollTaxRate();
     for (const lineItem of run.lineItems) {
+      if (lineItem.adjustedBy) continue;
+
+      const commissions = await this.prisma.commissionRecord.findMany({
+        where: {
+          agentId: lineItem.employeeId,
+          month: run.month,
+          status: CommissionStatus.APPROVED,
+        },
+      });
+      const freshCommission = commissions.reduce(
+        (sum, c) => sum + Number(c.adjustedAmount ?? c.calculatedAmount),
+        0,
+      );
+
+      const base = Number(lineItem.baseSalary);
+      const bonus = Number(lineItem.bonus);
+      const gross = base + freshCommission + bonus;
+      const taxDeduction = Number((gross * taxRate).toFixed(2));
+      const netPay = gross - taxDeduction - Number(lineItem.otherDeductions);
+
+      await this.prisma.payrollLineItem.update({
+        where: { id: lineItem.id },
+        data: {
+          commission: freshCommission,
+          grossPay: gross,
+          taxDeduction,
+          netPay,
+        },
+      });
+    }
+    await this.recalculateRunTotals(runId);
+
+    const refreshedRun = await this.prisma.payrollRun.findUniqueOrThrow({
+      where: { id: runId },
+      include: { lineItems: true },
+    });
+
+    for (const lineItem of refreshedRun.lineItems) {
       try {
-        const pdfBuffer = await this.payslipPdfService.generate(lineItem, run);
-        await this.payslipEmailService.send(lineItem, run.month, pdfBuffer);
+        const pdfBuffer = await this.payslipPdfService.generate(lineItem, refreshedRun);
+        await this.payslipEmailService.send(lineItem, refreshedRun.month, pdfBuffer);
 
         await this.prisma.payrollLineItem.update({
           where: { id: lineItem.id },
@@ -297,7 +344,7 @@ export class PayrollService {
       }
     }
 
-    const agentIds = run.lineItems
+    const agentIds = refreshedRun.lineItems
       .filter((i) => Number(i.commission) > 0)
       .map((i) => i.employeeId);
 
@@ -305,7 +352,7 @@ export class PayrollService {
       await this.prisma.commissionRecord.updateMany({
         where: {
           agentId: { in: agentIds },
-          month: run.month,
+          month: refreshedRun.month,
           status: CommissionStatus.APPROVED,
         },
         data: { status: CommissionStatus.PAID },
@@ -323,13 +370,13 @@ export class PayrollService {
     });
 
     // Create Finance Expense records so payroll costs appear in the P&L
-    const periodLabel = format(parse(run.month, 'yyyy-MM', new Date()), 'MMMM yyyy');
+    const periodLabel = format(parse(refreshedRun.month, 'yyyy-MM', new Date()), 'MMMM yyyy');
 
-    const totalSalaries = run.lineItems.reduce(
+    const totalSalaries = refreshedRun.lineItems.reduce(
       (sum, item) => sum + Number(item.baseSalary) + Number(item.bonus),
       0,
     );
-    const totalCommissions = run.lineItems.reduce(
+    const totalCommissions = refreshedRun.lineItems.reduce(
       (sum, item) => sum + Number(item.commission),
       0,
     );
@@ -339,10 +386,10 @@ export class PayrollService {
         data: {
           vendorName: `Staff salaries — ${periodLabel}`,
           amount: totalSalaries,
-          currency: run.currency ?? 'RWF',
+          currency: refreshedRun.currency ?? 'RWF',
           category: ExpenseCategory.STAFF,
           date: new Date(),
-          notes: `Auto-created from payroll run for ${periodLabel}. ${run.lineItems.length} employee${run.lineItems.length !== 1 ? 's' : ''}.`,
+          notes: `Auto-created from payroll run for ${periodLabel}. ${refreshedRun.lineItems.length} employee${refreshedRun.lineItems.length !== 1 ? 's' : ''}.`,
           isPayrollExpense: true,
           payrollRunId: runId,
           createdBy: userId,
@@ -351,12 +398,12 @@ export class PayrollService {
     }
 
     if (totalCommissions > 0) {
-      const commissionCount = run.lineItems.filter((i) => Number(i.commission) > 0).length;
+      const commissionCount = refreshedRun.lineItems.filter((i) => Number(i.commission) > 0).length;
       await this.prisma.expense.create({
         data: {
           vendorName: `Sales commissions — ${periodLabel}`,
           amount: totalCommissions,
-          currency: run.currency ?? 'RWF',
+          currency: refreshedRun.currency ?? 'RWF',
           category: ExpenseCategory.COMMISSION,
           date: new Date(),
           notes: `Auto-created from payroll run for ${periodLabel}. ${commissionCount} commission${commissionCount !== 1 ? 's' : ''} paid.`,
@@ -378,9 +425,9 @@ export class PayrollService {
       entityType: 'PayrollRun',
       entityId: runId,
       newValue: {
-        month: run.month,
-        totalNet: Number(run.totalNet),
-        employeeCount: run.lineItems.length,
+        month: processedRun.month,
+        totalNet: Number(processedRun.totalNet),
+        employeeCount: processedRun.lineItems.length,
       },
     });
 

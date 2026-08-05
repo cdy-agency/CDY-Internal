@@ -546,22 +546,19 @@
               next day — it doesn't stop the rest of the batch.
             </li>
             <li>
-              <strong>Payroll gross pay is a snapshot, not live.</strong>
-              Creating a Draft payroll run sums each agent's currently
-              Approved commissions for that month and bakes that number into
-              the run's line items right then. Processing the run later does
-              <em>not</em> re-check commissions for pay purposes — it only
-              uses what was already baked in.
-              <div class="warn">
-                <strong>Known gap:</strong> a commission approved
-                <em>after</em> a Draft run is created but before it's
-                processed is <strong>not</strong> added to that employee's
-                gross pay — but processing the run still flips it to Paid
-                anyway (the status flip matches by agent + month + Approved,
-                not by the specific commissions that were actually
-                snapshotted). The fix, if needed, is a manual per-line-item
-                adjustment before processing.
-              </div>
+              <strong>Payroll gross pay reflects commissions as of
+              processing, not as of the run's creation.</strong> Creating a
+              Draft payroll run sums each agent's currently Approved
+              commissions for that month as an initial estimate for the
+              line items. Right before a run is actually processed, every
+              line item that a manager hasn't manually adjusted is
+              re-synced against whatever commissions are Approved for that
+              agent/month <em>at that moment</em> — so a commission approved
+              any time after the run was drafted but before it's processed
+              still gets included in gross pay, and is marked Paid
+              consistently with what was actually paid out. A line item a
+              manager has manually overridden is left untouched — the
+              override is authoritative and isn't re-synced.
             </li>
             <li>
               <strong>Processing a Draft run</strong> generates and emails
