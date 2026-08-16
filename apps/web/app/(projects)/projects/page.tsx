@@ -245,7 +245,7 @@ export default function ProjectsOverviewPage(): JSX.Element {
               ))}
               {activeProjects.length > 6 && (
                 <Link
-                  href="/projects"
+                  href="/projects/all"
                   className="block text-xs text-cdy-red hover:underline"
                 >
                   +{activeProjects.length - 6} more projects →

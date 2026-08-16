@@ -38,6 +38,7 @@ import { ProjectApprovalsPanel } from '@/components/projects/ProjectApprovalsPan
 import { ProjectActivityPanel } from '@/components/projects/ProjectActivityPanel';
 import { CompleteProjectModal } from '@/components/projects/CompleteProjectModal';
 import { CsvImportModal } from '@/components/projects/CsvImportModal';
+import { EditProjectDrawer } from '@/components/projects/EditProjectDrawer';
 import { useEmployeeLookup } from '@/hooks/useHr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -175,6 +176,7 @@ export default function ProjectDetailPage(): JSX.Element {
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: progress } = useProjectProgress(projectId);
@@ -446,6 +448,13 @@ export default function ProjectDetailPage(): JSX.Element {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <PermissionGate feature="projects.all" action="write">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditOpen(true)}
+                >
+                  Edit Project
+                </Button>
                 {project.status === ProjectStatus.ACTIVE && (
                   <Button
                     size="sm"
@@ -1029,6 +1038,12 @@ export default function ProjectDetailPage(): JSX.Element {
         }
         isPending={importTasksCsv.isPending}
         onViewTasks={() => setActiveTab('tasks')}
+      />
+
+      <EditProjectDrawer
+        open={editOpen}
+        project={project}
+        onClose={() => setEditOpen(false)}
       />
     </div>
   );

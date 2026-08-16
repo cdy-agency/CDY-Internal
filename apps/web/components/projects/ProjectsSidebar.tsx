@@ -28,10 +28,9 @@ const navItems = [
   },
   {
     label: 'All Projects',
-    href: '/projects',
+    href: '/projects/all',
     icon: FolderOpen,
     feature: 'projects.all',
-    exact: true,
   },
   {
     label: 'My Tasks',

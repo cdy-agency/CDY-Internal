@@ -158,11 +158,12 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { pattern: /^\/projects\/reports/, feature: 'projects.reports', action: 'read' },
   { pattern: /^\/projects\/my/, feature: 'projects.own', action: 'read' },
   { pattern: /^\/projects\/new/, feature: 'projects.all', action: 'write' },
+  { pattern: /^\/projects\/all/, feature: 'projects.all', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/handover/, feature: 'projects.all', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/approvals/, feature: 'projects.approvals', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/status-report/, feature: 'projects.all', action: 'read' },
   { pattern: /^\/projects\/[^/]+\/milestones/, feature: 'projects.all', action: 'read' },
-  { pattern: /^\/projects$/, feature: 'projects.all', action: 'read' }, // Overview / All Projects
+  { pattern: /^\/projects$/, feature: 'projects.all', action: 'read' }, // Overview
   { pattern: /^\/projects/, module: 'projects' },                    // any projects.* permission
 
   // ── Finance ──────────────────────────────────────────────────────────
