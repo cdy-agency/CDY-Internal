@@ -67,6 +67,12 @@ export enum PaymentMethod {
   OTHER = 'OTHER',
 }
 
+export enum CompanyAccountType {
+  BANK = 'BANK',
+  MOBILE_MONEY = 'MOBILE_MONEY',
+  OTHER = 'OTHER',
+}
+
 export enum ClientService {
   SOFTWARE_DEV = 'SOFTWARE_DEV',
   BRANDING = 'BRANDING',
@@ -617,6 +623,8 @@ export interface InvoicePayment {
   amount: number;
   method: PaymentMethod;
   reference: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
   paidAt: string;
   receiptSent: boolean;
   notes: string | null;
@@ -649,6 +657,8 @@ export interface PaymentRecord {
   amount: number;
   paymentMethod: PaymentMethod;
   reference: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
   date: string;
   description: string;
   receiptSent?: boolean;
@@ -1023,6 +1033,19 @@ export enum BudgetRequestStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+}
+
+export interface CompanyAccountRecord {
+  id: string;
+  name: string;
+  type: CompanyAccountType;
+  provider: string | null;
+  accountNumber: string | null;
+  currency: string | null;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TaxRateRecord {

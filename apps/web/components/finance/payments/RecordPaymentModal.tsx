@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { invoiceRemainingBalance } from '@/lib/invoice-balance';
+import { useCompanyAccountLookup } from '@/hooks/useCompanyAccounts';
 import type { ApiResponse, InvoiceDetail } from '@cdy/shared';
 import { PaymentMethod } from '@cdy/shared';
 import type { AxiosError } from 'axios';
@@ -40,6 +41,7 @@ export function RecordPaymentModal({
   invoice,
 }: RecordPaymentModalProps): JSX.Element | null {
   const queryClient = useQueryClient();
+  const { data: accounts } = useCompanyAccountLookup();
   const [loading, setLoading] = useState(false);
 
   const alreadyPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
@@ -58,6 +60,7 @@ export function RecordPaymentModal({
     PaymentMethod.BANK_TRANSFER,
   );
   const [reference, setReference] = useState('');
+  const [accountId, setAccountId] = useState('');
   const [notes, setNotes] = useState('');
   const [amountError, setAmountError] = useState('');
 
@@ -67,6 +70,7 @@ export function RecordPaymentModal({
       setPaidAt(todayString());
       setMethod(PaymentMethod.BANK_TRANSFER);
       setReference('');
+      setAccountId('');
       setNotes('');
       setAmountError('');
     }
@@ -119,6 +123,7 @@ export function RecordPaymentModal({
         method,
         paidAt,
         reference: reference || undefined,
+        accountId: accountId || undefined,
         notes: notes || undefined,
       });
 
@@ -255,6 +260,26 @@ export function RecordPaymentModal({
                   placeholder="TXN-12345"
                 />
               </div>
+
+              {accounts && accounts.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="accountId">Account used (optional)</Label>
+                  <select
+                    id="accountId"
+                    value={accountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+                  >
+                    <option value="">— Not specified —</option>
+                    {accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name}
+                        {acc.provider ? ` (${acc.provider})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (optional)</Label>

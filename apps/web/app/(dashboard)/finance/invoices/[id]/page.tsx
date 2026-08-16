@@ -693,6 +693,7 @@ export default function InvoiceDetailPage(): JSX.Element {
                     <th className="pb-2 font-medium">Date</th>
                     <th className="pb-2 font-medium text-right">Amount</th>
                     <th className="pb-2 font-medium">Method</th>
+                    <th className="pb-2 font-medium">Account</th>
                     <th className="pb-2 font-medium">Reference</th>
                   </tr>
                 </thead>
@@ -710,6 +711,9 @@ export default function InvoiceDetailPage(): JSX.Element {
                       </td>
                       <td className="py-2 text-cdy-muted">
                         {payment.method.replace(/_/g, ' ')}
+                      </td>
+                      <td className="py-2 text-cdy-muted">
+                        {payment.accountName ?? '—'}
                       </td>
                       <td className="py-2 text-cdy-muted">
                         {payment.reference ?? '—'}

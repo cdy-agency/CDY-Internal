@@ -29,6 +29,8 @@ export interface SerializedPayment {
   amount: number;
   paymentMethod: PaymentMethod;
   reference: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
   date: Date;
   description: string;
   receiptSent?: boolean;
@@ -103,16 +105,27 @@ export class PaymentsService {
         throw new BadRequestException('Payment date cannot be in the future');
       }
 
+      if (dto.accountId) {
+        const account = await tx.companyAccount.findFirst({
+          where: { id: dto.accountId, isActive: true, deletedAt: null },
+        });
+        if (!account) {
+          throw new BadRequestException('Selected account is not a valid, active company account');
+        }
+      }
+
       const payment = await tx.payment.create({
         data: {
           invoiceId,
           amount: dto.amount,
           method: dto.method,
           reference: dto.reference,
+          accountId: dto.accountId ?? null,
           paidAt,
           notes: dto.notes,
           recordedBy: userId,
         },
+        include: { account: { select: { id: true, name: true } } },
       });
 
       const isFullyPaid = isInvoiceFullySettled({
@@ -230,6 +243,7 @@ export class PaymentsService {
           invoice: {
             include: { client: { select: { companyName: true, contactName: true } } },
           },
+          account: { select: { id: true, name: true } },
         },
         orderBy: { paidAt: 'desc' },
       }),
@@ -318,7 +332,7 @@ export class PaymentsService {
   async findOne(id: string): Promise<SerializedPayment> {
     const payment = await this.prisma.payment.findFirst({
       where: { id, deletedAt: null },
-      include: { invoice: true },
+      include: { invoice: true, account: { select: { id: true, name: true } } },
     });
 
     if (!payment) {
@@ -335,6 +349,8 @@ export class PaymentsService {
       amount: Prisma.Decimal;
       method: PaymentMethod;
       reference: string | null;
+      accountId?: string | null;
+      account?: { id: string; name: string } | null;
       paidAt: Date;
       receiptSent: boolean;
       notes: string | null;
@@ -358,6 +374,8 @@ export class PaymentsService {
       amount: Number(payment.amount),
       paymentMethod: payment.method,
       reference: payment.reference,
+      accountId: payment.accountId ?? payment.account?.id ?? null,
+      accountName: payment.account?.name ?? null,
       date: payment.paidAt,
       description: `Invoice ${invoice.invoiceNumber}`,
       receiptSent: payment.receiptSent,

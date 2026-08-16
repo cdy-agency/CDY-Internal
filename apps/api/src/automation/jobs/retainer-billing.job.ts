@@ -78,6 +78,7 @@ export class RetainerBillingJob {
           data: {
             invoiceNumber,
             clientId: retainer.clientId,
+            ventureId: retainer.ventureId ?? null,
             serviceType: 'retainer',
             retainerContractId: retainer.id,
             lineItems: lineItems as unknown as Prisma.InputJsonValue,

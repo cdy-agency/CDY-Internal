@@ -23,6 +23,7 @@ import {
   X,
   Store,
   Landmark,
+  Banknote,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -75,6 +76,12 @@ const navItems: NavItem[] = [
     href: '/finance/settings/tax',
     icon: Percent,
     feature: 'finance.tax',
+  },
+  {
+    label: 'Company Accounts',
+    href: '/finance/settings/accounts',
+    icon: Banknote,
+    feature: 'finance.accounts',
   },
 ];
 

@@ -246,6 +246,7 @@ export class InvoicesService {
         payments: {
           where: { deletedAt: null },
           orderBy: { paidAt: 'asc' },
+          include: { account: { select: { id: true, name: true } } },
         },
         creditNotes: {
           where: { deletedAt: null },
@@ -694,6 +695,8 @@ export class InvoicesService {
     amount: Prisma.Decimal;
     method: string;
     reference: string | null;
+    accountId: string | null;
+    account?: { id: string; name: string } | null;
     paidAt: Date;
     receiptSent: boolean;
     notes: string | null;
@@ -701,9 +704,11 @@ export class InvoicesService {
     createdAt: Date;
     updatedAt: Date;
   }) {
+    const { account, ...rest } = payment;
     return {
-      ...payment,
+      ...rest,
       amount: Number(payment.amount),
+      accountName: account?.name ?? null,
     };
   }
 }

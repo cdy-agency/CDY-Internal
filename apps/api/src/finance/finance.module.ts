@@ -18,6 +18,7 @@ import { CreditNotesModule } from '../credit-notes/credit-notes.module';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
 import { ReconciliationModule } from '../reconciliation/reconciliation.module';
 import { TaxModule } from '../tax/tax.module';
+import { CompanyAccountsModule } from '../company-accounts/company-accounts.module';
 import { RetainersModule } from '../retainers/retainers.module';
 import { BudgetModule } from '../budget/budget.module';
 import { PayrollModule } from '../payroll/payroll.module';
@@ -39,6 +40,7 @@ import { DirectIncomeModule } from '../direct-income/direct-income.module';
     PaymentPlansModule,
     ReconciliationModule,
     TaxModule,
+    CompanyAccountsModule,
     RetainersModule,
     BudgetModule,
     PayrollModule,

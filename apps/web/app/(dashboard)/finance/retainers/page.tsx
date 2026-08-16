@@ -126,7 +126,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                       <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
                     </>
                   )}
-                  {retainer.status === RetainerStatus.PAUSED || retainer.status === RetainerStatus.ENDED && (
+                  {retainer.status === RetainerStatus.PAUSED && (
                     <Button variant="outline" size="sm" onClick={resume} disabled={actionLoading}>
                       {actionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Resume'}
                     </Button>

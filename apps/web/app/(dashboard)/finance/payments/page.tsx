@@ -195,6 +195,7 @@ export default function PaymentsPage(): JSX.Element {
                   <th className="px-4 py-3 font-medium">Client</th>
                   <th className="px-4 py-3 font-medium text-right">Amount</th>
                   <th className="px-4 py-3 font-medium">Method</th>
+                  <th className="px-4 py-3 font-medium">Account</th>
                   <th className="px-4 py-3 font-medium">Reference</th>
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
@@ -231,6 +232,9 @@ export default function PaymentsPage(): JSX.Element {
                     </td>
                     <td className="px-4 py-3">
                       <PaymentMethodBadge method={payment.paymentMethod} />
+                    </td>
+                    <td className="px-4 py-3 text-cdy-muted">
+                      {payment.accountName ?? '—'}
                     </td>
                     <td className="px-4 py-3 font-mono text-cdy-muted">
                       {payment.reference ?? '—'}
