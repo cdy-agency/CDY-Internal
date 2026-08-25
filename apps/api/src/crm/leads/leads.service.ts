@@ -750,21 +750,46 @@ export class LeadsService {
     return date;
   }
 
+  /**
+   * Finds an existing Client to reuse when closing a deal, instead of
+   * always creating a new one. Deliberately conservative: a false match
+   * silently merges two unrelated deals into one client record (and, for
+   * venture-tagged leads, overwrites which venture that client belongs to).
+   *
+   * - Email is the only signal trusted on its own — it's the closest thing
+   *   to a unique identifier a lead/client has.
+   * - Company name is only trusted for COMPANY-type leads (an INDIVIDUAL
+   *   lead's companyName is a display fallback of contactName, not a real
+   *   company name — matching on it would merge unrelated people who
+   *   happen to share a name), and only when corroborated by a matching
+   *   phone number, since company names alone are not unique (two
+   *   unrelated businesses can both be called "City Motors").
+   */
+  private async findExistingClientForLead(lead: Lead) {
+    const byEmail = await this.prisma.client.findFirst({
+      where: { email: { equals: lead.email, mode: 'insensitive' }, deletedAt: null },
+    });
+    if (byEmail) return byEmail;
+
+    if (lead.leadType === ClientType.COMPANY && lead.companyName && lead.phone) {
+      return this.prisma.client.findFirst({
+        where: {
+          companyName: { equals: lead.companyName, mode: 'insensitive' },
+          phone: lead.phone,
+          deletedAt: null,
+        },
+      });
+    }
+
+    return null;
+  }
+
   private async handleDealClosed(
     lead: Lead,
     userId: string,
     wonOutcome: 'invoice' | 'retainer',
   ): Promise<void> {
-    const companyMatch = lead.companyName
-      ? [{ companyName: { equals: lead.companyName, mode: 'insensitive' as const } }]
-      : [];
-
-    let client = await this.prisma.client.findFirst({
-      where: {
-        OR: [{ email: lead.email }, ...companyMatch],
-        deletedAt: null,
-      },
-    });
+    let client = await this.findExistingClientForLead(lead);
 
     if (!client) {
       client = await this.prisma.client.create({
