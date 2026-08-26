@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   Building2,
   CalendarDays,
+  CalendarCheck,
   LogOut,
   Menu,
   X,
@@ -29,6 +30,13 @@ const navItems: NavItem[] = [
     href: '/marketing',
     icon: Building2,
     feature: 'marketing.clients',
+    exact: true,
+  },
+  {
+    label: 'Today',
+    href: '/marketing/today',
+    icon: CalendarCheck,
+    feature: 'marketing.content',
     exact: true,
   },
   {

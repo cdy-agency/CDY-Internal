@@ -8,6 +8,7 @@ import type {
   ContentItemRecord,
   ContentCalendarResult,
   GlobalContentCalendarResult,
+  TodaysContentResult,
   MarketingMonthlySummary,
   MarketingAllClientsSummaryItem,
 } from '@cdy/shared';
@@ -89,6 +90,20 @@ export function useGlobalContentCalendar(month: string) {
   });
 }
 
+export function useTodaysContent() {
+  return useQuery({
+    queryKey: ['marketing', 'calendar', 'today'],
+    queryFn: async (): Promise<TodaysContentResult> => {
+      const res = await api.get<ApiResponse<TodaysContentResult>>(
+        '/marketing/calendar/today',
+      );
+      return res.data.data;
+    },
+    staleTime: 30_000,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
 export function useMarketingMonthlySummary(clientId: string, month: string) {
   return useQuery({
     queryKey: ['marketing', 'summary', clientId, month],
@@ -166,6 +181,12 @@ export function useCreateContentItem(clientId: string) {
       void queryClient.invalidateQueries({
         queryKey: ['marketing', 'summary', clientId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ['marketing', 'calendar', 'all'],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['marketing', 'calendar', 'today'],
+      });
     },
   });
 }
@@ -195,6 +216,12 @@ export function useUpdateContentStatus(clientId: string) {
       });
       void queryClient.invalidateQueries({
         queryKey: ['marketing', 'summary', clientId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['marketing', 'calendar', 'all'],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['marketing', 'calendar', 'today'],
       });
     },
   });

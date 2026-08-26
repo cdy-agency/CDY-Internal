@@ -40,7 +40,8 @@ export function AddContentDrawer({
 }: AddContentDrawerProps): JSX.Element | null {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [platform, setPlatform] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [customPlatform, setCustomPlatform] = useState('');
   const [contentType, setContentType] = useState('POST');
   const [scheduledDate, setScheduledDate] = useState('');
   const [fileUrl, setFileUrl] = useState('');
@@ -48,16 +49,23 @@ export function AddContentDrawer({
 
   const { mutateAsync, isPending } = useCreateContentItem(clientId);
 
-  const platforms =
+  const basePlatforms =
     allowedPlatforms.length > 0
       ? PLATFORMS.filter((p) => allowedPlatforms.includes(p))
       : PLATFORMS;
+  // Custom platforms already picked (not in the base list) stay selectable
+  // even after being added, so they show up as chips alongside the presets.
+  const platformOptions = [
+    ...basePlatforms,
+    ...selectedPlatforms.filter((p) => !basePlatforms.includes(p)),
+  ];
 
   useEffect(() => {
     if (open) {
       setTitle('');
       setDescription('');
-      setPlatform(platforms[0] ?? 'instagram');
+      setSelectedPlatforms(basePlatforms[0] ? [basePlatforms[0]] : []);
+      setCustomPlatform('');
       setContentType('POST');
       setScheduledDate(
         prefillDate ?? format(new Date(), 'yyyy-MM-dd'),
@@ -65,24 +73,49 @@ export function AddContentDrawer({
       setFileUrl('');
       setNotes('');
     }
-  }, [open, prefillDate, platforms[0]]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefillDate]);
 
   if (!open) return null;
 
+  function togglePlatform(p: string): void {
+    setSelectedPlatforms((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
+    );
+  }
+
+  function addCustomPlatform(): void {
+    const normalized = customPlatform.trim().toLowerCase();
+    if (!normalized) return;
+    if (!selectedPlatforms.includes(normalized)) {
+      setSelectedPlatforms((prev) => [...prev, normalized]);
+    }
+    setCustomPlatform('');
+  }
+
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (!title.trim() || !platform || !scheduledDate) return;
+    if (!title.trim() || selectedPlatforms.length === 0 || !scheduledDate) return;
     try {
-      await mutateAsync({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        platform,
-        contentType,
-        scheduledDate,
-        fileUrl: fileUrl.trim() || undefined,
-        notes: notes.trim() || undefined,
-      });
-      toast.success('Content item added');
+      // One content item per selected platform — each platform's post is
+      // tracked/approved/published independently (they don't all go live
+      // at once), so a single combined row wouldn't fit the status workflow.
+      for (const platform of selectedPlatforms) {
+        await mutateAsync({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          platform,
+          contentType,
+          scheduledDate,
+          fileUrl: fileUrl.trim() || undefined,
+          notes: notes.trim() || undefined,
+        });
+      }
+      toast.success(
+        selectedPlatforms.length > 1
+          ? `${selectedPlatforms.length} content items added`
+          : 'Content item added',
+      );
       onClose();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -126,37 +159,69 @@ export function AddContentDrawer({
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="content-platform">Platform</Label>
-                <select
-                  id="content-platform"
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm capitalize text-cdy-white"
-                >
-                  {platforms.map((p) => (
-                    <option key={p} value={p}>
-                      {p.charAt(0).toUpperCase() + p.slice(1)}
-                    </option>
-                  ))}
-                </select>
+            <div>
+              <Label>Platform{selectedPlatforms.length > 1 ? 's' : ''}</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {platformOptions.map((p) => {
+                  const active = selectedPlatforms.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => togglePlatform(p)}
+                      className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
+                        active
+                          ? 'border-cdy-red bg-cdy-red/10 text-cdy-white'
+                          : 'border-cdy-navy-border text-cdy-muted hover:border-cdy-muted'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
               </div>
-              <div>
-                <Label htmlFor="content-type">Type</Label>
-                <select
-                  id="content-type"
-                  value={contentType}
-                  onChange={(e) => setContentType(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              <div className="mt-2 flex gap-2">
+                <Input
+                  value={customPlatform}
+                  onChange={(e) => setCustomPlatform(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomPlatform();
+                    }
+                  }}
+                  placeholder="Add a custom platform…"
+                  className="h-9"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0"
+                  onClick={addCustomPlatform}
                 >
-                  {CONTENT_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
+                  Add
+                </Button>
               </div>
+              {selectedPlatforms.length === 0 && (
+                <p className="mt-1 text-xs text-[var(--cdy-danger)]">
+                  Select at least one platform
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="content-type">Type</Label>
+              <select
+                id="content-type"
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white"
+              >
+                {CONTENT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <Label htmlFor="content-date">Scheduled date</Label>
@@ -207,7 +272,11 @@ export function AddContentDrawer({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending} className="flex-1">
+            <Button
+              type="submit"
+              disabled={isPending || selectedPlatforms.length === 0}
+              className="flex-1"
+            >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

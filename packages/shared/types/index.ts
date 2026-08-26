@@ -2803,6 +2803,11 @@ export interface GlobalContentCalendarResult {
   byDate: Record<string, GlobalContentItemRecord[]>;
 }
 
+export interface TodaysContentResult {
+  date: string;
+  items: GlobalContentItemRecord[];
+}
+
 export interface MarketingMonthlySummary {
   month: string;
   marketingClientId: string;

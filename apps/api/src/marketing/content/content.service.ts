@@ -7,6 +7,8 @@ import { ContentStatus } from '@prisma/client';
 import {
   startOfMonth,
   endOfMonth,
+  startOfDay,
+  endOfDay,
   parse,
   format,
 } from 'date-fns';
@@ -199,6 +201,31 @@ export class ContentService {
     }
 
     return { month, items: serialized, byDate };
+  }
+
+  /** Every client's content scheduled for today, across the whole agency. */
+  async getTodaysContent() {
+    const now = new Date();
+    const from = startOfDay(now);
+    const to = endOfDay(now);
+
+    const items = await this.prisma.contentItem.findMany({
+      where: {
+        scheduledDate: { gte: from, lte: to },
+        deletedAt: null,
+      },
+      include: {
+        marketingClient: { include: { client: true } },
+      },
+      orderBy: { scheduledDate: 'asc' },
+    });
+
+    const serialized = items.map((item) => ({
+      ...item,
+      clientName: item.marketingClient.client?.companyName ?? 'Unknown client',
+    }));
+
+    return { date: format(now, 'yyyy-MM-dd'), items: serialized };
   }
 
   async getCalendar(marketingClientId: string, month: string) {

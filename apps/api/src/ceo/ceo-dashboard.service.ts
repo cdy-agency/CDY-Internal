@@ -99,6 +99,9 @@ export class CeoDashboardService {
       rawPaymentByMethod,
       rawDirectIncomeByMethod,
       rawExpenseByMethod,
+      rawPaymentByMethodAllTime,
+      rawDirectIncomeByMethodAllTime,
+      rawExpenseByMethodAllTime,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -320,6 +323,26 @@ export class CeoDashboardService {
         _sum: { amount: true },
         _count: { id: true },
       }),
+
+      // ── Cash vs Bank balance — all-time, not scoped to this month ────
+      this.prisma.payment.groupBy({
+        by: ['method'],
+        where: { deletedAt: null },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      this.prisma.directIncome.groupBy({
+        by: ['paymentMethod'],
+        where: { deletedAt: null },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      this.prisma.expense.groupBy({
+        by: ['paymentMethod'],
+        where: { deletedAt: null, paymentMethod: { not: null } },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
     ]);
 
     // Venture summary
@@ -357,33 +380,44 @@ export class CeoDashboardService {
       0,
     );
 
-    // Income by payment method = invoice payments + Direct Income, combined
-    // — a payment method's true "money in" figure, not just its invoice-
-    // payment subset.
-    const incomeByMethod = new Map<string, { amount: number; count: number }>();
-    for (const r of rawPaymentByMethod) {
-      const prev = incomeByMethod.get(r.method) ?? { amount: 0, count: 0 };
-      incomeByMethod.set(r.method, {
-        amount: prev.amount + Number(r._sum.amount ?? 0),
-        count: prev.count + r._count.id,
-      });
+    type MethodAgg = Map<string, { amount: number; count: number }>;
+    function buildIncomeByMethod(
+      payments: Array<{ method: string; _sum: { amount: unknown }; _count: { id: number } }>,
+      directIncome: Array<{ paymentMethod: string; _sum: { amount: unknown }; _count: { id: number } }>,
+    ): MethodAgg {
+      // Income by payment method = invoice payments + Direct Income, combined
+      // — a payment method's true "money in" figure, not just its invoice-
+      // payment subset.
+      const map: MethodAgg = new Map();
+      for (const r of payments) {
+        const prev = map.get(r.method) ?? { amount: 0, count: 0 };
+        map.set(r.method, {
+          amount: prev.amount + Number(r._sum.amount ?? 0),
+          count: prev.count + r._count.id,
+        });
+      }
+      for (const r of directIncome) {
+        const prev = map.get(r.paymentMethod) ?? { amount: 0, count: 0 };
+        map.set(r.paymentMethod, {
+          amount: prev.amount + Number(r._sum.amount ?? 0),
+          count: prev.count + r._count.id,
+        });
+      }
+      return map;
     }
-    for (const r of rawDirectIncomeByMethod) {
-      const prev = incomeByMethod.get(r.paymentMethod) ?? { amount: 0, count: 0 };
-      incomeByMethod.set(r.paymentMethod, {
-        amount: prev.amount + Number(r._sum.amount ?? 0),
-        count: prev.count + r._count.id,
-      });
+    function buildExpensesByMethod(
+      expenses: Array<{ paymentMethod: string | null; _sum: { amount: unknown }; _count: { id: number } }>,
+    ): MethodAgg {
+      const map: MethodAgg = new Map();
+      for (const r of expenses) {
+        if (!r.paymentMethod) continue;
+        map.set(r.paymentMethod, { amount: Number(r._sum.amount ?? 0), count: r._count.id });
+      }
+      return map;
     }
 
-    const expensesByMethod = new Map<string, { amount: number; count: number }>();
-    for (const r of rawExpenseByMethod) {
-      if (!r.paymentMethod) continue;
-      expensesByMethod.set(r.paymentMethod, {
-        amount: Number(r._sum.amount ?? 0),
-        count: r._count.id,
-      });
-    }
+    const incomeByMethod = buildIncomeByMethod(rawPaymentByMethod, rawDirectIncomeByMethod);
+    const expensesByMethod = buildExpensesByMethod(rawExpenseByMethod);
 
     // CEO-level simplification: every method collapses into either "held as
     // physical Cash" or "sits in a Bank/electronic account". OTHER and
@@ -391,16 +425,23 @@ export class CeoDashboardService {
     // guessed into either bucket — showing a bucket without them would be
     // more inaccurate than just leaving that money unclassified.
     const BANK_METHODS = ['BANK_TRANSFER', 'MOBILE_MONEY', 'MTN_MOMO', 'AIRTEL_MONEY', 'CARD'];
-    function sumMethods(
-      map: Map<string, { amount: number; count: number }>,
-      methods: string[],
-    ): number {
+    function sumMethods(map: MethodAgg, methods: string[]): number {
       return methods.reduce((s, m) => s + (map.get(m)?.amount ?? 0), 0);
     }
-    const cashIncome = incomeByMethod.get('CASH')?.amount ?? 0;
-    const cashExpenses = expensesByMethod.get('CASH')?.amount ?? 0;
-    const bankIncome = sumMethods(incomeByMethod, BANK_METHODS);
-    const bankExpenses = sumMethods(expensesByMethod, BANK_METHODS);
+
+    // Cash vs Bank balance is a running, all-time figure (how much is
+    // actually sitting in each place right now) — not reset to "this
+    // month", unlike the rest of the dashboard's MTD metrics.
+    const incomeByMethodAllTime = buildIncomeByMethod(
+      rawPaymentByMethodAllTime,
+      rawDirectIncomeByMethodAllTime,
+    );
+    const expensesByMethodAllTime = buildExpensesByMethod(rawExpenseByMethodAllTime);
+
+    const cashIncome = incomeByMethodAllTime.get('CASH')?.amount ?? 0;
+    const cashExpenses = expensesByMethodAllTime.get('CASH')?.amount ?? 0;
+    const bankIncome = sumMethods(incomeByMethodAllTime, BANK_METHODS);
+    const bankExpenses = sumMethods(expensesByMethodAllTime, BANK_METHODS);
 
     return {
       generatedAt: now,

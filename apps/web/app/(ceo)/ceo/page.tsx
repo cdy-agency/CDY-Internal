@@ -382,11 +382,11 @@ export default function CeoDashboardPage() {
           </SectionCard>
         </div>
 
-        {/* Row 2b2 — Balance by mode of payment (Cash vs Bank) — this month */}
+        {/* Row 2b2 — Balance by mode of payment (Cash vs Bank) — all-time */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SectionCard>
             <p className="text-xs font-medium uppercase tracking-wide text-emerald-400">
-              💵 Cash Balance — this month
+              💵 Cash Balance — overall
             </p>
             <p
               className={`mt-2 text-2xl font-bold ${
@@ -395,11 +395,11 @@ export default function CeoDashboardPage() {
             >
               {isLoading ? '—' : formatCurrency(cashBalance)}
             </p>
-            <p className="mt-1 text-xs text-cdy-muted">Cash income − cash expenses</p>
+            <p className="mt-1 text-xs text-cdy-muted">All-time cash income − cash expenses</p>
           </SectionCard>
           <SectionCard>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-400">
-              🏦 Bank Balance — this month
+              🏦 Bank Balance — overall
             </p>
             <p
               className={`mt-2 text-2xl font-bold ${
@@ -409,7 +409,7 @@ export default function CeoDashboardPage() {
               {isLoading ? '—' : formatCurrency(bankBalance)}
             </p>
             <p className="mt-1 text-xs text-cdy-muted">
-              Bank transfer, mobile money, and card income − expenses
+              All-time bank transfer, mobile money, and card income − expenses
             </p>
           </SectionCard>
         </div>

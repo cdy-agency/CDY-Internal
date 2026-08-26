@@ -42,6 +42,13 @@ export class MarketingController {
     return { data, statusCode: HttpStatus.OK };
   }
 
+  @Get('calendar/today')
+  @RequirePermission('marketing.content', 'read')
+  async getTodaysContent() {
+    const data = await this.contentService.getTodaysContent();
+    return { data, statusCode: HttpStatus.OK };
+  }
+
   @Get('calendar/pdf')
   @RequirePermission('marketing.content', 'read')
   async downloadGlobalCalendarPdf(
