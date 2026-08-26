@@ -350,6 +350,12 @@ export interface FinanceSummary {
     paymentMethod: string | null;
     date: string;
   }>;
+  meta: DataCutoffMeta;
+}
+
+export interface DataCutoffMeta {
+  excludeOldDataEnabled: boolean;
+  excludeOldDataCutoff: string | null;
 }
 
 export enum NotificationType {

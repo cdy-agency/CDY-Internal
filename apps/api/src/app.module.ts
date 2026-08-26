@@ -81,6 +81,7 @@ export class AppModule implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     await this.settingsService.seed();
+    await this.settingsService.ensureDataCutoffDefaults();
     await this.hrSettingsService.onApplicationBootstrap();
   }
 }

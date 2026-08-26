@@ -9,16 +9,25 @@ import {
 } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { invoiceRemainingBalance } from '../common/invoice-balance.util';
+import { DataCutoffService, laterOf } from '../settings/data-cutoff.service';
 
 @Injectable()
 export class CeoDashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly dataCutoffService: DataCutoffService,
+  ) {}
 
   private async sumOutstandingForStatuses(
     statuses: Array<'SENT' | 'PARTIALLY_PAID' | 'OVERDUE'>,
+    cutoff: Date | null,
   ): Promise<{ total: number; count: number }> {
     const invoices = await this.prisma.invoice.findMany({
-      where: { status: { in: statuses }, deletedAt: null },
+      where: {
+        status: { in: statuses },
+        deletedAt: null,
+        createdAt: { gte: cutoff ?? undefined },
+      },
       select: {
         total: true,
         payments: { where: { deletedAt: null }, select: { amount: true } },
@@ -51,6 +60,8 @@ export class CeoDashboardService {
     const monthEnd = endOfMonth(now);
     const lastMonthStart = startOfMonth(subMonths(now, 1));
     const lastMonthEnd = endOfMonth(subMonths(now, 1));
+
+    const { enabled: excludeOldDataEnabled, cutoff } = await this.dataCutoffService.getState();
 
     const [
       revenueMTD,
@@ -107,7 +118,7 @@ export class CeoDashboardService {
       this.prisma.invoice.aggregate({
         where: {
           status: { in: ['SENT', 'PARTIALLY_PAID', 'PAID'] },
-          createdAt: { gte: monthStart, lte: monthEnd },
+          createdAt: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
           deletedAt: null,
         },
         _sum: { total: true },
@@ -115,27 +126,33 @@ export class CeoDashboardService {
       this.prisma.invoice.aggregate({
         where: {
           status: { in: ['SENT', 'PARTIALLY_PAID', 'PAID'] },
-          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+          createdAt: { gte: laterOf(lastMonthStart, cutoff), lte: lastMonthEnd },
           deletedAt: null,
         },
         _sum: { total: true },
       }),
       this.prisma.invoice.aggregate({
-        where: { status: 'PAID', paidAt: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+        where: {
+          status: 'PAID',
+          paidAt: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
+          deletedAt: null,
+        },
         _sum: { total: true },
       }),
-      this.sumOutstandingForStatuses(['SENT', 'PARTIALLY_PAID', 'OVERDUE']),
-      this.sumOutstandingForStatuses(['OVERDUE']),
+      this.sumOutstandingForStatuses(['SENT', 'PARTIALLY_PAID', 'OVERDUE'], cutoff),
+      this.sumOutstandingForStatuses(['OVERDUE'], cutoff),
       this.prisma.expense.aggregate({
-        where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+        where: { date: { gte: laterOf(monthStart, cutoff), lte: monthEnd }, deletedAt: null },
         _sum: { amount: true },
       }),
       this.prisma.retainerContract.aggregate({
-        where: { status: 'ACTIVE' },
+        where: { status: 'ACTIVE', startDate: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
         _count: { id: true },
       }),
-      this.prisma.commissionRecord.count({ where: { status: 'PENDING' } }),
+      this.prisma.commissionRecord.count({
+        where: { status: 'PENDING', createdAt: { gte: cutoff ?? undefined } },
+      }),
 
       // 6-month revenue trend
       Promise.all(
@@ -145,7 +162,7 @@ export class CeoDashboardService {
             .aggregate({
               where: {
                 status: { in: ['PAID', 'PARTIALLY_PAID'] },
-                paidAt: { gte: startOfMonth(d), lte: endOfMonth(d) },
+                paidAt: { gte: laterOf(startOfMonth(d), cutoff), lte: endOfMonth(d) },
                 deletedAt: null,
               },
               _sum: { total: true },
@@ -159,7 +176,7 @@ export class CeoDashboardService {
 
       this.prisma.invoice.groupBy({
         by: ['status'],
-        where: { deletedAt: null },
+        where: { deletedAt: null, createdAt: { gte: cutoff ?? undefined } },
         _count: { id: true },
       }),
 
@@ -260,17 +277,17 @@ export class CeoDashboardService {
           invoices: {
             where: {
               status: 'PAID',
-              paidAt: { gte: monthStart, lte: monthEnd },
+              paidAt: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
               deletedAt: null,
             },
             select: { total: true },
           },
           directIncome: {
-            where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+            where: { date: { gte: laterOf(monthStart, cutoff), lte: monthEnd }, deletedAt: null },
             select: { amount: true },
           },
           expenses: {
-            where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+            where: { date: { gte: laterOf(monthStart, cutoff), lte: monthEnd }, deletedAt: null },
             select: { amount: true, ventureSharePercent: true },
           },
         },
@@ -287,7 +304,7 @@ export class CeoDashboardService {
         by: ['serviceType'],
         where: {
           status: 'PAID',
-          paidAt: { gte: monthStart, lte: monthEnd },
+          paidAt: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
           deletedAt: null,
         },
         _sum: { total: true },
@@ -297,7 +314,7 @@ export class CeoDashboardService {
       this.prisma.payment.groupBy({
         by: ['method'],
         where: {
-          paidAt: { gte: monthStart, lte: monthEnd },
+          paidAt: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
           deletedAt: null,
         },
         _sum: { amount: true },
@@ -309,14 +326,14 @@ export class CeoDashboardService {
       // payment method" figure, not just the invoice-payment subset of it.
       this.prisma.directIncome.groupBy({
         by: ['paymentMethod'],
-        where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+        where: { date: { gte: laterOf(monthStart, cutoff), lte: monthEnd }, deletedAt: null },
         _sum: { amount: true },
         _count: { id: true },
       }),
       this.prisma.expense.groupBy({
         by: ['paymentMethod'],
         where: {
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: laterOf(monthStart, cutoff), lte: monthEnd },
           deletedAt: null,
           paymentMethod: { not: null },
         },
@@ -324,22 +341,22 @@ export class CeoDashboardService {
         _count: { id: true },
       }),
 
-      // ── Cash vs Bank balance — all-time, not scoped to this month ────
+      // ── Cash vs Bank balance — all-time (subject to the cutoff below), not scoped to this month ────
       this.prisma.payment.groupBy({
         by: ['method'],
-        where: { deletedAt: null },
+        where: { deletedAt: null, paidAt: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
         _count: { id: true },
       }),
       this.prisma.directIncome.groupBy({
         by: ['paymentMethod'],
-        where: { deletedAt: null },
+        where: { deletedAt: null, date: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
         _count: { id: true },
       }),
       this.prisma.expense.groupBy({
         by: ['paymentMethod'],
-        where: { deletedAt: null, paymentMethod: { not: null } },
+        where: { deletedAt: null, paymentMethod: { not: null }, date: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
         _count: { id: true },
       }),
@@ -445,6 +462,11 @@ export class CeoDashboardService {
 
     return {
       generatedAt: now,
+
+      meta: {
+        excludeOldDataEnabled,
+        excludeOldDataCutoff: cutoff ? cutoff.toISOString() : null,
+      },
 
       finance: {
         revenueMTD: revMTD,

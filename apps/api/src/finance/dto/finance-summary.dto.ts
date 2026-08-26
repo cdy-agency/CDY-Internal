@@ -1,4 +1,4 @@
-import { FinanceSummaryMetrics } from '@cdy/shared';
+import { FinanceSummaryMetrics, DataCutoffMeta } from '@cdy/shared';
 
 export class FinanceSummaryDto implements FinanceSummaryMetrics {
   totalInvoiced!: number;
@@ -140,4 +140,5 @@ export class FinanceSummaryDto implements FinanceSummaryMetrics {
       payments: number;
     };
   };
+  meta!: DataCutoffMeta;
 }

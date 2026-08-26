@@ -15,9 +15,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import api from '@/lib/api';
-import type { ApiResponse } from '@cdy/shared';
+import type { ApiResponse, DataCutoffMeta } from '@cdy/shared';
 import { useFinanceSummary } from '@/hooks/useFinanceSummary';
 import { formatCurrency } from '@/lib/utils';
+import { DataCutoffToggle } from '@/components/ceo/DataCutoffToggle';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ interface VentureSummary {
 
 interface CeoSummary {
   generatedAt: string;
+  meta: DataCutoffMeta;
   finance: {
     revenueMTD: number;
     revenueLastMonth: number;
@@ -250,6 +252,7 @@ export default function CeoDashboardPage() {
               </button>
             )}
             <div className="flex items-center gap-2">
+              <DataCutoffToggle meta={summary?.meta} />
               <button
                 type="button"
                 onClick={() => document.getElementById('service-lines')?.scrollIntoView({ behavior: 'smooth' })}

@@ -14,6 +14,7 @@ import { VenturesService } from '../ventures/ventures.service';
 import { FinanceSummaryDto } from './dto/finance-summary.dto';
 import { ReserveService } from './reserve/reserve.service';
 import { FinanceSummaryMetrics } from '@cdy/shared';
+import { DataCutoffService, laterOf } from '../settings/data-cutoff.service';
 
 interface BalanceResult {
   total: Prisma.Decimal | null;
@@ -28,6 +29,7 @@ export class FinanceService {
     private readonly cashFlowService: CashFlowService,
     private readonly venturesService: VenturesService,
     private readonly reserveService: ReserveService,
+    private readonly dataCutoffService: DataCutoffService,
   ) {}
 
   private pctChange(current: number, previous: number): number {
@@ -36,6 +38,11 @@ export class FinanceService {
   }
 
   async getSummary(rangeStart?: Date, rangeEnd?: Date): Promise<FinanceSummaryDto> {
+    const { enabled: excludeOldDataEnabled, cutoff } = await this.dataCutoffService.getState();
+    if (cutoff) {
+      rangeStart = rangeStart ? laterOf(rangeStart, cutoff) : undefined;
+    }
+
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(
@@ -112,54 +119,55 @@ export class FinanceService {
       recentIncomeTransactions,
       recentExpenseTransactions,
     ] = await Promise.all([
-      this.sumInvoices(currentMonthStart, currentMonthEnd),
-      this.sumPayments(currentMonthStart, currentMonthEnd),
-      this.sumExpenses(currentMonthStart, currentMonthEnd),
-      this.sumInvoices(lastMonthStart, lastMonthEnd),
-      this.sumPayments(lastMonthStart, lastMonthEnd),
-      this.sumExpenses(lastMonthStart, lastMonthEnd),
-      this.sumOutstandingBalance(),
-      this.sumOverdueBalance(),
-      this.sumOutstandingBalance(lastMonthEnd),
-      this.sumOverdueBalance(lastMonthEnd),
-      this.countInvoicesByStatus('DRAFT'),
-      this.countInvoicesByStatus('SENT'),
+      this.sumInvoices(currentMonthStart, currentMonthEnd, cutoff),
+      this.sumPayments(currentMonthStart, currentMonthEnd, cutoff),
+      this.sumExpenses(currentMonthStart, currentMonthEnd, cutoff),
+      this.sumInvoices(lastMonthStart, lastMonthEnd, cutoff),
+      this.sumPayments(lastMonthStart, lastMonthEnd, cutoff),
+      this.sumExpenses(lastMonthStart, lastMonthEnd, cutoff),
+      this.sumOutstandingBalance(undefined, cutoff),
+      this.sumOverdueBalance(undefined, cutoff),
+      this.sumOutstandingBalance(lastMonthEnd, cutoff),
+      this.sumOverdueBalance(lastMonthEnd, cutoff),
+      this.countInvoicesByStatus('DRAFT', cutoff),
+      this.countInvoicesByStatus('SENT', cutoff),
       this.sumBillsPending(),
       this.sumBillsOverdue(),
-      this.sumPayments(todayStart, todayEnd),
-      this.sumExpenses(weekStart, now),
+      this.sumPayments(todayStart, todayEnd, cutoff),
+      this.sumExpenses(weekStart, now, cutoff),
       this.sumBillsPending(lastMonthEnd),
       this.sumBillsOverdue(lastMonthEnd),
-      this.sumPayments(lastMonthStart, lastMonthEnd),
+      this.sumPayments(lastMonthStart, lastMonthEnd, cutoff),
       this.sumExpenses(
         new Date(lastMonthEnd.getTime() - 7 * 24 * 60 * 60 * 1000),
         lastMonthEnd,
+        cutoff,
       ),
-      this.countPendingCommissions(),
-      this.sumPendingCommissionValue(),
+      this.countPendingCommissions(cutoff),
+      this.sumPendingCommissionValue(cutoff),
       this.countActivePaymentPlans(),
       this.countCreditNotesIssuedMTD(currentMonthStart, currentMonthEnd),
       this.sumCreditNotesValueMTD(currentMonthStart, currentMonthEnd),
       this.countPendingReconciliations(),
-      this.sumActiveRetainerMRR(),
+      this.sumActiveRetainerMRR(cutoff),
       this.countActiveRetainers(),
       this.countRetainersUpForRenewal(),
-      this.computeCurrentMonthTaxOwed(currentMonthStart, currentMonthEnd),
+      this.computeCurrentMonthTaxOwed(currentMonthStart, currentMonthEnd, cutoff),
       this.countBlockedProjects(),
-      this.venturesService.getMtdTotals(currentMonthStart, currentMonthEnd),
+      this.venturesService.getMtdTotals(laterOf(currentMonthStart, cutoff), currentMonthEnd),
       this.prisma.client.count({ where: { deletedAt: null } }),
       this.prisma.client.count({
         where: { deletedAt: null, createdAt: { gte: currentMonthStart } },
       }),
       this.getHrPayrollMetrics(),
-      this.getMonthlyRevenueSeries(now, 6),
-      this.getMonthlyCollectedSeries(now, 6),
-      this.countInvoicesByStatusExact('PAID'),
-      this.countInvoicesByStatusExact('OVERDUE'),
-      this.countInvoicesByStatusExact('PARTIALLY_PAID'),
-      this.getExpensesByCategory(currentMonthStart, currentMonthEnd),
+      this.getMonthlyRevenueSeries(now, 6, cutoff),
+      this.getMonthlyCollectedSeries(now, 6, cutoff),
+      this.countInvoicesByStatusExact('PAID', cutoff),
+      this.countInvoicesByStatusExact('OVERDUE', cutoff),
+      this.countInvoicesByStatusExact('PARTIALLY_PAID', cutoff),
+      this.getExpensesByCategory(currentMonthStart, currentMonthEnd, cutoff),
       this.getRecentInvoices(5),
-      this.getTopClientsByRevenue(5),
+      this.getTopClientsByRevenue(5, cutoff),
       this.getPendingLeaveRequests(),
       this.getRecentIncomeTransactions(10),
       this.getRecentExpenses(10),
@@ -205,7 +213,7 @@ export class FinanceService {
         by: ['serviceType'],
         where: {
           status: InvoiceStatus.PAID,
-          paidAt: { gte: currentMonthStart, lte: currentMonthEnd },
+          paidAt: { gte: laterOf(currentMonthStart, cutoff), lte: currentMonthEnd },
           deletedAt: null,
         },
         _sum: { total: true },
@@ -215,7 +223,7 @@ export class FinanceService {
       this.prisma.expense.groupBy({
         by: ['category'],
         where: {
-          date: { gte: currentMonthStart, lte: currentMonthEnd },
+          date: { gte: laterOf(currentMonthStart, cutoff), lte: currentMonthEnd },
           deletedAt: null,
         },
         _sum: { amount: true },
@@ -225,7 +233,7 @@ export class FinanceService {
       this.prisma.payment.groupBy({
         by: ['method'],
         where: {
-          paidAt: { gte: currentMonthStart, lte: currentMonthEnd },
+          paidAt: { gte: laterOf(currentMonthStart, cutoff), lte: currentMonthEnd },
           deletedAt: null,
         },
         _sum: { amount: true },
@@ -301,7 +309,7 @@ export class FinanceService {
       await Promise.all([
         this.prisma.directIncome.aggregate({
           _sum: { amount: true },
-          where: { deletedAt: null, date: { gte: currentMonthStart, lte: currentMonthEnd } },
+          where: { deletedAt: null, date: { gte: laterOf(currentMonthStart, cutoff), lte: currentMonthEnd } },
         }),
         this.prisma.bill.findMany({
           where: {
@@ -317,12 +325,12 @@ export class FinanceService {
           const s = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
           const e = new Date(now.getFullYear(), now.getMonth() - 5 + i + 1, 0, 23, 59, 59, 999);
           return Promise.all([
-            this.sumPayments(s, e),
+            this.sumPayments(s, e, cutoff),
             this.prisma.directIncome.aggregate({
               _sum: { amount: true },
-              where: { deletedAt: null, date: { gte: s, lte: e } },
+              where: { deletedAt: null, date: { gte: laterOf(s, cutoff), lte: e } },
             }).then((r) => this.toNumber(r._sum.amount)),
-            this.sumExpenses(s, e),
+            this.sumExpenses(s, e, cutoff),
             s,
           ] as const);
         }),
@@ -421,6 +429,10 @@ export class FinanceService {
       monthlyComparison,
       recentIncomeTransactions,
       recentExpenseTransactions,
+      meta: {
+        excludeOldDataEnabled,
+        excludeOldDataCutoff: cutoff ? cutoff.toISOString() : null,
+      },
     };
   }
 
@@ -429,21 +441,23 @@ export class FinanceService {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  private async countPendingCommissions(): Promise<number> {
+  private async countPendingCommissions(cutoff?: Date | null): Promise<number> {
     return this.prisma.commissionRecord.count({
       where: {
         month: this.currentMonthKey(),
         status: 'PENDING',
+        createdAt: { gte: cutoff ?? undefined },
       },
     });
   }
 
-  private async sumPendingCommissionValue(): Promise<number> {
+  private async sumPendingCommissionValue(cutoff?: Date | null): Promise<number> {
     const result = await this.prisma.commissionRecord.aggregate({
       _sum: { calculatedAmount: true },
       where: {
         month: this.currentMonthKey(),
         status: 'PENDING',
+        createdAt: { gte: cutoff ?? undefined },
       },
     });
     return this.toNumber(result._sum.calculatedAmount);
@@ -477,48 +491,52 @@ export class FinanceService {
 
   private async countInvoicesByStatus(
     status: 'DRAFT' | 'SENT',
+    cutoff?: Date | null,
   ): Promise<number> {
     return this.prisma.invoice.count({
-      where: { deletedAt: null, status },
+      where: { deletedAt: null, status, createdAt: { gte: cutoff ?? undefined } },
     });
   }
 
-  private async sumInvoices(start: Date, end: Date): Promise<number> {
+  private async sumInvoices(start: Date, end: Date, cutoff?: Date | null): Promise<number> {
     const result = await this.prisma.invoice.aggregate({
       _sum: { total: true },
       where: {
         deletedAt: null,
-        createdAt: { gte: start, lte: end },
+        createdAt: { gte: laterOf(start, cutoff), lte: end },
       },
     });
     return this.toNumber(result._sum.total);
   }
 
-  private async sumPayments(start: Date, end: Date): Promise<number> {
+  private async sumPayments(start: Date, end: Date, cutoff?: Date | null): Promise<number> {
     const result = await this.prisma.payment.aggregate({
       _sum: { amount: true },
       where: {
         deletedAt: null,
-        paidAt: { gte: start, lte: end },
+        paidAt: { gte: laterOf(start, cutoff), lte: end },
       },
     });
     return this.toNumber(result._sum.amount);
   }
 
-  private async sumExpenses(start: Date, end: Date): Promise<number> {
+  private async sumExpenses(start: Date, end: Date, cutoff?: Date | null): Promise<number> {
     const result = await this.prisma.expense.aggregate({
       _sum: { amount: true },
       where: {
         deletedAt: null,
-        date: { gte: start, lte: end },
+        date: { gte: laterOf(start, cutoff), lte: end },
       },
     });
     return this.toNumber(result._sum.amount);
   }
 
-  private async sumOutstandingBalance(asOf?: Date): Promise<number> {
+  private async sumOutstandingBalance(asOf?: Date, cutoff?: Date | null): Promise<number> {
     const asOfClause = asOf
       ? Prisma.sql`AND i."createdAt" <= ${asOf}`
+      : Prisma.empty;
+    const cutoffClause = cutoff
+      ? Prisma.sql`AND i."createdAt" >= ${cutoff}`
       : Prisma.empty;
 
     const result = await this.prisma.$queryRaw<BalanceResult[]>`
@@ -544,15 +562,19 @@ export class FinanceService {
       WHERE i."deletedAt" IS NULL
         AND i.status NOT IN ('PAID', 'WRITTEN_OFF', 'DRAFT')
         ${asOfClause}
+        ${cutoffClause}
     `;
 
     return this.toNumber(result[0]?.total ?? 0);
   }
 
-  private async sumOverdueBalance(asOf?: Date): Promise<number> {
+  private async sumOverdueBalance(asOf?: Date, cutoff?: Date | null): Promise<number> {
     const referenceDate = asOf ?? new Date();
     const asOfCreatedClause = asOf
       ? Prisma.sql`AND i."createdAt" <= ${asOf}`
+      : Prisma.empty;
+    const cutoffClause = cutoff
+      ? Prisma.sql`AND i."createdAt" >= ${cutoff}`
       : Prisma.empty;
 
     const result = await this.prisma.$queryRaw<BalanceResult[]>`
@@ -582,6 +604,7 @@ export class FinanceService {
         AND i.status NOT IN ('PAID', 'WRITTEN_OFF', 'DRAFT')
         AND (i.status = 'OVERDUE' OR i."dueDate" < ${referenceDate})
         ${asOfCreatedClause}
+        ${cutoffClause}
     `;
 
     return this.toNumber(result[0]?.total ?? 0);
@@ -624,9 +647,9 @@ export class FinanceService {
     });
   }
 
-  private async sumActiveRetainerMRR(): Promise<number> {
+  private async sumActiveRetainerMRR(cutoff?: Date | null): Promise<number> {
     const result = await this.prisma.retainerContract.aggregate({
-      where: { status: RetainerStatus.ACTIVE },
+      where: { status: RetainerStatus.ACTIVE, startDate: { gte: cutoff ?? undefined } },
       _sum: { amount: true },
     });
     return this.toNumber(result._sum.amount);
@@ -651,11 +674,12 @@ export class FinanceService {
   private async computeCurrentMonthTaxOwed(
     from: Date,
     to: Date,
+    cutoff?: Date | null,
   ): Promise<number> {
     const taxCollected = await this.prisma.invoice.aggregate({
       where: {
         status: InvoiceStatus.PAID,
-        paidAt: { gte: from, lte: to },
+        paidAt: { gte: laterOf(from, cutoff), lte: to },
         taxAmount: { gt: 0 },
         deletedAt: null,
       },
@@ -714,12 +738,13 @@ export class FinanceService {
   private async getMonthlyRevenueSeries(
     now: Date,
     months: number,
+    cutoff?: Date | null,
   ): Promise<number[]> {
     const series: number[] = [];
     for (let i = months - 1; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
-      series.push(await this.sumInvoices(start, end));
+      series.push(await this.sumInvoices(start, end, cutoff));
     }
     return series;
   }
@@ -727,29 +752,31 @@ export class FinanceService {
   private async getMonthlyCollectedSeries(
     now: Date,
     months: number,
+    cutoff?: Date | null,
   ): Promise<number[]> {
     const series: number[] = [];
     for (let i = months - 1; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
-      series.push(await this.sumPayments(start, end));
+      series.push(await this.sumPayments(start, end, cutoff));
     }
     return series;
   }
 
-  private async countInvoicesByStatusExact(status: string): Promise<number> {
+  private async countInvoicesByStatusExact(status: string, cutoff?: Date | null): Promise<number> {
     return this.prisma.invoice.count({
-      where: { deletedAt: null, status: status as InvoiceStatus },
+      where: { deletedAt: null, status: status as InvoiceStatus, createdAt: { gte: cutoff ?? undefined } },
     });
   }
 
   private async getExpensesByCategory(
     start: Date,
     end: Date,
+    cutoff?: Date | null,
   ): Promise<Array<{ category: string; amount: number }>> {
     const rows = await this.prisma.expense.groupBy({
       by: ['category'],
-      where: { deletedAt: null, date: { gte: start, lte: end } },
+      where: { deletedAt: null, date: { gte: laterOf(start, cutoff), lte: end } },
       _sum: { amount: true },
       orderBy: { _sum: { amount: 'desc' } },
     });
@@ -781,9 +808,12 @@ export class FinanceService {
     }));
   }
 
-  private async getTopClientsByRevenue(limit: number): Promise<
+  private async getTopClientsByRevenue(limit: number, cutoff?: Date | null): Promise<
     Array<{ companyName: string; totalInvoiced: number; totalCollected: number; outstanding: number }>
   > {
+    const cutoffJoinClause = cutoff
+      ? Prisma.sql`AND i."createdAt" >= ${cutoff}`
+      : Prisma.empty;
     const result = await this.prisma.$queryRaw<
       Array<{
         companyName: string;
@@ -816,7 +846,7 @@ export class FinanceService {
           ELSE 0 END
         ), 0) AS outstanding
       FROM "Client" c
-      LEFT JOIN "Invoice" i ON i."clientId" = c.id AND i."deletedAt" IS NULL
+      LEFT JOIN "Invoice" i ON i."clientId" = c.id AND i."deletedAt" IS NULL ${cutoffJoinClause}
       WHERE c."deletedAt" IS NULL
       GROUP BY c.id, c."companyName"
       ORDER BY "totalInvoiced" DESC

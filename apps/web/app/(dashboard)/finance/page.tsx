@@ -124,6 +124,14 @@ export default function FinanceDashboard(): JSX.Element {
         </div>
       )}
 
+      {data?.meta.excludeOldDataEnabled && data.meta.excludeOldDataCutoff && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-2 text-sm text-amber-200">
+          Excluding data before{' '}
+          {format(new Date(data.meta.excludeOldDataCutoff), 'MMM d, yyyy')} (pre-migration data
+          filter — toggle it from the CEO dashboard).
+        </div>
+      )}
+
       {/* Date range filter + Record Income */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
