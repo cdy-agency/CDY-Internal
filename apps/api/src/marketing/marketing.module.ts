@@ -7,9 +7,10 @@ import { ContentService } from './content/content.service';
 import { CalendarPdfService } from './content/calendar-pdf.service';
 import { MarketingSummaryService } from './summary/marketing-summary.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, ProjectsModule],
   controllers: [
     MarketingController,
     MarketingClientsController,

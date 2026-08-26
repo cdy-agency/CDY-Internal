@@ -33,6 +33,6 @@ import { ProjectReportsService } from './reports/project-reports.service';
     DeliverableApprovalService,
     ProjectReportsService,
   ],
-  exports: [ProjectsService, ProjectsSummaryService, ProjectActivityService],
+  exports: [ProjectsService, ProjectsSummaryService, ProjectActivityService, ProjectCodeService],
 })
 export class ProjectsModule {}

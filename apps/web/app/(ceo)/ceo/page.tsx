@@ -82,6 +82,10 @@ interface CeoSummary {
         net: number;
       }>;
     };
+    cashVsBank: {
+      cash: { income: number; expenses: number; net: number };
+      bank: { income: number; expenses: number; net: number };
+    };
   };
   crm: {
     totalLeadsMTD: number;
@@ -187,6 +191,9 @@ export default function CeoDashboardPage() {
   const displayExpenses = hasDateRange ? (financeRange?.rangeExpenses ?? 0) : (financeRange?.totalExpenses ?? 0);
   const displayBalance = hasDateRange ? (financeRange?.rangeBalance ?? 0) : (financeRange?.difference ?? 0);
   const ceoRangePeriodLabel = hasDateRange ? 'Selected period' : 'MTD';
+
+  const cashBalance = summary?.finance.cashVsBank.cash.net ?? 0;
+  const bankBalance = summary?.finance.cashVsBank.bank.net ?? 0;
 
   const alerts = summary?.alerts;
   const hasAlerts = alerts && Object.values(alerts).some((v) => Number(v) > 0);
@@ -372,6 +379,38 @@ export default function CeoDashboardPage() {
               {rangeLoading ? '—' : formatCurrency(displayBalance)}
             </p>
             <p className="mt-1 text-xs text-cdy-muted">Income − Expenses</p>
+          </SectionCard>
+        </div>
+
+        {/* Row 2b2 — Balance by mode of payment (Cash vs Bank) — this month */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SectionCard>
+            <p className="text-xs font-medium uppercase tracking-wide text-emerald-400">
+              💵 Cash Balance — this month
+            </p>
+            <p
+              className={`mt-2 text-2xl font-bold ${
+                isLoading || cashBalance >= 0 ? 'text-cdy-white' : 'text-orange-400'
+              }`}
+            >
+              {isLoading ? '—' : formatCurrency(cashBalance)}
+            </p>
+            <p className="mt-1 text-xs text-cdy-muted">Cash income − cash expenses</p>
+          </SectionCard>
+          <SectionCard>
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-400">
+              🏦 Bank Balance — this month
+            </p>
+            <p
+              className={`mt-2 text-2xl font-bold ${
+                isLoading || bankBalance >= 0 ? 'text-cdy-white' : 'text-orange-400'
+              }`}
+            >
+              {isLoading ? '—' : formatCurrency(bankBalance)}
+            </p>
+            <p className="mt-1 text-xs text-cdy-muted">
+              Bank transfer, mobile money, and card income − expenses
+            </p>
           </SectionCard>
         </div>
 

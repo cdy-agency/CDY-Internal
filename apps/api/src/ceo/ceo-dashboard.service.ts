@@ -97,6 +97,8 @@ export class CeoDashboardService {
 
       rawIncomeByService,
       rawPaymentByMethod,
+      rawDirectIncomeByMethod,
+      rawExpenseByMethod,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -299,6 +301,25 @@ export class CeoDashboardService {
         _count: { id: true },
         orderBy: { _sum: { amount: 'desc' } },
       }),
+      // Income also comes in as Direct Income (no invoice raised) — must be
+      // combined with invoice payments above for an accurate "income by
+      // payment method" figure, not just the invoice-payment subset of it.
+      this.prisma.directIncome.groupBy({
+        by: ['paymentMethod'],
+        where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      this.prisma.expense.groupBy({
+        by: ['paymentMethod'],
+        where: {
+          date: { gte: monthStart, lte: monthEnd },
+          deletedAt: null,
+          paymentMethod: { not: null },
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
     ]);
 
     // Venture summary
@@ -335,6 +356,51 @@ export class CeoDashboardService {
       (s, r) => s + Number(r._sum.amount ?? 0),
       0,
     );
+
+    // Income by payment method = invoice payments + Direct Income, combined
+    // — a payment method's true "money in" figure, not just its invoice-
+    // payment subset.
+    const incomeByMethod = new Map<string, { amount: number; count: number }>();
+    for (const r of rawPaymentByMethod) {
+      const prev = incomeByMethod.get(r.method) ?? { amount: 0, count: 0 };
+      incomeByMethod.set(r.method, {
+        amount: prev.amount + Number(r._sum.amount ?? 0),
+        count: prev.count + r._count.id,
+      });
+    }
+    for (const r of rawDirectIncomeByMethod) {
+      const prev = incomeByMethod.get(r.paymentMethod) ?? { amount: 0, count: 0 };
+      incomeByMethod.set(r.paymentMethod, {
+        amount: prev.amount + Number(r._sum.amount ?? 0),
+        count: prev.count + r._count.id,
+      });
+    }
+
+    const expensesByMethod = new Map<string, { amount: number; count: number }>();
+    for (const r of rawExpenseByMethod) {
+      if (!r.paymentMethod) continue;
+      expensesByMethod.set(r.paymentMethod, {
+        amount: Number(r._sum.amount ?? 0),
+        count: r._count.id,
+      });
+    }
+
+    // CEO-level simplification: every method collapses into either "held as
+    // physical Cash" or "sits in a Bank/electronic account". OTHER and
+    // expenses/income with no recorded method are excluded rather than
+    // guessed into either bucket — showing a bucket without them would be
+    // more inaccurate than just leaving that money unclassified.
+    const BANK_METHODS = ['BANK_TRANSFER', 'MOBILE_MONEY', 'MTN_MOMO', 'AIRTEL_MONEY', 'CARD'];
+    function sumMethods(
+      map: Map<string, { amount: number; count: number }>,
+      methods: string[],
+    ): number {
+      return methods.reduce((s, m) => s + (map.get(m)?.amount ?? 0), 0);
+    }
+    const cashIncome = incomeByMethod.get('CASH')?.amount ?? 0;
+    const cashExpenses = expensesByMethod.get('CASH')?.amount ?? 0;
+    const bankIncome = sumMethods(incomeByMethod, BANK_METHODS);
+    const bankExpenses = sumMethods(expensesByMethod, BANK_METHODS);
 
     return {
       generatedAt: now,
@@ -381,17 +447,21 @@ export class CeoDashboardService {
                 : 0,
           })),
           paymentMethodSummary: CEO_ALL_METHODS.map((method) => {
-            const inc = rawPaymentByMethod.find((r) => r.method === method);
-            const incAmt = Number(inc?._sum.amount ?? 0);
+            const inc = incomeByMethod.get(method) ?? { amount: 0, count: 0 };
+            const exp = expensesByMethod.get(method) ?? { amount: 0, count: 0 };
             return {
               method,
               label: ceoPaymentLabel(method),
               color: CEO_METHOD_COLORS[method] ?? '#94A3B8',
-              income:   { amount: incAmt, count: inc?._count.id ?? 0 },
-              expenses: { amount: 0, count: 0 },
-              net: incAmt,
+              income: inc,
+              expenses: exp,
+              net: inc.amount - exp.amount,
             };
-          }).filter((m) => m.income.amount > 0),
+          }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
+        },
+        cashVsBank: {
+          cash: { income: cashIncome, expenses: cashExpenses, net: cashIncome - cashExpenses },
+          bank: { income: bankIncome, expenses: bankExpenses, net: bankIncome - bankExpenses },
         },
       },
 

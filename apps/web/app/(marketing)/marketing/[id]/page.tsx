@@ -92,6 +92,17 @@ export default function ClientCalendarPage(): JSX.Element {
                 {mc.platforms
                   .map(platformShort)
                   .join(' · ')} · Target: {mc.postsPerMonth} posts/month
+                {mc.projectId && (
+                  <>
+                    {' · '}
+                    <Link
+                      href={`/projects/${mc.projectId}`}
+                      className="text-cdy-red hover:underline"
+                    >
+                      Tasks &amp; Project →
+                    </Link>
+                  </>
+                )}
               </p>
               {summary && (
                 <p className="mt-1 text-sm text-cdy-muted">

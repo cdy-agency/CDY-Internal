@@ -14,10 +14,6 @@ export class CreateMarketingClientDto {
   @IsNotEmpty()
   retainerId!: string;
 
-  @IsOptional()
-  @IsString()
-  projectId?: string;
-
   @IsArray()
   @IsString({ each: true })
   platforms!: string[];

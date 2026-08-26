@@ -4,8 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ContentStatus, RetainerStatus } from '@prisma/client';
+import {
+  ContentStatus,
+  ProjectPriority,
+  ProjectStatus,
+  RetainerStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProjectCodeService } from '../../projects/projects/project-code.service';
 import {
   CreateMarketingClientDto,
   UpdateMarketingClientDto,
@@ -13,7 +19,10 @@ import {
 
 @Injectable()
 export class MarketingClientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly projectCodeService: ProjectCodeService,
+  ) {}
 
   async create(dto: CreateMarketingClientDto, userId: string) {
     const retainer = await this.prisma.retainerContract.findUnique({
@@ -32,20 +41,50 @@ export class MarketingClientsService {
       throw new ConflictException('Marketing service already set up for this retainer');
     }
 
-    return this.prisma.marketingClient.create({
-      data: {
-        retainerId: dto.retainerId,
-        clientId: retainer.client.id,
-        projectId: dto.projectId,
-        platforms: dto.platforms,
-        postsPerMonth: dto.postsPerMonth,
-        notes: dto.notes,
-        createdBy: userId,
-      },
-      include: {
-        client: { select: { companyName: true, contactName: true } },
-        retainer: { select: { serviceName: true, status: true } },
-      },
+    // Every marketing client gets its own Project in the general Projects
+    // module — this is what lets tasks actually be created/assigned for it
+    // (a MarketingClient has no task system of its own).
+    const projectCode = await this.projectCodeService.generate();
+    const clientName = retainer.client.companyName ?? 'Client';
+
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data: {
+          projectCode,
+          name: `${clientName} — Marketing`,
+          clientId: retainer.client.id,
+          serviceType: 'marketing',
+          status: ProjectStatus.ACTIVE,
+          priority: ProjectPriority.MEDIUM,
+          managerId: userId,
+          startDate: new Date(),
+          createdBy: userId,
+        },
+      });
+
+      // Backfill the client's generic project link only if it doesn't
+      // already point somewhere else (mirrors ClientServiceService's
+      // GENERAL-branch behavior for the same field).
+      await tx.client.updateMany({
+        where: { id: retainer.client.id, projectId: null },
+        data: { projectId: project.id },
+      });
+
+      return tx.marketingClient.create({
+        data: {
+          retainerId: dto.retainerId,
+          clientId: retainer.client.id,
+          projectId: project.id,
+          platforms: dto.platforms,
+          postsPerMonth: dto.postsPerMonth,
+          notes: dto.notes,
+          createdBy: userId,
+        },
+        include: {
+          client: { select: { companyName: true, contactName: true } },
+          retainer: { select: { serviceName: true, status: true } },
+        },
+      });
     });
   }
 
