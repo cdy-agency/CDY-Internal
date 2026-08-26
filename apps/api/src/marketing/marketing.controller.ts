@@ -1,8 +1,11 @@
 import { Controller, Get, Query, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
-import { startOfWeek, parseISO } from 'date-fns';
-import { MarketingSummaryService } from './summary/marketing-summary.service';
+import { startOfWeek, parseISO, format } from 'date-fns';
+import {
+  MarketingSummaryService,
+  SummaryPeriod,
+} from './summary/marketing-summary.service';
 import { ContentService } from './content/content.service';
 import { CalendarPdfService } from './content/calendar-pdf.service';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
@@ -24,7 +27,16 @@ export class MarketingController {
 
   @Get('summary')
   @RequirePermission('marketing.clients', 'read')
-  async getAllSummary(@Query('month') month: string) {
+  async getAllSummary(
+    @Query('month') month: string,
+    @Query('period') period?: SummaryPeriod,
+    @Query('date') date?: string,
+  ) {
+    if (period) {
+      const d = date ?? format(new Date(), 'yyyy-MM-dd');
+      const data = await this.summaryService.getAllClientsSummaryForPeriod(period, d);
+      return { data, statusCode: HttpStatus.OK };
+    }
     const m =
       month ??
       `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;

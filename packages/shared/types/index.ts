@@ -2832,6 +2832,21 @@ export interface MarketingAllClientsSummaryItem extends MarketingMonthlySummary 
   clientName: string;
 }
 
+export type MarketingSummaryPeriod = 'day' | 'week' | 'month';
+
+export interface MarketingPeriodSummaryItem {
+  clientName: string;
+  marketingClientId: string;
+  postsTarget: number;
+  planned: number;
+  approved: number;
+  published: number;
+  pending: number;
+  rejected: number;
+  deliveryRate: number;
+  byPlatform: Record<string, { planned: number; published: number }>;
+}
+
 // ─── Sprint 19: Software & Web Dev Services ───────────────────
 
 export enum SoftwareProjectType {

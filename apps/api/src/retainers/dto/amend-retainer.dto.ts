@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AmendRetainerDto {
@@ -19,4 +19,11 @@ export class AmendRetainerDto {
   @IsOptional()
   @IsString()
   taxRateId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  billingDayOfMonth?: number;
 }

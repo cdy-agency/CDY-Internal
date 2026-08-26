@@ -11,6 +11,8 @@ import type {
   TodaysContentResult,
   MarketingMonthlySummary,
   MarketingAllClientsSummaryItem,
+  MarketingSummaryPeriod,
+  MarketingPeriodSummaryItem,
 } from '@cdy/shared';
 
 export function useMarketingClients() {
@@ -118,7 +120,7 @@ export function useMarketingMonthlySummary(clientId: string, month: string) {
   });
 }
 
-export function useAllMarketingSummary(month: string) {
+export function useAllMarketingSummary(month: string, enabled = true) {
   return useQuery({
     queryKey: ['marketing', 'summary', 'all', month],
     queryFn: async (): Promise<MarketingAllClientsSummaryItem[]> => {
@@ -127,6 +129,25 @@ export function useAllMarketingSummary(month: string) {
       );
       return res.data.data;
     },
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useMarketingSummaryForPeriod(
+  period: MarketingSummaryPeriod,
+  date: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['marketing', 'summary', 'period', period, date],
+    queryFn: async (): Promise<MarketingPeriodSummaryItem[]> => {
+      const res = await api.get<ApiResponse<MarketingPeriodSummaryItem[]>>(
+        `/marketing/summary?period=${period}&date=${date}`,
+      );
+      return res.data.data;
+    },
+    enabled,
     staleTime: 30_000,
   });
 }

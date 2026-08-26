@@ -4,11 +4,12 @@
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { Prisma, RetainerStatus } from '@prisma/client';
+import { Prisma, RetainerStatus, InvoiceStatus, NotificationType } from '@prisma/client';
 import {
   addDays,
   addMonths,
   endOfMonth,
+  format,
   getDaysInMonth,
   setDate,
   startOfDay,
@@ -20,6 +21,10 @@ import { AuditContext } from '../common/audit/audit.context';
 import { CreateRetainerDto } from './dto/create-retainer.dto';
 import { AmendRetainerDto } from './dto/amend-retainer.dto';
 import { RetainerFiltersDto } from './dto/retainer-filters.dto';
+import { InvoiceNumberService } from '../invoices/invoice-number.service';
+import { InvoicePdfService } from '../invoices/invoice-pdf.service';
+import { InvoiceEmailService } from '../invoices/invoice-email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class RetainersService {
@@ -28,6 +33,10 @@ export class RetainersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly invoiceNumberService: InvoiceNumberService,
+    private readonly invoicePdfService: InvoicePdfService,
+    private readonly invoiceEmailService: InvoiceEmailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   calculateNextBillingDate(billingDay: number, fromDate: Date): Date {
@@ -44,6 +53,109 @@ export class RetainersService {
     }
 
     return candidate;
+  }
+
+  /**
+   * Bills a retainer immediately instead of waiting for the daily
+   * auto-billing cron (RetainerBillingJob) to reach its scheduled day —
+   * same invoice-generation logic either way, so both paths stay in sync.
+   * Advances nextBillingDate the same way the cron does, so the regular
+   * cycle resumes from here rather than double-billing on the original date.
+   */
+  async generateInvoiceNow(id: string, userId: string, auditCtx?: AuditContext) {
+    const retainer = await this.prisma.retainerContract.findUnique({
+      where: { id },
+      include: { taxRate: true },
+    });
+    if (!retainer) throw new NotFoundException('Retainer not found');
+    if (retainer.status !== RetainerStatus.ACTIVE) {
+      throw new BadRequestException('Only active retainers can be billed');
+    }
+
+    const today = startOfDay(new Date());
+
+    const lineItems = [
+      {
+        description: `${retainer.serviceName} — ${format(today, 'MMMM yyyy')}`,
+        quantity: 1,
+        unitPrice: Number(retainer.amount),
+        amount: Number(retainer.amount),
+      },
+    ];
+
+    const taxRatePercent = retainer.taxRate ? Number(retainer.taxRate.ratePercent) : 0;
+    const subtotal = Number(retainer.amount);
+    const taxAmount = Number(((subtotal * taxRatePercent) / 100).toFixed(2));
+    const total = subtotal + taxAmount;
+
+    const invoiceNumber = await this.invoiceNumberService.generate();
+
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        clientId: retainer.clientId,
+        ventureId: retainer.ventureId ?? null,
+        serviceType: 'retainer',
+        retainerContractId: retainer.id,
+        lineItems: lineItems as unknown as Prisma.InputJsonValue,
+        subtotal,
+        taxRate: taxRatePercent,
+        taxAmount,
+        total,
+        taxRateId: retainer.taxRateId,
+        currency: retainer.currency,
+        dueDate: addDays(today, 30),
+        status: InvoiceStatus.SENT,
+        sentAt: new Date(),
+        createdBy: userId,
+      },
+    });
+
+    // The invoice already exists in Finance at this point — that's the
+    // actual billing action. A PDF/email failure (bad API key, provider
+    // outage) must not stop nextBillingDate from advancing below, or the
+    // retainer would look "not yet billed" and get billed again tomorrow.
+    try {
+      const pdfBuffer = await this.invoicePdfService.generate(invoice);
+      await this.invoiceEmailService.sendInvoice(invoice, pdfBuffer, retainer.clientId);
+    } catch (err) {
+      this.logger.error(
+        `Invoice ${invoiceNumber} created but PDF/email delivery failed for retainer ${retainer.id}`,
+        String(err),
+      );
+    }
+
+    const nextBillingDate = this.calculateNextBillingDate(
+      retainer.billingDayOfMonth,
+      addMonths(today, 1),
+    );
+
+    const updated = await this.prisma.retainerContract.update({
+      where: { id: retainer.id },
+      data: { lastBilledAt: today, nextBillingDate },
+      include: { taxRate: true },
+    });
+
+    this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
+      type: NotificationType.SYSTEM,
+      title: `Retainer invoice sent — ${retainer.clientId}`,
+      body: `Invoice ${invoiceNumber} for ${retainer.serviceName} ($${total.toFixed(2)}) generated.`,
+      link: `/finance/invoices/${invoice.id}`,
+    });
+
+    if (auditCtx) {
+      this.auditService.log({
+        ...auditCtx,
+        action: 'retainer.invoice_generated_manually',
+        entityType: 'RetainerContract',
+        entityId: id,
+        newValue: { invoiceId: invoice.id, invoiceNumber, total },
+      });
+    }
+
+    this.logger.log(`Retainer invoice created and sent: ${invoiceNumber} for retainer ${retainer.id}`);
+
+    return { retainer: this.serializeRetainer(updated), invoiceId: invoice.id, invoiceNumber };
   }
 
   async create(dto: CreateRetainerDto, userId: string, auditCtx: AuditContext) {
@@ -302,7 +414,17 @@ export class RetainersService {
     const previous = {
       amount: Number(retainer.amount),
       serviceName: retainer.serviceName,
+      billingDayOfMonth: retainer.billingDayOfMonth,
+      nextBillingDate: retainer.nextBillingDate,
     };
+
+    // Changing the billing day re-anchors the next billing date to the next
+    // occurrence of that day from today — not from the old nextBillingDate,
+    // which would carry the old day-of-month forward incorrectly.
+    const nextBillingDate =
+      dto.billingDayOfMonth !== undefined && dto.billingDayOfMonth !== retainer.billingDayOfMonth
+        ? this.calculateNextBillingDate(dto.billingDayOfMonth, new Date())
+        : retainer.nextBillingDate;
 
     const updated = await this.prisma.retainerContract.update({
       where: { id },
@@ -311,6 +433,8 @@ export class RetainersService {
         serviceName: dto.serviceName ?? retainer.serviceName,
         description: dto.description ?? retainer.description,
         taxRateId: dto.taxRateId ?? retainer.taxRateId,
+        billingDayOfMonth: dto.billingDayOfMonth ?? retainer.billingDayOfMonth,
+        nextBillingDate,
       },
       include: { taxRate: true },
     });
@@ -324,6 +448,8 @@ export class RetainersService {
       newValue: {
         amount: Number(updated.amount),
         serviceName: updated.serviceName,
+        billingDayOfMonth: updated.billingDayOfMonth,
+        nextBillingDate: updated.nextBillingDate,
       },
     });
 

@@ -28,13 +28,19 @@ export function AmendRetainerModal({
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState(String(retainer.amount));
   const [serviceName, setServiceName] = useState(retainer.serviceName);
+  const [billingDayOfMonth, setBillingDayOfMonth] = useState(
+    String(retainer.billingDayOfMonth),
+  );
 
   useEffect(() => {
     if (open) {
       setAmount(String(retainer.amount));
       setServiceName(retainer.serviceName);
+      setBillingDayOfMonth(String(retainer.billingDayOfMonth));
     }
   }, [open, retainer]);
+
+  const billingDayChanged = Number(billingDayOfMonth) !== retainer.billingDayOfMonth;
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -43,6 +49,7 @@ export function AmendRetainerModal({
       await api.patch<ApiResponse<RetainerRecord>>(`/retainers/${retainer.id}`, {
         amount: parseFloat(amount),
         serviceName,
+        billingDayOfMonth: Number(billingDayOfMonth),
       });
       toast.success('Retainer amended');
       await queryClient.invalidateQueries({ queryKey: ['retainers'] });
@@ -81,9 +88,25 @@ export function AmendRetainerModal({
               <Label>Service name</Label>
               <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} required />
             </div>
+            <div className="space-y-2">
+              <Label>Billing day of month</Label>
+              <Input
+                type="number"
+                min="1"
+                max="31"
+                value={billingDayOfMonth}
+                onChange={(e) => setBillingDayOfMonth(e.target.value)}
+                required
+              />
+              <p className="text-xs text-cdy-muted">
+                Currently bills on day {retainer.billingDayOfMonth} of each month. Falls back to the
+                last day of the month if a month is shorter than the chosen day.
+              </p>
+            </div>
             <p className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-3 text-sm text-amber-200">
-              Effective from next billing cycle ({format(new Date(retainer.nextBillingDate), 'MMM d, yyyy')}).
-              Past invoices are unaffected.
+              {billingDayChanged
+                ? 'Changing the billing day recalculates the next invoice date based on the new day, starting from today. Past invoices are unaffected.'
+                : `Effective from next billing cycle (${format(new Date(retainer.nextBillingDate), 'MMM d, yyyy')}). Past invoices are unaffected.`}
             </p>
             <div className="flex gap-3">
               <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>

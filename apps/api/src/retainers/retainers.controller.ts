@@ -146,6 +146,22 @@ export class RetainersController {
     return { data, message: 'Retainer extended', statusCode: HttpStatus.OK };
   }
 
+  @Post(':id/generate-invoice')
+  @RequirePermission('finance.retainers', 'write')
+  @ApiOperation({ summary: 'Generate this retainer\'s bill now, instead of waiting for auto-billing' })
+  async generateInvoiceNow(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
+    const data = await this.retainersService.generateInvoiceNow(
+      id,
+      user.sub,
+      buildAuditContext(user, req),
+    );
+    return { data, message: 'Invoice generated', statusCode: HttpStatus.CREATED };
+  }
+
   @Post(':id/start')
   @RequirePermission('finance.retainers', 'write')
   @ApiOperation({ summary: 'Start retainer contract' })

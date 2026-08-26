@@ -74,6 +74,23 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
     } catch { /* */ } finally { setActionLoading(false); }
   }
 
+  async function generateInvoice(): Promise<void> {
+    if (
+      !window.confirm(
+        'Generate this month\'s invoice now, ahead of the scheduled billing date? The next billing date will move forward one cycle from today.',
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await api.post(`/retainers/${retainer.id}/generate-invoice`, {});
+      toast.success('Invoice generated');
+      await queryClient.invalidateQueries({ queryKey: ['retainers'] });
+      await queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    } catch { /* */ } finally { setActionLoading(false); }
+  }
+
   async function del(): Promise<void> {
     setActionLoading(true);
     try {
@@ -122,6 +139,9 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                     <>
                       <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>Extend Contract</Button>
                       <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>Amend</Button>
+                      <Button variant="outline" size="sm" onClick={generateInvoice} disabled={actionLoading}>
+                        Generate Bill Now
+                      </Button>
                       <Button variant="outline" size="sm" onClick={pause} disabled={actionLoading}>Pause</Button>
                       <Button variant="outline" size="sm" onClick={end} disabled={actionLoading}>End Contract</Button>
                     </>

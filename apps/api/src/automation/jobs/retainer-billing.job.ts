@@ -1,18 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import {
-  InvoiceStatus,
-  NotificationType,
-  Prisma,
-  RetainerStatus,
-} from '@prisma/client';
-import { addDays, addMonths, format, startOfDay } from 'date-fns';
+import { RetainerStatus } from '@prisma/client';
+import { addDays, startOfDay } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
-import { InvoiceNumberService } from '../../invoices/invoice-number.service';
-import { InvoicePdfService } from '../../invoices/invoice-pdf.service';
-import { InvoiceEmailService } from '../../invoices/invoice-email.service';
 import { RetainersService } from '../../retainers/retainers.service';
-import { NotificationsService } from '../../notifications/notifications.service';
 import { CronLogService } from '../cron-log.service';
 
 @Injectable()
@@ -21,11 +12,7 @@ export class RetainerBillingJob {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly invoiceNumberService: InvoiceNumberService,
-    private readonly invoicePdfService: InvoicePdfService,
-    private readonly invoiceEmailService: InvoiceEmailService,
     private readonly retainersService: RetainersService,
-    private readonly notificationsService: NotificationsService,
     private readonly cronLog: CronLogService,
   ) {}
 
@@ -46,85 +33,15 @@ export class RetainerBillingJob {
           lt: addDays(today, 1),
         },
       },
-      include: { taxRate: true },
     });
 
     this.logger.log(`Found ${dueRetainers.length} retainers due for billing today`);
 
     for (const retainer of dueRetainers) {
       try {
-        const lineItems = [
-          {
-            description: `${retainer.serviceName} — ${format(today, 'MMMM yyyy')}`,
-            quantity: 1,
-            unitPrice: Number(retainer.amount),
-            amount: Number(retainer.amount),
-          },
-        ];
-
-        const taxRatePercent = retainer.taxRate
-          ? Number(retainer.taxRate.ratePercent)
-          : 0;
-
-        const subtotal = Number(retainer.amount);
-        const taxAmount = Number(
-          ((subtotal * taxRatePercent) / 100).toFixed(2),
-        );
-        const total = subtotal + taxAmount;
-
-        const invoiceNumber = await this.invoiceNumberService.generate();
-
-        const invoice = await this.prisma.invoice.create({
-          data: {
-            invoiceNumber,
-            clientId: retainer.clientId,
-            ventureId: retainer.ventureId ?? null,
-            serviceType: 'retainer',
-            retainerContractId: retainer.id,
-            lineItems: lineItems as unknown as Prisma.InputJsonValue,
-            subtotal,
-            taxRate: taxRatePercent,
-            taxAmount,
-            total,
-            taxRateId: retainer.taxRateId,
-            currency: retainer.currency,
-            dueDate: addDays(today, 30),
-            status: InvoiceStatus.SENT,
-            sentAt: new Date(),
-            createdBy: retainer.createdBy,
-          },
-        });
-
-        const pdfBuffer = await this.invoicePdfService.generate(invoice);
-        await this.invoiceEmailService.sendInvoice(
-          invoice,
-          pdfBuffer,
-          retainer.clientId,
-        );
-
-        const nextBillingDate = this.retainersService.calculateNextBillingDate(
-          retainer.billingDayOfMonth,
-          addMonths(today, 1),
-        );
-
-        await this.prisma.retainerContract.update({
-          where: { id: retainer.id },
-          data: {
-            lastBilledAt: today,
-            nextBillingDate,
-          },
-        });
-
-        this.notificationsService.createForRoleAsync('FINANCE_MANAGER', {
-          type: NotificationType.SYSTEM,
-          title: `Retainer invoice sent — ${retainer.clientId}`,
-          body: `Invoice ${invoiceNumber} for ${retainer.serviceName} ($${total.toFixed(2)}) auto-sent.`,
-          link: `/finance/invoices/${invoice.id}`,
-        });
-
-        this.logger.log(
-          `Retainer invoice created and sent: ${invoiceNumber} for retainer ${retainer.id}`,
-        );
+        // No auditCtx — matches every other cron job in this codebase,
+        // none of which write audit log entries for automated actions.
+        await this.retainersService.generateInvoiceNow(retainer.id, retainer.createdBy);
         itemsProcessed++;
       } catch (err) {
         errors++;

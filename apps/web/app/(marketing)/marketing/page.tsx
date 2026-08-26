@@ -5,8 +5,19 @@ import Link from 'next/link';
 import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import {
+  addDays,
+  addWeeks,
+  endOfWeek,
+  format,
+  startOfWeek,
+} from 'date-fns';
 import api from '@/lib/api';
-import { useAllMarketingSummary, useMarketingClients } from '@/hooks/useMarketing';
+import {
+  useAllMarketingSummary,
+  useMarketingSummaryForPeriod,
+  useMarketingClients,
+} from '@/hooks/useMarketing';
 import { AddMarketingClientDrawer } from '@/components/marketing/AddMarketingClientDrawer';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -20,39 +31,106 @@ import {
   deliveryRateColor,
   platformShort,
 } from '@/lib/marketingUtils';
-import type { MarketingAllClientsSummaryItem } from '@cdy/shared';
+import type {
+  MarketingAllClientsSummaryItem,
+  MarketingPeriodSummaryItem,
+  MarketingSummaryPeriod,
+} from '@cdy/shared';
+
+const PERIODS: { value: MarketingSummaryPeriod; label: string }[] = [
+  { value: 'day', label: 'Daily' },
+  { value: 'week', label: 'Weekly' },
+  { value: 'month', label: 'Monthly' },
+];
+
+function todayString(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}
+
+function formatDay(dateStr: string): string {
+  return format(new Date(dateStr), 'EEE, MMM d, yyyy');
+}
+
+function formatWeek(dateStr: string): string {
+  const start = startOfWeek(new Date(dateStr), { weekStartsOn: 1 });
+  const end = endOfWeek(new Date(dateStr), { weekStartsOn: 1 });
+  return `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`;
+}
 
 export default function MarketingOverviewPage(): JSX.Element {
+  const [period, setPeriod] = useState<MarketingSummaryPeriod>('month');
   const [month, setMonth] = useState(currentMonth());
+  const [anchorDate, setAnchorDate] = useState(todayString());
   const [addOpen, setAddOpen] = useState(false);
 
-  const { data: summaries, isLoading, isError } = useAllMarketingSummary(month);
+  const isMonth = period === 'month';
+  const monthQuery = useAllMarketingSummary(month, isMonth);
+  const periodQuery = useMarketingSummaryForPeriod(
+    period === 'week' ? 'week' : 'day',
+    anchorDate,
+    !isMonth,
+  );
   const { data: clients } = useMarketingClients();
+
+  const summaries: (MarketingAllClientsSummaryItem | MarketingPeriodSummaryItem)[] | undefined =
+    isMonth ? monthQuery.data : periodQuery.data;
+  const isLoading = isMonth ? monthQuery.isLoading : periodQuery.isLoading;
+  const isError = isMonth ? monthQuery.isError : periodQuery.isError;
 
   const totalPlanned = summaries?.reduce((s, c) => s + c.planned, 0) ?? 0;
   const totalPublished = summaries?.reduce((s, c) => s + c.published, 0) ?? 0;
   const totalPending = summaries?.reduce((s, c) => s + c.pending, 0) ?? 0;
   const activeCount = clients?.length ?? 0;
 
+  function goPrev(): void {
+    if (period === 'month') setMonth(prevMonth(month));
+    else if (period === 'week') setAnchorDate(format(addWeeks(new Date(anchorDate), -1), 'yyyy-MM-dd'));
+    else setAnchorDate(format(addDays(new Date(anchorDate), -1), 'yyyy-MM-dd'));
+  }
+  function goNext(): void {
+    if (period === 'month') setMonth(nextMonth(month));
+    else if (period === 'week') setAnchorDate(format(addWeeks(new Date(anchorDate), 1), 'yyyy-MM-dd'));
+    else setAnchorDate(format(addDays(new Date(anchorDate), 1), 'yyyy-MM-dd'));
+  }
+
+  const rangeLabel =
+    period === 'month' ? formatMonth(month) : period === 'week' ? formatWeek(anchorDate) : formatDay(anchorDate);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-cdy-white">Marketing</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setPeriod(p.value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  period === p.value
+                    ? 'bg-cdy-red text-white'
+                    : 'text-cdy-muted hover:text-cdy-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light px-3 py-1.5">
             <button
               type="button"
-              onClick={() => setMonth(prevMonth(month))}
+              onClick={goPrev}
               className="text-cdy-muted hover:text-cdy-white"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="min-w-32 text-center text-sm text-cdy-white">
-              {formatMonth(month)}
+              {rangeLabel}
             </span>
             <button
               type="button"
-              onClick={() => setMonth(nextMonth(month))}
+              onClick={goNext}
               className="text-cdy-muted hover:text-cdy-white"
             >
               <ChevronRight className="h-4 w-4" />
@@ -102,11 +180,11 @@ export default function MarketingOverviewPage(): JSX.Element {
               <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Client</th>
                 <th className="px-4 py-3 font-medium">Platforms</th>
-                <th className="px-4 py-3 font-medium text-right">Target</th>
+                <th className="px-4 py-3 font-medium text-right">Monthly target</th>
                 <th className="px-4 py-3 font-medium text-right">Planned</th>
                 <th className="px-4 py-3 font-medium text-right">Published</th>
                 <th className="px-4 py-3 font-medium text-right">Rate</th>
-                <th className="px-4 py-3 font-medium">Invoice</th>
+                {isMonth && <th className="px-4 py-3 font-medium">Invoice</th>}
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -114,7 +192,7 @@ export default function MarketingOverviewPage(): JSX.Element {
               {summaries.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={isMonth ? 8 : 7}
                     className="px-4 py-8 text-center text-cdy-muted"
                   >
                     No marketing clients yet
@@ -126,6 +204,7 @@ export default function MarketingOverviewPage(): JSX.Element {
                   key={row.marketingClientId}
                   row={row}
                   clients={clients}
+                  showInvoice={isMonth}
                 />
               ))}
             </tbody>
@@ -144,9 +223,11 @@ export default function MarketingOverviewPage(): JSX.Element {
 function ClientRow({
   row,
   clients,
+  showInvoice,
 }: {
-  row: MarketingAllClientsSummaryItem;
+  row: MarketingAllClientsSummaryItem | MarketingPeriodSummaryItem;
   clients?: { id: string; platforms: string[] }[];
+  showInvoice: boolean;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -198,19 +279,21 @@ function ClientRow({
       <td className={`px-4 py-3 text-right font-medium ${rateColor}`}>
         {row.deliveryRate}%
       </td>
-      <td className="px-4 py-3">
-        {row.invoice ? (
-          <Link
-            href={`/finance/invoices/${row.invoice.id}`}
-            className="font-mono text-xs text-cdy-red hover:underline"
-          >
-            {row.invoice.invoiceNumber}{' '}
-            {row.invoice.status === 'PAID' ? '✅' : '⏳'}
-          </Link>
-        ) : (
-          <span className="text-xs text-cdy-muted">—</span>
-        )}
-      </td>
+      {showInvoice && 'invoice' in row && (
+        <td className="px-4 py-3">
+          {row.invoice ? (
+            <Link
+              href={`/finance/invoices/${row.invoice.id}`}
+              className="font-mono text-xs text-cdy-red hover:underline"
+            >
+              {row.invoice.invoiceNumber}{' '}
+              {row.invoice.status === 'PAID' ? '✅' : '⏳'}
+            </Link>
+          ) : (
+            <span className="text-xs text-cdy-muted">—</span>
+          )}
+        </td>
+      )}
       <td className="px-4 py-3">
         <PermissionGate feature="marketing.clients" action="write">
           <button
