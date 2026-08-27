@@ -238,7 +238,16 @@ export class RetainersService {
       where: {
         status: RetainerStatus.ACTIVE,
         deletedAt: null,
-        ...(opts?.unlinkedOnly !== false && { marketingClient: null }),
+        // "Unlinked" means no ACTIVE marketing client. A retainer can carry
+        // several soft-deleted MarketingClient rows over time (see
+        // MarketingClient.retainerId), so this must check for none of them
+        // being active — nested relation filters aren't scoped by the
+        // soft-delete extension (see soft-delete.extension.ts), so without
+        // the explicit deletedAt check a soft-deleted row would still block
+        // this retainer from ever being picked again after it's "deleted".
+        ...(opts?.unlinkedOnly !== false && {
+          marketingClients: { none: { deletedAt: null } },
+        }),
         OR: [
           { serviceName: { contains: term, mode: 'insensitive' } },
           { client: { companyName: { contains: term, mode: 'insensitive' } } },

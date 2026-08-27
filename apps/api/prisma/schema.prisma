@@ -686,12 +686,16 @@ model RetainerContract {
   updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
 
-  taxRate         TaxRate?            @relation(fields: [taxRateId], references: [id])
-  invoices        Invoice[]           @relation("RetainerInvoices")
-  marketingClient MarketingClient?
-  client          Client              @relation(fields: [clientId], references: [id])
-  venture         Venture?            @relation(fields: [ventureId], references: [id])
-  extensions      RetainerExtension[]
+  taxRate          TaxRate?            @relation(fields: [taxRateId], references: [id])
+  invoices         Invoice[]           @relation("RetainerInvoices")
+  // Plural: a retainer can accumulate more than one MarketingClient row over
+  // time once soft-deleted ones stop being unique (see MarketingClient.retainerId).
+  // Only one is ever ACTIVE (deletedAt: null) at a time — enforced by a
+  // partial unique index, not by the Prisma relation shape.
+  marketingClients MarketingClient[]
+  client           Client              @relation(fields: [clientId], references: [id])
+  venture          Venture?            @relation(fields: [ventureId], references: [id])
+  extensions       RetainerExtension[]
 
   @@index([status])
   @@index([nextBillingDate])
@@ -1881,7 +1885,12 @@ model MarketingClient {
   id            String    @id @default(cuid())
   clientId      String?
   projectId     String?
-  retainerId    String    @unique
+  // Not @unique: a retainer can accumulate several soft-deleted
+  // MarketingClient rows over time. Uniqueness among ACTIVE rows only is
+  // enforced by a partial unique index added directly in migration
+  // 20260826000000_marketing_client_retainer_partial_unique (Prisma's
+  // schema DSL can't express a filtered/partial unique constraint).
+  retainerId    String
   platforms     String[]
   postsPerMonth Int       @default(12)
   isActive      Boolean   @default(true)
@@ -1898,6 +1907,7 @@ model MarketingClient {
   @@index([clientId])
   @@index([isActive])
   @@index([deletedAt])
+  @@index([retainerId])
 }
 
 model ContentItem {

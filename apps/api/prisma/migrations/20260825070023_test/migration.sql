@@ -1,0 +1,6 @@
+-- Placeholder: this migration's original file was missing from disk even
+-- though the database already recorded it as successfully applied (see
+-- _prisma_migrations). Recreated as a no-op so `prisma migrate status`/
+-- `migrate deploy` can find a file here again — content intentionally left
+-- empty since the original SQL is unknown and the DB already has whatever
+-- effect it had.

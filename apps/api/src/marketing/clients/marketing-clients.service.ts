@@ -34,7 +34,13 @@ export class MarketingClientsService {
       throw new BadRequestException('Retainer must be ACTIVE to link a marketing client');
     }
 
-    const existing = await this.prisma.marketingClient.findUnique({
+    // retainerId is no longer @unique in the schema — a retainer can carry
+    // several soft-deleted MarketingClient rows over time (see
+    // MarketingClient.retainerId) — so this must look for an ACTIVE one
+    // specifically, not just any row. findFirst() is soft-delete-aware
+    // (deletedAt: null is applied automatically), matching lookup()'s
+    // "unlinked" check in retainers.service.ts.
+    const existing = await this.prisma.marketingClient.findFirst({
       where: { retainerId: dto.retainerId },
     });
     if (existing) {
