@@ -110,9 +110,9 @@ export class CeoDashboardService {
       rawPaymentByMethod,
       rawDirectIncomeByMethod,
       rawExpenseByMethod,
-      rawPaymentByMethodAllTime,
-      rawDirectIncomeByMethodAllTime,
-      rawExpenseByMethodAllTime,
+      allTimePayments,
+      allTimeDirectIncome,
+      allTimeExpenses,
     ] = await Promise.all([
       // ── Finance ─────────────────────────────────────────────
       this.prisma.invoice.aggregate({
@@ -341,24 +341,23 @@ export class CeoDashboardService {
         _count: { id: true },
       }),
 
-      // ── Cash vs Bank balance — all-time (subject to the cutoff below), not scoped to this month ────
-      this.prisma.payment.groupBy({
-        by: ['method'],
+      // ── Overall balance — all-time (subject to the cutoff below), not
+      // scoped to this month, and NOT filtered by payment method — every
+      // payment/direct income/expense counts here regardless of method
+      // (including OTHER and expenses with no method recorded at all), so
+      // this reconciles with the date-range "Balance" card on the same
+      // page, which also doesn't filter by method.
+      this.prisma.payment.aggregate({
         where: { deletedAt: null, paidAt: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
-        _count: { id: true },
       }),
-      this.prisma.directIncome.groupBy({
-        by: ['paymentMethod'],
+      this.prisma.directIncome.aggregate({
         where: { deletedAt: null, date: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
-        _count: { id: true },
       }),
-      this.prisma.expense.groupBy({
-        by: ['paymentMethod'],
-        where: { deletedAt: null, paymentMethod: { not: null }, date: { gte: cutoff ?? undefined } },
+      this.prisma.expense.aggregate({
+        where: { deletedAt: null, date: { gte: cutoff ?? undefined } },
         _sum: { amount: true },
-        _count: { id: true },
       }),
     ]);
 
@@ -446,19 +445,13 @@ export class CeoDashboardService {
       return methods.reduce((s, m) => s + (map.get(m)?.amount ?? 0), 0);
     }
 
-    // Cash vs Bank balance is a running, all-time figure (how much is
-    // actually sitting in each place right now) — not reset to "this
-    // month", unlike the rest of the dashboard's MTD metrics.
-    const incomeByMethodAllTime = buildIncomeByMethod(
-      rawPaymentByMethodAllTime,
-      rawDirectIncomeByMethodAllTime,
-    );
-    const expensesByMethodAllTime = buildExpensesByMethod(rawExpenseByMethodAllTime);
-
-    const cashIncome = incomeByMethodAllTime.get('CASH')?.amount ?? 0;
-    const cashExpenses = expensesByMethodAllTime.get('CASH')?.amount ?? 0;
-    const bankIncome = sumMethods(incomeByMethodAllTime, BANK_METHODS);
-    const bankExpenses = sumMethods(expensesByMethodAllTime, BANK_METHODS);
+    // Overall balance is a running, all-time figure (not reset to "this
+    // month" like the rest of the dashboard's MTD metrics) — and unlike the
+    // payment-method breakdown above, it's not filtered by method at all,
+    // so it reconciles with the date-range "Balance" card on the same page.
+    const overallIncome =
+      Number(allTimePayments._sum.amount ?? 0) + Number(allTimeDirectIncome._sum.amount ?? 0);
+    const overallExpenses = Number(allTimeExpenses._sum.amount ?? 0);
 
     return {
       generatedAt: now,
@@ -522,9 +515,10 @@ export class CeoDashboardService {
             };
           }).filter((m) => m.income.amount > 0 || m.expenses.amount > 0),
         },
-        cashVsBank: {
-          cash: { income: cashIncome, expenses: cashExpenses, net: cashIncome - cashExpenses },
-          bank: { income: bankIncome, expenses: bankExpenses, net: bankIncome - bankExpenses },
+        overallBalance: {
+          income: overallIncome,
+          expenses: overallExpenses,
+          net: overallIncome - overallExpenses,
         },
       },
 
