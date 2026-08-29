@@ -140,7 +140,16 @@ export default function FinanceDashboard(): JSX.Element {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDateFrom(value);
+                // A "from" with no "to" is otherwise silently ignored
+                // (hasDateRange requires both) — default "to" to today so
+                // picking just a start date still filters as expected.
+                if (value && !dateTo) {
+                  setDateTo(format(new Date(), 'yyyy-MM-dd'));
+                }
+              }}
               className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
             />
           </div>
@@ -149,7 +158,13 @@ export default function FinanceDashboard(): JSX.Element {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Same reasoning as "from" above: don't let "to" go blank
+                // while "from" is still set, or the range silently drops
+                // back to MTD with no visible explanation.
+                setDateTo(!value && dateFrom ? format(new Date(), 'yyyy-MM-dd') : value);
+              }}
               className="rounded-lg border border-cdy-navy-border bg-cdy-navy px-3 py-1.5 text-sm text-cdy-white focus:border-blue-500 focus:outline-none"
             />
           </div>
