@@ -2,7 +2,12 @@
 FROM node:20-alpine AS base
 # Prisma query engine requires OpenSSL on Alpine (musl)
 RUN apk add --no-cache openssl libc6-compat
-RUN npm install -g pnpm
+# Pinned to match "packageManager" in package.json / the pnpm version that
+# generated pnpm-lock.yaml — an unpinned install grabs whatever pnpm is
+# latest at build time, and pnpm 10+ added a lockfile "engine identity"
+# check that an older lockfile like ours doesn't satisfy
+# (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE).
+RUN npm install -g pnpm@9.15.9
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
 COPY packages/ ./packages/
@@ -43,7 +48,7 @@ RUN apk add --no-cache \
     font-noto-emoji
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.9
 WORKDIR /app
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma

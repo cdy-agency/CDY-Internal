@@ -1,6 +1,11 @@
 # ─── Base ─────────────────────────────────────────────────────
 FROM node:20-alpine AS base
-RUN npm install -g pnpm
+# Pinned to match "packageManager" in package.json / the pnpm version that
+# generated pnpm-lock.yaml — an unpinned install grabs whatever pnpm is
+# latest at build time, and pnpm 10+ added a lockfile "engine identity"
+# check that an older lockfile like ours doesn't satisfy
+# (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE).
+RUN npm install -g pnpm@9.15.9
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
 COPY packages/ ./packages/
