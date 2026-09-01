@@ -206,6 +206,9 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
           <div>
             <Label>Email</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" />
+            <p className="mt-1 text-xs text-cdy-muted">
+              This email cannot already belong to an existing client.
+            </p>
           </div>
           <div>
             <Label>Phone</Label>

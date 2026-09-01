@@ -1,5 +1,6 @@
 ﻿import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -102,6 +103,7 @@ export class LeadsService {
   async create(dto: CreateLeadDto, actor: CrmActor): Promise<Lead> {
     const assigneeId = dto.assignedTo ?? actor.userId;
     await this.assertAssignableUser(assigneeId);
+    await this.assertEmailIsNotAnActiveClient(dto.email);
 
     const createdAt = this.resolveCreatedAt(dto.createdAt);
 
@@ -530,6 +532,10 @@ export class LeadsService {
       dto.stage === PipelineStage.CLOSED_WON ||
       dto.stage === PipelineStage.CLOSED_LOST;
 
+    // A closed deal cannot use the email address of an active client. For a
+    // won deal, validate any correction entered in the close-deal form.
+    await this.assertEmailIsNotAnActiveClient(dto.email ?? lead.email);
+
     const updateData: Prisma.LeadUpdateInput = {
       stage: dto.stage,
       // convertedAt is the close timestamp for both won and lost deals
@@ -721,6 +727,22 @@ export class LeadsService {
     if (!user || CRM_EXCLUDED_ASSIGNEE_ROLES.has(user.role.key)) {
       throw new BadRequestException(
         'Lead can only be assigned to a non-IT user',
+      );
+    }
+  }
+
+  private async assertEmailIsNotAnActiveClient(email: string): Promise<void> {
+    const existingClient = await this.prisma.client.findFirst({
+      where: {
+        email: { equals: email.trim(), mode: 'insensitive' },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (existingClient) {
+      throw new ConflictException(
+        'This email address already belongs to an existing client',
       );
     }
   }

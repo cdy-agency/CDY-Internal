@@ -225,8 +225,8 @@ export function CloseDealModal({
                     />
                   </div>
                   <p className="text-xs text-cdy-muted">
-                    These corrections are saved on the lead and carried into
-                    the client record this deal creates or links to.
+                    These corrections are saved on the lead. The email must
+                    not already belong to an existing client.
                   </p>
                 </div>
               )}
