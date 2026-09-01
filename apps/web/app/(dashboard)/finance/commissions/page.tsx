@@ -240,7 +240,7 @@ export default function CommissionsPage(): JSX.Element {
             <thead>
               <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Agent</th>
-                <th className="px-4 py-3 font-medium">Deal ID</th>
+                <th className="px-4 py-3 font-medium">Deal</th>
                 <th className="px-4 py-3 font-medium">Service</th>
                 <th className="px-4 py-3 font-medium text-right">Deal Value</th>
                 <th className="px-4 py-3 font-medium text-right">Rate</th>
@@ -258,7 +258,9 @@ export default function CommissionsPage(): JSX.Element {
                       ? `${c.agent.firstName} ${c.agent.lastName}`
                       : c.agentId}
                   </td>
-                  <td className="px-4 py-3 font-mono text-cdy-muted">{c.dealId}</td>
+                  <td className="px-4 py-3 text-cdy-white">
+                    {c.dealName ?? 'Unknown deal'}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-cdy-navy-border px-2 py-0.5 text-xs">
                       {serviceTypeLabel(c.serviceType)}

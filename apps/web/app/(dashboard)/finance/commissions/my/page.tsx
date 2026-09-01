@@ -69,7 +69,7 @@ export default function MyCommissionsPage(): JSX.Element {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
-                <th className="px-4 py-3 font-medium">Deal ID</th>
+                <th className="px-4 py-3 font-medium">Deal</th>
                 <th className="px-4 py-3 font-medium">Service</th>
                 <th className="px-4 py-3 font-medium text-right">Deal Value</th>
                 <th className="px-4 py-3 font-medium text-right">Commission</th>
@@ -79,7 +79,9 @@ export default function MyCommissionsPage(): JSX.Element {
             <tbody>
               {data.data.map((c) => (
                 <tr key={c.id} className="border-b border-cdy-navy-border/50">
-                  <td className="px-4 py-3 font-mono text-cdy-muted">{c.dealId}</td>
+                  <td className="px-4 py-3 text-cdy-white">
+                    {c.dealName ?? 'Unknown deal'}
+                  </td>
                   <td className="px-4 py-3 text-cdy-white">
                     {serviceTypeLabel(c.serviceType)}
                   </td>

@@ -875,6 +875,7 @@ export interface CommissionRecord {
   id: string;
   agentId: string;
   dealId: string;
+  dealName?: string | null;
   dealValue: number;
   serviceType: string;
   ratePercent: number;

@@ -301,8 +301,24 @@ export class CommissionsService {
       this.getMonthSummary(filters.month),
     ]);
 
+    const dealLeads =
+      records.length > 0
+        ? await this.prisma.lead.findMany({
+            where: { id: { in: records.map((record) => record.dealId) } },
+            select: { id: true, companyName: true, contactName: true },
+          })
+        : [];
+    const dealNameById = new Map(
+      dealLeads.map((lead) => [
+        lead.id,
+        lead.companyName ?? lead.contactName,
+      ]),
+    );
+
     return {
-      data: records.map((r) => this.serializeRecord(r)),
+      data: records.map((record) =>
+        this.serializeRecord(record, dealNameById.get(record.dealId) ?? null),
+      ),
       total,
       page,
       limit,
@@ -625,6 +641,7 @@ export class CommissionsService {
         role?: { key: string };
       };
     },
+    dealName: string | null = null,
   ) {
     const agent =
       'agent' in record && record.agent
@@ -640,6 +657,7 @@ export class CommissionsService {
       id: record.id,
       agentId: record.agentId,
       dealId: record.dealId,
+      dealName,
       dealValue: Number(record.dealValue),
       serviceType: record.serviceType,
       ratePercent: Number(record.ratePercent),
