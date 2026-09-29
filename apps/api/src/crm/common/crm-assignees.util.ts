@@ -21,7 +21,7 @@ export async function findCrmAssignableUsers(
   prisma: PrismaService,
 ): Promise<CrmAssignableUser[]> {
   const users = await prisma.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, isActive: true },
     select: {
       id: true,
       firstName: true,

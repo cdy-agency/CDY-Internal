@@ -256,8 +256,8 @@ export class ItManagementService {
     updatedAt: true,
   } as const;
 
-  // Deactivated users (isActive=false, deletedAt set) stay visible here so IT
-  // can see their status and reactivate them.
+  // No deletedAt filter: users deactivated before deactivation stopped setting
+  // deletedAt must still be listed so IT can see and reactivate them.
   async listUsers() {
     return this.prisma.user.findMany({
       select: {
@@ -420,7 +420,9 @@ export class ItManagementService {
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { isActive: false, deletedAt: new Date() },
+      // Deactivation only blocks login (auth checks isActive); the account is
+      // not deleted, so it stays visible to IT and can be reactivated.
+      data: { isActive: false },
     });
 
     await this.rbacService.invalidateUserCache(userId);

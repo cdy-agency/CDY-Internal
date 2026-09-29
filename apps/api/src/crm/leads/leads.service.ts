@@ -721,7 +721,7 @@ export class LeadsService {
 
   private async assertAssignableUser(userId: string): Promise<void> {
     const user = await this.prisma.user.findFirst({
-      where: { id: userId, deletedAt: null },
+      where: { id: userId, deletedAt: null, isActive: true },
       select: { id: true, role: { select: { key: true } } },
     });
     if (!user || CRM_EXCLUDED_ASSIGNEE_ROLES.has(user.role.key)) {
