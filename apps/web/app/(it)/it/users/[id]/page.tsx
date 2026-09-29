@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { ApiResponse, PermissionMap } from '@cdy/shared';
 
 interface ItUserDetail {
@@ -29,6 +30,8 @@ export default function ItUserDetailPage(): JSX.Element {
   const [user, setUser] = useState<ItUserDetail | null>(null);
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -50,18 +53,25 @@ export default function ItUserDetailPage(): JSX.Element {
     setUser(res.data.data);
   }
 
-  async function handleDeactivate(): Promise<void> {
-    if (!confirm('Deactivate this user?')) return;
-    await api.delete(`/it/users/${userId}`);
-    const res = await api.get<ApiResponse<ItUserDetail>>(`/it/users/${userId}`);
-    setUser(res.data.data);
-  }
-
-  async function handleActivate(): Promise<void> {
-    if (!confirm('Reactivate this user?')) return;
-    await api.patch(`/it/users/${userId}/activate`);
-    const res = await api.get<ApiResponse<ItUserDetail>>(`/it/users/${userId}`);
-    setUser(res.data.data);
+  // Deactivates an active user or reactivates an inactive one, after the
+  // confirmation dialog is accepted.
+  async function handleToggleActive(): Promise<void> {
+    if (!user) return;
+    setStatusLoading(true);
+    try {
+      if (user.isActive) {
+        await api.delete(`/it/users/${userId}`);
+      } else {
+        await api.patch(`/it/users/${userId}/activate`);
+      }
+      const res = await api.get<ApiResponse<ItUserDetail>>(`/it/users/${userId}`);
+      setUser(res.data.data);
+      setStatusConfirmOpen(false);
+    } catch {
+      /* interceptor shows the error */
+    } finally {
+      setStatusLoading(false);
+    }
   }
 
   if (!user) {
@@ -103,17 +113,27 @@ export default function ItUserDetailPage(): JSX.Element {
             ))}
           </select>
           <Button onClick={handleRoleChange}>Change Role</Button>
-          {user.isActive ? (
-            <Button variant="outline" onClick={handleDeactivate}>
-              Deactivate
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={handleActivate}>
-              Reactivate
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setStatusConfirmOpen(true)}>
+            {user.isActive ? 'Deactivate' : 'Reactivate'}
+          </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={statusConfirmOpen}
+        title={user.isActive ? 'Deactivate this user?' : 'Reactivate this user?'}
+        description={
+          user.isActive
+            ? `${user.firstName} ${user.lastName} will be signed out and unable to log in until reactivated.`
+            : `${user.firstName} ${user.lastName} will be able to log in again with their existing role.`
+        }
+        confirmLabel={user.isActive ? 'Deactivate' : 'Reactivate'}
+        loadingLabel={user.isActive ? 'Deactivating…' : 'Reactivating…'}
+        variant={user.isActive ? 'danger' : 'default'}
+        isLoading={statusLoading}
+        onConfirm={() => void handleToggleActive()}
+        onCancel={() => setStatusConfirmOpen(false)}
+      />
 
       <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
         <h2 className="mb-4 font-medium text-cdy-white">Permission summary</h2>

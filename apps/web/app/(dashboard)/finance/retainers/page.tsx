@@ -42,6 +42,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   const [extendOpen, setExtendOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   async function pause(): Promise<void> {
     const reason = window.prompt('Reason for pausing:');
@@ -75,17 +76,11 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
   }
 
   async function generateInvoice(): Promise<void> {
-    if (
-      !window.confirm(
-        'Generate this month\'s invoice now, ahead of the scheduled billing date? The next billing date will move forward one cycle from today.',
-      )
-    ) {
-      return;
-    }
     setActionLoading(true);
     try {
       await api.post(`/retainers/${retainer.id}/generate-invoice`, {});
       toast.success('Invoice generated');
+      setGenerateOpen(false);
       await queryClient.invalidateQueries({ queryKey: ['retainers'] });
       await queryClient.invalidateQueries({ queryKey: ['invoices'] });
     } catch { /* */ } finally { setActionLoading(false); }
@@ -139,7 +134,7 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
                     <>
                       <Button variant="outline" size="sm" onClick={() => setExtendOpen(true)}>Extend Contract</Button>
                       <Button variant="outline" size="sm" onClick={() => setAmendOpen(true)}>Amend</Button>
-                      <Button variant="outline" size="sm" onClick={generateInvoice} disabled={actionLoading}>
+                      <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)} disabled={actionLoading}>
                         Generate Bill Now
                       </Button>
                       <Button variant="outline" size="sm" onClick={pause} disabled={actionLoading}>Pause</Button>
@@ -182,6 +177,17 @@ function RetainerRow({ retainer }: { retainer: RetainerRecord }): JSX.Element {
         isLoading={actionLoading}
         onConfirm={() => void del()}
         onCancel={() => setDeleteOpen(false)}
+      />
+      <ConfirmDialog
+        open={generateOpen}
+        title="Generate invoice now?"
+        description="This month's invoice will be generated ahead of the scheduled billing date. The next billing date will move forward one cycle from today."
+        confirmLabel="Generate invoice"
+        loadingLabel="Generating…"
+        variant="default"
+        isLoading={actionLoading}
+        onConfirm={() => void generateInvoice()}
+        onCancel={() => setGenerateOpen(false)}
       />
     </Fragment>
   );

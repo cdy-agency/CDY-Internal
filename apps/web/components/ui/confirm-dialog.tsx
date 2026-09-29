@@ -10,6 +10,10 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isLoading?: boolean;
+  /** Confirm button text while isLoading. */
+  loadingLabel?: string;
+  /** 'danger' renders a red confirm button for destructive actions. */
+  variant?: 'danger' | 'default';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -27,6 +31,8 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   isLoading = false,
+  loadingLabel = 'Deleting…',
+  variant = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps): JSX.Element | null {
@@ -57,16 +63,16 @@ export function ConfirmDialog({
           {title}
         </h2>
         {description && <p className="mt-2 text-sm text-cdy-muted">{description}</p>}
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
           <Button variant="outline" onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </Button>
           <Button
-            className="bg-cdy-red hover:bg-cdy-red/90"
+            className={variant === 'danger' ? 'bg-cdy-red hover:bg-cdy-red/90' : undefined}
             onClick={onConfirm}
             disabled={isLoading}
           >
-            {isLoading ? 'Deleting…' : confirmLabel}
+            {isLoading ? loadingLabel : confirmLabel}
           </Button>
         </div>
       </div>

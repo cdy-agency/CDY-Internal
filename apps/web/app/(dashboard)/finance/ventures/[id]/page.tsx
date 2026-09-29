@@ -80,6 +80,8 @@ export default function VentureDetailPage(): JSX.Element {
   const [nameValue, setNameValue] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
   const { data: venture, isLoading: ventureLoading } = useVenture(ventureId);
   const { data: summary, isLoading: summaryLoading } = useVentureSummary(ventureId, { from, to });
@@ -105,13 +107,16 @@ export default function VentureDetailPage(): JSX.Element {
   const isLoading = ventureLoading || summaryLoading;
 
   async function handleDeactivate(): Promise<void> {
-    if (!window.confirm('Deactivate this venture?')) return;
+    setDeactivating(true);
     try {
       await api.patch(`/ventures/${ventureId}/deactivate`);
       toast.success('Venture deactivated');
       await queryClient.invalidateQueries({ queryKey: ['ventures'] });
+      setDeactivateOpen(false);
     } catch {
       /* handled by interceptor */
+    } finally {
+      setDeactivating(false);
     }
   }
 
@@ -191,7 +196,7 @@ export default function VentureDetailPage(): JSX.Element {
                     <Pencil className="h-4 w-4" /> Edit
                   </Button>
                   {venture.isActive && (
-                    <Button variant="outline" size="sm" onClick={handleDeactivate}>Deactivate</Button>
+                    <Button variant="outline" size="sm" onClick={() => setDeactivateOpen(true)}>Deactivate</Button>
                   )}
                   <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
                     <Trash2 className="h-4 w-4" /> Delete
@@ -616,6 +621,21 @@ export default function VentureDetailPage(): JSX.Element {
           isLoading={deleting}
           onConfirm={() => void handleDelete()}
           onCancel={() => setDeleteOpen(false)}
+        />
+
+        <ConfirmDialog
+          open={deactivateOpen}
+          title="Deactivate venture?"
+          description={
+            venture
+              ? `"${venture.name}" will be marked inactive. Its history is kept.`
+              : undefined
+          }
+          confirmLabel="Deactivate"
+          loadingLabel="Deactivating…"
+          isLoading={deactivating}
+          onConfirm={() => void handleDeactivate()}
+          onCancel={() => setDeactivateOpen(false)}
         />
       </div>
     </FeatureReadGate>

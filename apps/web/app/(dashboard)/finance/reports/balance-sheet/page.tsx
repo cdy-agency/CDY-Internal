@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/utils';
 import { downloadReportPdf } from '@/lib/reportPdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { cn } from '@/lib/utils';
 import type { BalanceSheetManualEntry } from '@cdy/shared';
@@ -143,6 +144,8 @@ export default function BalanceSheetPage(): JSX.Element {
     type: 'ASSET' | 'LIABILITY';
     entry?: BalanceSheetManualEntry;
   } | null>(null);
+  const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState(false);
 
   const { data, isLoading, isError } = useBalanceSheetReport(date);
 
@@ -162,13 +165,16 @@ export default function BalanceSheetPage(): JSX.Element {
   }
 
   async function deleteEntry(id: string): Promise<void> {
-    if (!window.confirm('Delete this entry?')) return;
+    setDeletingEntry(true);
     try {
       await api.delete(`/reports/balance-sheet/entries/${id}`);
       toast.success('Entry deleted');
       await queryClient.invalidateQueries({ queryKey: ['reports', 'balance-sheet'] });
+      setDeleteEntryId(null);
     } catch {
       /* interceptor */
+    } finally {
+      setDeletingEntry(false);
     }
   }
 
@@ -289,7 +295,7 @@ export default function BalanceSheetPage(): JSX.Element {
                     <button
                       type="button"
                       className="text-xs text-cdy-muted hover:underline"
-                      onClick={() => void deleteEntry(entry.id)}
+                      onClick={() => setDeleteEntryId(entry.id)}
                     >
                       Delete
                     </button>
@@ -350,7 +356,7 @@ export default function BalanceSheetPage(): JSX.Element {
                     <button
                       type="button"
                       className="text-xs text-cdy-muted hover:underline"
-                      onClick={() => void deleteEntry(entry.id)}
+                      onClick={() => setDeleteEntryId(entry.id)}
                     >
                       Delete
                     </button>
@@ -432,6 +438,16 @@ export default function BalanceSheetPage(): JSX.Element {
           }
         />
       )}
+
+      <ConfirmDialog
+        open={deleteEntryId !== null}
+        title="Delete this entry?"
+        description="The manual balance sheet entry will be removed. This cannot be undone."
+        confirmLabel="Delete"
+        isLoading={deletingEntry}
+        onConfirm={() => deleteEntryId && void deleteEntry(deleteEntryId)}
+        onCancel={() => setDeleteEntryId(null)}
+      />
     </div>
     </FeatureReadGate>
   );

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface SystemFeature {
   id: string;
@@ -58,6 +59,7 @@ export default function ItRoleDetailPage(): JSX.Element {
   const [permissions, setPermissions] = useState<PermState>({});
   const [initial, setInitial] = useState<PermState>({});
   const [saving, setSaving] = useState(false);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -103,15 +105,6 @@ export default function ItRoleDetailPage(): JSX.Element {
 
   async function handleSave(): Promise<void> {
     if (!role || role.key === 'CEO' || role.key === 'IT_ADMINISTRATOR') return;
-    const userCount = role._count?.users ?? 0;
-    if (
-      !confirm(
-        `Saving will immediately update permissions for ${userCount} user(s). Continue?`,
-      )
-    ) {
-      return;
-    }
-
     setSaving(true);
     try {
       await api.post(`/it/roles/${roleId}/permissions`, {
@@ -122,6 +115,9 @@ export default function ItRoleDetailPage(): JSX.Element {
         })),
       });
       setInitial({ ...permissions });
+      setSaveConfirmOpen(false);
+    } catch {
+      /* interceptor shows the error */
     } finally {
       setSaving(false);
     }
@@ -211,10 +207,22 @@ export default function ItRoleDetailPage(): JSX.Element {
       ))}
 
       {!isProtected && (
-        <Button onClick={handleSave} disabled={saving || changedCount === 0}>
+        <Button onClick={() => setSaveConfirmOpen(true)} disabled={saving || changedCount === 0}>
           {saving ? 'Saving...' : `Save Changes (${changedCount} modified)`}
         </Button>
       )}
+
+      <ConfirmDialog
+        open={saveConfirmOpen}
+        title="Save permission changes?"
+        description={`Saving will immediately update permissions for ${role._count?.users ?? 0} user(s) with the ${role.name} role.`}
+        confirmLabel="Save changes"
+        loadingLabel="Saving…"
+        variant="default"
+        isLoading={saving}
+        onConfirm={() => void handleSave()}
+        onCancel={() => setSaveConfirmOpen(false)}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { CommissionStatusBadge } from '@/components/finance/commissions/Commissi
 import { InvoiceTableSkeleton } from '@/components/finance/skeletons/InvoiceTableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatCurrency } from '@/lib/utils';
 import {
   currentMonthKey,
@@ -135,6 +136,7 @@ export default function CommissionsPage(): JSX.Element {
     mode: 'approve' | 'reject';
   } | null>(null);
   const [approveAllLoading, setApproveAllLoading] = useState(false);
+  const [approveAllConfirmOpen, setApproveAllConfirmOpen] = useState(false);
 
   const { data, isLoading } = useCommissions({ month, limit: 50 });
   const { canRead, canWrite } = usePermissions();
@@ -159,14 +161,11 @@ export default function CommissionsPage(): JSX.Element {
 
   async function approveAll(): Promise<void> {
     if (!data) return;
-    const confirmed = window.confirm(
-      `This will approve ${data.summary.pending} pending commissions totalling ${formatCurrency(data.summary.pendingValue)}. Continue?`,
-    );
-    if (!confirmed) return;
     setApproveAllLoading(true);
     try {
       await api.patch(`/commissions/approve-all?month=${month}`);
       toast.success('All pending commissions approved');
+      setApproveAllConfirmOpen(false);
       await queryClient.invalidateQueries({ queryKey: ['commissions'] });
       await queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
     } catch {
@@ -213,7 +212,7 @@ export default function CommissionsPage(): JSX.Element {
         </div>
         <PermissionGate feature="finance.commissions" action="write">
         {data && data.summary.pending > 0 && (
-          <Button onClick={approveAll} disabled={approveAllLoading}>
+          <Button onClick={() => setApproveAllConfirmOpen(true)} disabled={approveAllLoading}>
             {approveAllLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -328,6 +327,22 @@ export default function CommissionsPage(): JSX.Element {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={approveAllConfirmOpen && Boolean(data)}
+        title="Approve all pending commissions?"
+        description={
+          data
+            ? `This will approve ${data.summary.pending} pending commissions totalling ${formatCurrency(data.summary.pendingValue)}.`
+            : undefined
+        }
+        confirmLabel="Approve all"
+        loadingLabel="Approving…"
+        variant="default"
+        isLoading={approveAllLoading}
+        onConfirm={() => void approveAll()}
+        onCancel={() => setApproveAllConfirmOpen(false)}
+      />
     </div>
   );
 }
