@@ -18,9 +18,9 @@ export function BarChart({ items, formatValue }: BarChartProps): JSX.Element {
     <div className="space-y-2.5">
       {items.map((item, i) => (
         <div key={i} className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-cdy-muted">{item.label}</span>
-            <span className="font-mono text-cdy-white">
+          <div className="flex justify-between gap-2 text-xs">
+            <span className="min-w-0 truncate text-cdy-muted">{item.label}</span>
+            <span className="shrink-0 font-mono text-cdy-white">
               {formatValue ? formatValue(item.value) : String(item.value)}
             </span>
           </div>

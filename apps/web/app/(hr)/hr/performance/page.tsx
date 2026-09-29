@@ -164,7 +164,7 @@ export default function PerformanceReviewsPage(): JSX.Element {
           <p className="text-sm text-cdy-muted">No pending reviews.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                   <th className="pb-2 pr-4 font-medium">Employee</th>
@@ -305,7 +305,7 @@ export default function PerformanceReviewsPage(): JSX.Element {
             onClick={() => setModalOpen(false)}
             role="presentation"
           />
-          <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
+          <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-cdy-white">Start Review</h3>
               <button
@@ -335,7 +335,7 @@ export default function PerformanceReviewsPage(): JSX.Element {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="quarter">Period *</Label>
                   <select

@@ -85,7 +85,7 @@ export default function VenturesOverviewPage(): JSX.Element {
           ))}
           <Input
             type="date"
-            className="w-36"
+            className="min-w-0 flex-1 sm:w-36 sm:flex-none"
             value={from}
             onChange={(e) => {
               setActivePreset('custom');
@@ -95,7 +95,7 @@ export default function VenturesOverviewPage(): JSX.Element {
           <span className="text-cdy-muted">—</span>
           <Input
             type="date"
-            className="w-36"
+            className="min-w-0 flex-1 sm:w-36 sm:flex-none"
             value={to}
             onChange={(e) => {
               setActivePreset('custom');

@@ -194,7 +194,7 @@ export function EditProjectDrawer({
             <ClientSearch value={client} onChange={setClient} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-cdy-muted">Service type *</Label>
               <select
@@ -221,7 +221,7 @@ export function EditProjectDrawer({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-cdy-muted">Start date *</Label>
               <Input
@@ -242,7 +242,7 @@ export function EditProjectDrawer({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-cdy-muted">Total agreed cost</Label>
               <Input

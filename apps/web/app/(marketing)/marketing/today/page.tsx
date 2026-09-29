@@ -56,9 +56,9 @@ export default function TodaysContentPage(): JSX.Element {
               key={clientName}
               className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light"
             >
-              <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-3">
-                <h2 className="font-medium text-cdy-white">{clientName}</h2>
-                <span className="text-xs text-cdy-muted">
+              <div className="flex items-center justify-between gap-3 border-b border-cdy-navy-border px-4 py-3">
+                <h2 className="min-w-0 truncate font-medium text-cdy-white">{clientName}</h2>
+                <span className="shrink-0 text-xs text-cdy-muted">
                   {items.length} post{items.length === 1 ? '' : 's'}
                 </span>
               </div>

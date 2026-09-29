@@ -142,7 +142,7 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             <Input value={territory} onChange={(e) => setTerritory(e.target.value)} placeholder="Geographic area"
               className="bg-cdy-navy border-cdy-navy-border text-cdy-white" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-cdy-muted">Start date</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required
@@ -154,7 +154,7 @@ function NewCampaignDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                 className="bg-cdy-navy border-cdy-navy-border text-cdy-white" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1">
               <Label className="text-cdy-muted">Visit target</Label>
               <Input type="number" min="0" value={visitTarget} onChange={(e) => setVisitTarget(e.target.value)}
@@ -239,7 +239,7 @@ export default function SalesCampaignsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-cdy-white">Sales Campaigns</h1>
           <p className="text-sm text-cdy-muted">Field sales team management</p>
@@ -279,7 +279,7 @@ export default function SalesCampaignsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-left text-xs text-cdy-muted">
                   <th className="px-6 py-3">Campaign</th>

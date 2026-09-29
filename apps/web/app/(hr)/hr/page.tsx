@@ -72,7 +72,7 @@ export default function HrOverviewPage(): JSX.Element {
   return (
     <div className="space-y-6 p-6">
       {/* Row 1 — Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SectionCard>
           <MetricHero
             value={String(summary?.totalEmployees ?? 0)}
@@ -242,7 +242,7 @@ export default function HrOverviewPage(): JSX.Element {
                       {Number(req.totalDays)} days
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {rejectId === req.id ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <input

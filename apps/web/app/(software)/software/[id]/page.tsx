@@ -189,9 +189,9 @@ function PhaseSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="text-base">{icon}</span>
           <span className="font-medium text-cdy-white">{title}</span>
           {statusBadge}
@@ -280,9 +280,9 @@ function RequirementsPanel({
             key={doc.id}
             className="flex items-start justify-between rounded-md border border-cdy-navy-border bg-cdy-navy p-3"
           >
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-cdy-white">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="break-words text-sm font-medium text-cdy-white">
                   v{doc.version} — {doc.title}
                 </span>
                 <span className={`text-xs font-semibold ${cfg.color}`}>
@@ -544,7 +544,7 @@ function DesignPanel({
           )}
 
           <PermissionGate feature="software.delivery" action="write">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(!design ||
                 design.status === 'IN_PROGRESS' ||
                 design.status === 'CHANGES_REQUESTED') && (
@@ -605,7 +605,8 @@ function SprintBoard({
   ];
 
   return (
-    <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+    <div className="mt-3 overflow-x-auto">
+    <div className="grid min-w-[560px] grid-cols-4 gap-2 text-xs">
       {columns.map((col) => (
         <div key={col.key}>
           <p className="mb-2 font-semibold text-cdy-muted">{col.label}</p>
@@ -617,7 +618,7 @@ function SprintBoard({
                   key={i.id}
                   className="flex items-center justify-between gap-1 rounded border border-cdy-navy-border bg-cdy-navy px-2 py-1.5 text-cdy-white"
                 >
-                  <span>{i.title}</span>
+                  <span className="min-w-0 break-words">{i.title}</span>
                   <PermissionGate feature="software.delivery" action="write">
                     <button
                       type="button"
@@ -636,6 +637,7 @@ function SprintBoard({
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }
@@ -697,7 +699,7 @@ function AddSprintDrawer({
         role="presentation"
       />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
-        <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-cdy-white">Add Sprint</h2>
           <button
             type="button"
@@ -709,7 +711,7 @@ function AddSprintDrawer({
         </div>
         <form
           onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-1 flex-col overflow-y-auto p-6"
+          className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6"
         >
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -731,7 +733,7 @@ function AddSprintDrawer({
                 className="w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-1 focus:ring-cdy-red"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-cdy-muted">Start date</Label>
                 <Input
@@ -902,10 +904,10 @@ function DevelopmentPanel({
           >
             <button
               type="button"
-              className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+              className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
               onClick={() => setExpandedSprint(isOpen ? null : sprint.id)}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <span className="text-sm font-medium text-cdy-white">
                   {sprint.name}
                 </span>
@@ -925,7 +927,7 @@ function DevelopmentPanel({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-cdy-muted">
+              <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs text-cdy-muted">
                 {done}/{total} done
                 {isOpen ? (
                   <ChevronUp className="h-3.5 w-3.5" />
@@ -1141,7 +1143,7 @@ function LogBugDrawer({
         role="presentation"
       />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
-        <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-cdy-white">Log Bug</h2>
           <button
             type="button"
@@ -1153,7 +1155,7 @@ function LogBugDrawer({
         </div>
         <form
           onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-1 flex-col overflow-y-auto p-6"
+          className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6"
         >
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -1288,7 +1290,7 @@ function QaPanel({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-cdy-muted">
           {openCritical > 0 && (
             <span className="text-red-400">
@@ -1324,8 +1326,8 @@ function QaPanel({
             key={bug.id}
             className="flex items-start justify-between rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2"
           >
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span>{SEVERITY_CONFIG[bug.severity]?.dot ?? '⚪'}</span>
                 <span className="text-sm font-medium text-cdy-white">
                   {bug.title}
@@ -1449,7 +1451,7 @@ function DeploymentPanel({
           </a>
         )}
         {dep.serverDetails && (
-          <p className="text-cdy-muted">Server: {dep.serverDetails}</p>
+          <p className="break-words text-cdy-muted">Server: {dep.serverDetails}</p>
         )}
         {project.maintenanceEndsAt && (
           <p className="text-cdy-muted">
@@ -1614,7 +1616,7 @@ function LogIssueDrawer({
         role="presentation"
       />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
-        <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-cdy-white">
             Log Maintenance Issue
           </h2>
@@ -1628,7 +1630,7 @@ function LogIssueDrawer({
         </div>
         <form
           onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-1 flex-col overflow-y-auto p-6"
+          className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6"
         >
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -1648,7 +1650,7 @@ function LogIssueDrawer({
                 className="w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white placeholder:text-cdy-muted focus:outline-none focus:ring-1 focus:ring-cdy-red"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-cdy-muted">Type</Label>
                 <select
@@ -1743,7 +1745,7 @@ function MaintenancePanel({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-0.5 text-sm text-cdy-muted">
           <p>
             {monthsElapsed} of 12 months elapsed · {openCount} open ·{' '}
@@ -1774,8 +1776,8 @@ function MaintenancePanel({
             key={log.id}
             className="flex items-start justify-between rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2"
           >
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span>{SEVERITY_CONFIG[log.priority]?.dot ?? '⚪'}</span>
                 <span className="text-xs uppercase text-cdy-muted">{log.type}</span>
                 <span className="text-sm font-medium text-cdy-white">

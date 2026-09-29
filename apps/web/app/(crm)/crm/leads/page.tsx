@@ -134,7 +134,7 @@ export default function LeadsListPage(): JSX.Element {
     <div className="space-y-6 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-cdy-white">Leads</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" disabled={exporting} onClick={() => void handleExport()}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
@@ -482,7 +482,7 @@ export default function LeadsListPage(): JSX.Element {
       {isLoading && <p className="text-cdy-muted">Loading leads...</p>}
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[960px] text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
               <th className="px-4 py-3 w-10" />
@@ -660,7 +660,7 @@ export default function LeadsListPage(): JSX.Element {
 
       {saveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Save filter</h2>
             <Input
               className="mt-4"

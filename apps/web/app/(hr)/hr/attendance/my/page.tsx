@@ -159,13 +159,13 @@ export default function MyAttendancePage(): JSX.Element {
             </div>
           )}
 
-          <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
-            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-cdy-muted">
+          <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
+            <div className="mb-2 grid min-w-[280px] grid-cols-7 gap-1 text-center text-xs text-cdy-muted">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                 <span key={d}>{d}</span>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid min-w-[280px] grid-cols-7 gap-1">
               {Array.from({ length: startPad }).map((_, i) => (
                 <div key={`pad-${i}`} />
               ))}

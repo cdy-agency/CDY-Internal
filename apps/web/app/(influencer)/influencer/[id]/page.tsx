@@ -665,13 +665,13 @@ function CompleteModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
         role="presentation"
       />
-      <div className="relative z-10 w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-cdy-white">
           Complete campaign?
         </h2>
@@ -889,7 +889,7 @@ export default function CampaignDetailPage(): JSX.Element {
 
         {campaign.status === 'ACTIVE' && (
           <PermissionGate feature="influencer.campaigns" action="write">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant="outline"

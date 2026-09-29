@@ -260,7 +260,7 @@ export function AddLeadDrawer({ open, onClose }: AddLeadDrawerProps): JSX.Elemen
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label>Estimated value</Label>
               <Input type="number" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} className="mt-1" />

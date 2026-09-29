@@ -172,7 +172,7 @@ function DeployAgentDrawer({ open, campaignId, onClose }: { open: boolean; campa
               placeholder="Agent's area"
               className="bg-cdy-navy border-cdy-navy-border text-cdy-white" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1">
               <Label className="text-cdy-muted text-xs">Daily visits</Label>
               <Input type="number" min="0" value={visitTarget} onChange={(e) => setVisitTarget(e.target.value)}
@@ -232,7 +232,7 @@ function GenerateReportDrawer({ open, campaignId, onClose, existingWeeks }: {
           <h2 className="text-lg font-semibold text-cdy-white">Generate Weekly Report</h2>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4 p-6">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-cdy-muted">Week number</Label>
               <Input type="number" min="1" value={weekNumber} onChange={(e) => setWeekNumber(e.target.value)} required
@@ -374,7 +374,7 @@ function WeeklyReportView({ report, campaignName, clientName, onClose }: {
             ))}
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button onClick={() => void handleSave()} disabled={save.isPending}
               className="bg-cdy-red text-white hover:bg-cdy-red/90">
               {save.isPending ? 'Saving...' : 'Save report'}
@@ -483,7 +483,7 @@ export default function SalesCampaignDetailPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-cdy-white">{campaign.name}</h1>
             <span className={`rounded-full px-2 py-0.5 text-xs ${cfg.className}`}>{cfg.label}</span>
           </div>
@@ -542,7 +542,7 @@ export default function SalesCampaignDetailPage() {
           <p className="px-6 py-8 text-center text-sm text-cdy-muted">No agents deployed yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-left text-xs text-cdy-muted">
                   <th className="px-4 py-3">Agent</th>
@@ -580,7 +580,7 @@ export default function SalesCampaignDetailPage() {
           <p className="px-6 py-8 text-center text-sm text-cdy-muted">No logs recorded yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-left text-xs text-cdy-muted">
                   <th className="px-4 py-3">Date</th>
@@ -675,8 +675,8 @@ export default function SalesCampaignDetailPage() {
 
       {/* Complete confirm */}
       {completeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-sm rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 space-y-4">
             <h3 className="text-base font-semibold text-cdy-white">Mark Campaign Complete?</h3>
             <p className="text-sm text-cdy-muted">
               Finance Manager will be notified for final billing. This cannot be undone.

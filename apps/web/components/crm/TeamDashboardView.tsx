@@ -160,7 +160,7 @@ export function TeamDashboardView({
         <h2 className="mb-4 font-medium text-cdy-white">Agent leaderboard</h2>
         {targetsLoading && <p className="text-cdy-muted">Loading...</p>}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                 <th className="px-2 py-2">Rank</th>
@@ -242,7 +242,7 @@ export function TeamDashboardView({
 
       {targetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">
               Set Monthly Targets — {format(monthDate, 'MMMM yyyy')}
             </h2>

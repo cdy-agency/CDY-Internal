@@ -156,7 +156,7 @@ export default function ConversionReportPage(): JSX.Element {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ['Conversion Rate', `${report.metrics.conversionRate}%`],
               ['Total Revenue Won', formatCurrency(report.metrics.totalRevenue)],
@@ -201,58 +201,62 @@ export default function ConversionReportPage(): JSX.Element {
           {report.bySource.length > 0 && (
             <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
               <h2 className="mb-4 font-medium text-cdy-white">Source performance</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="px-2 py-2">Source</th>
-                    <th className="px-2 py-2">Won</th>
-                    <th className="px-2 py-2">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.bySource.map((row) => (
-                    <tr key={row.source} className="border-b border-cdy-navy-border/50">
-                      <td className="px-2 py-2 text-cdy-white">
-                        {row.source.replace('_', ' ')}
-                      </td>
-                      <td className="px-2 py-2 text-cdy-muted">{row.count}</td>
-                      <td className="px-2 py-2 text-cdy-white">
-                        {formatCurrency(row.revenue)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="px-2 py-2">Source</th>
+                      <th className="px-2 py-2">Won</th>
+                      <th className="px-2 py-2">Revenue</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {report.bySource.map((row) => (
+                      <tr key={row.source} className="border-b border-cdy-navy-border/50">
+                        <td className="px-2 py-2 text-cdy-white">
+                          {row.source.replace('_', ' ')}
+                        </td>
+                        <td className="px-2 py-2 text-cdy-muted">{row.count}</td>
+                        <td className="px-2 py-2 text-cdy-white">
+                          {formatCurrency(row.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {report.agentPerformance.length > 0 && (
             <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
               <h2 className="mb-4 font-medium text-cdy-white">Agent performance</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="px-2 py-2">Agent</th>
-                    <th className="px-2 py-2">Deals Won</th>
-                    <th className="px-2 py-2">Revenue Won</th>
-                    <th className="px-2 py-2">Avg Deal Size</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.agentPerformance.map((row) => (
-                    <tr key={row.agentId} className="border-b border-cdy-navy-border/50">
-                      <td className="px-2 py-2 text-cdy-white">{row.agentName}</td>
-                      <td className="px-2 py-2 text-cdy-muted">{row.dealsWon}</td>
-                      <td className="px-2 py-2 text-cdy-white">
-                        {formatCurrency(row.revenue)}
-                      </td>
-                      <td className="px-2 py-2 text-cdy-muted">
-                        {formatCurrency(row.dealsWon > 0 ? row.revenue / row.dealsWon : 0)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="px-2 py-2">Agent</th>
+                      <th className="px-2 py-2">Deals Won</th>
+                      <th className="px-2 py-2">Revenue Won</th>
+                      <th className="px-2 py-2">Avg Deal Size</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {report.agentPerformance.map((row) => (
+                      <tr key={row.agentId} className="border-b border-cdy-navy-border/50">
+                        <td className="px-2 py-2 text-cdy-white">{row.agentName}</td>
+                        <td className="px-2 py-2 text-cdy-muted">{row.dealsWon}</td>
+                        <td className="px-2 py-2 text-cdy-white">
+                          {formatCurrency(row.revenue)}
+                        </td>
+                        <td className="px-2 py-2 text-cdy-muted">
+                          {formatCurrency(row.dealsWon > 0 ? row.revenue / row.dealsWon : 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>

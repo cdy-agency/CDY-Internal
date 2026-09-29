@@ -147,7 +147,7 @@ export default function EmployeeProfilePage(): JSX.Element {
         </Link>
       </div>
 
-      <div className="flex gap-1 border-b border-cdy-navy-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-cdy-navy-border">
         {TABS.map((t) => {
           if (t.gated === 'payroll') {
             return (
@@ -184,15 +184,15 @@ export default function EmployeeProfilePage(): JSX.Element {
           <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
             <h3 className="mb-4 font-semibold text-cdy-white">Contact</h3>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Email</dt>
-                <dd className="text-cdy-white">{employee.email}</dd>
+                <dd className="min-w-0 break-all text-right text-cdy-white">{employee.email}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Phone</dt>
                 <dd className="text-cdy-white">{employee.phone ?? '—'}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Emergency</dt>
                 <dd className="text-cdy-white">
                   {employee.emergencyContactName ?? '—'}
@@ -206,23 +206,23 @@ export default function EmployeeProfilePage(): JSX.Element {
           <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
             <h3 className="mb-4 font-semibold text-cdy-white">Employment</h3>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Status</dt>
                 <dd className="text-cdy-white">{employee.status}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Type</dt>
                 <dd className="text-cdy-white">
                   {employee.employmentType.replace('_', ' ')}
                 </dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Start date</dt>
                 <dd className="text-cdy-white">
                   {format(new Date(employee.startDate), 'MMM d, yyyy')}
                 </dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <dt className="text-cdy-muted">Manager</dt>
                 <dd className="text-cdy-white">
                   {employee.managerName ?? '—'}
@@ -298,13 +298,13 @@ export default function EmployeeProfilePage(): JSX.Element {
               <span>{attendanceReport.summary.totalHours.toFixed(1)} hrs</span>
             </div>
           )}
-          <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
-            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-cdy-muted">
+          <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4">
+            <div className="mb-2 grid min-w-[280px] grid-cols-7 gap-1 text-center text-xs text-cdy-muted">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                 <span key={d}>{d}</span>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid min-w-[280px] grid-cols-7 gap-1">
               {Array.from({ length: startPad }).map((_, i) => (
                 <div key={`pad-${i}`} />
               ))}
@@ -330,7 +330,7 @@ export default function EmployeeProfilePage(): JSX.Element {
       {tab === 'salary' && (
         <PermissionGate feature="hr.payroll" action="read">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-cdy-white">Salary History</h3>
               <PermissionGate feature="hr.payroll" action="write">
                 <Button size="sm" onClick={() => setSalaryModalOpen(true)}>
@@ -349,7 +349,7 @@ export default function EmployeeProfilePage(): JSX.Element {
               </p>
             )}
             <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-cdy-navy-light text-left text-cdy-muted">
                   <tr>
                     <th className="px-4 py-2">Date</th>
@@ -396,7 +396,7 @@ export default function EmployeeProfilePage(): JSX.Element {
           {salaryModalOpen && (
             <>
               <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setSalaryModalOpen(false)} role="presentation" />
-              <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
+              <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
                 <h3 className="mb-4 font-semibold text-cdy-white">Update Salary</h3>
                 <div className="space-y-3">
                   <div>
@@ -458,7 +458,7 @@ export default function EmployeeProfilePage(): JSX.Element {
       {tab === 'performance' && (
         <PermissionGate feature="hr.performance" action="read">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-cdy-white">
                 Performance History — {employee.firstName} {employee.lastName}
               </h3>
@@ -523,7 +523,7 @@ export default function EmployeeProfilePage(): JSX.Element {
         ) : (
         <div className="space-y-4">
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-semibold text-cdy-white">
                 Onboarding Checklist — {employee.firstName} {employee.lastName}
               </h3>
@@ -656,7 +656,7 @@ function TabButton({
       type="button"
       onClick={() => onSelect(tab)}
       className={cn(
-        'px-4 py-2 text-sm font-medium transition-colors',
+        'whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors',
         active
           ? 'border-b-2 border-cdy-red text-cdy-red'
           : 'text-cdy-muted hover:text-cdy-white',

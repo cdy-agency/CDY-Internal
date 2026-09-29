@@ -296,7 +296,7 @@ export default function FinanceSettingsPage(): JSX.Element {
 
       {tab === 'tax' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-cdy-muted">
               Manage tax rates applied to invoices and retainers.
             </p>

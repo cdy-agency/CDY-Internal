@@ -145,7 +145,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
             <Label>Description (optional)</Label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="flex w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Amount / month</Label>
               <Input type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
@@ -157,7 +157,7 @@ export function RetainerDrawer({ open, onClose }: RetainerDrawerProps): JSX.Elem
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Billing day</Label>
               <select value={billingDay} onChange={(e) => setBillingDay(e.target.value)} className="flex h-10 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white">

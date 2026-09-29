@@ -57,6 +57,13 @@ export default function ItUserDetailPage(): JSX.Element {
     setUser(res.data.data);
   }
 
+  async function handleActivate(): Promise<void> {
+    if (!confirm('Reactivate this user?')) return;
+    await api.patch(`/it/users/${userId}/activate`);
+    const res = await api.get<ApiResponse<ItUserDetail>>(`/it/users/${userId}`);
+    setUser(res.data.data);
+  }
+
   if (!user) {
     return <p className="text-cdy-muted">Loading user...</p>;
   }
@@ -70,7 +77,7 @@ export default function ItUserDetailPage(): JSX.Element {
       </h1>
 
       <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
-        <p className="text-cdy-muted">{user.email}</p>
+        <p className="break-all text-cdy-muted">{user.email}</p>
         <p className="mt-2 text-sm text-cdy-muted">
           Created {new Date(user.createdAt).toLocaleDateString()} ·{' '}
           {user.isActive ? 'Active' : 'Inactive'}
@@ -87,7 +94,7 @@ export default function ItUserDetailPage(): JSX.Element {
           <select
             value={selectedRoleId}
             onChange={(e) => setSelectedRoleId(e.target.value)}
-            className="rounded border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white"
+            className="w-full rounded border border-cdy-navy-border bg-cdy-navy px-3 py-2 text-sm text-cdy-white sm:w-auto"
           >
             {roles.map((role) => (
               <option key={role.id} value={role.id}>
@@ -96,9 +103,13 @@ export default function ItUserDetailPage(): JSX.Element {
             ))}
           </select>
           <Button onClick={handleRoleChange}>Change Role</Button>
-          {user.isActive && (
+          {user.isActive ? (
             <Button variant="outline" onClick={handleDeactivate}>
               Deactivate
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleActivate}>
+              Reactivate
             </Button>
           )}
         </div>
@@ -118,8 +129,8 @@ export default function ItUserDetailPage(): JSX.Element {
               </h3>
               <div className="space-y-1 text-sm">
                 {entries.map(([key, perm]) => (
-                  <div key={key} className="flex justify-between text-cdy-white">
-                    <span>{key}</span>
+                  <div key={key} className="flex flex-wrap justify-between gap-x-3 text-cdy-white">
+                    <span className="min-w-0 break-all">{key}</span>
                     <span className="text-cdy-muted">
                       READ {perm.canRead ? '✅' : '❌'} · WRITE{' '}
                       {perm.canWrite ? '✅' : '❌'}

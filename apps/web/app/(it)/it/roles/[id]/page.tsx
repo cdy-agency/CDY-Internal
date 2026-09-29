@@ -170,7 +170,7 @@ export default function ItRoleDetailPage(): JSX.Element {
               return (
                 <div
                   key={feature.id}
-                  className={`flex items-center justify-between rounded px-2 py-2 text-sm ${
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded px-2 py-2 text-sm ${
                     changed ? 'bg-amber-500/10' : ''
                   }`}
                 >

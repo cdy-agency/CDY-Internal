@@ -80,7 +80,7 @@ export function DataCutoffToggle({ meta }: DataCutoffToggleProps): JSX.Element {
           : 'Data filter'}
       </Button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-80 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
+        <div className="fixed inset-x-4 z-20 mt-2 rounded-lg sm:absolute sm:inset-x-auto sm:right-0 sm:w-80 border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-cdy-muted">
             Exclude pre-migration data
           </p>

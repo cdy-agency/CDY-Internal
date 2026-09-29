@@ -57,7 +57,7 @@ export function CsvImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-cdy-white">
           Import Tasks from CSV
         </h2>

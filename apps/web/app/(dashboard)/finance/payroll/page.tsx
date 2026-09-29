@@ -122,7 +122,7 @@ export default function PayrollPage(): JSX.Element {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-cdy-white">Payroll</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/finance/payroll/salaries">
             <Button variant="outline" size="sm">Employee Salaries</Button>
           </Link>
@@ -180,7 +180,7 @@ export default function PayrollPage(): JSX.Element {
 
       {/* All runs table */}
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
               <th className="px-4 py-3 font-medium">Month</th>
@@ -236,7 +236,7 @@ export default function PayrollPage(): JSX.Element {
       {/* Create modal with employee picker */}
       {confirmOpen && preview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="flex w-full max-w-lg flex-col rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
+          <div className="flex max-h-[90vh] w-full overflow-y-auto max-w-lg flex-col rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
             <div className="border-b border-cdy-navy-border px-6 py-4">
               <h2 className="text-lg font-semibold text-cdy-white">
                 Run Payroll — {formatMonthKey(month)}

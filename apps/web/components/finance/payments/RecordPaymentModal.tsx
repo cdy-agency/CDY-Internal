@@ -233,7 +233,7 @@ export function RecordPaymentModal({
 
               <div className="space-y-2">
                 <Label>Payment Method *</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {PAYMENT_METHODS.map((opt) => (
                     <button
                       key={opt.value}

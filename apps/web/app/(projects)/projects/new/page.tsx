@@ -157,7 +157,7 @@ export default function NewProjectPage(): JSX.Element {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-cdy-white">Create Project</h2>
         <Link
           href="/projects"

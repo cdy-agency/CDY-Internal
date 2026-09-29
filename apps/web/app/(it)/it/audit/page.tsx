@@ -45,8 +45,8 @@ export default function ItAuditPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-cdy-white">IT Audit Log</h1>
-      <div className="overflow-hidden rounded-lg border border-cdy-navy-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-cdy-navy-light text-left text-cdy-muted">
             <tr>
               <th className="p-3">Timestamp</th>
@@ -77,7 +77,7 @@ export default function ItAuditPage(): JSX.Element {
                 </tr>
                 {expanded === entry.id && (
                   <tr key={`${entry.id}-detail`} className="border-t border-cdy-navy-border">
-                    <td colSpan={4} className="bg-cdy-navy p-4 font-mono text-xs text-cdy-muted">
+                    <td colSpan={4} className="break-all bg-cdy-navy p-4 font-mono text-xs text-cdy-muted">
                       <div>Previous: {JSON.stringify(entry.previousValue, null, 2)}</div>
                       <div className="mt-2">
                         New: {JSON.stringify(entry.newValue, null, 2)}

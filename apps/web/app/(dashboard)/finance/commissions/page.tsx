@@ -195,7 +195,7 @@ export default function CommissionsPage(): JSX.Element {
       </nav>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setMonth(shiftMonth(month, -1))}>
             <ChevronLeft className="h-4 w-4" />
@@ -236,7 +236,7 @@ export default function CommissionsPage(): JSX.Element {
 
       {data && data.data.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Agent</th>

@@ -35,7 +35,7 @@ export function ModuleSwitcher(): JSX.Element | null {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-1 overflow-x-auto max-w-[220px] md:max-w-none">
+    <div className="flex items-center gap-1 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-1 overflow-x-auto max-w-full w-fit">
       {visible.map((module) => {
         const active = pathname.startsWith(module.href);
         const Icon = module.icon;
@@ -44,7 +44,7 @@ export function ModuleSwitcher(): JSX.Element | null {
             key={module.href}
             href={module.target}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
               active
                 ? 'bg-cdy-red text-white'
                 : 'text-cdy-muted hover:text-cdy-white',

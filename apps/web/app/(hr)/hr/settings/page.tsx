@@ -158,14 +158,14 @@ export default function HrSettingsPage(): JSX.Element {
     <div className="mx-auto max-w-3xl space-y-6">
       <h2 className="text-lg font-semibold text-cdy-white">HR Settings</h2>
 
-      <div className="flex gap-1 border-b border-cdy-navy-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-cdy-navy-border">
         {(['general', 'leave-types'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
             className={cn(
-              'px-4 py-2 text-sm font-medium capitalize transition-colors',
+              'whitespace-nowrap px-4 py-2 text-sm font-medium capitalize transition-colors',
               tab === t
                 ? 'border-b-2 border-cdy-red text-cdy-red'
                 : 'text-cdy-muted hover:text-cdy-white',

@@ -115,38 +115,40 @@ export default function TaxReportPage(): JSX.Element {
 
           <div>
             <h3 className="mb-3 text-sm font-medium uppercase text-cdy-muted">Tax Collected</h3>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                  <th className="pb-2">Rate</th>
-                  <th className="pb-2 text-center">Invoices</th>
-                  <th className="pb-2 text-right">Gross Revenue</th>
-                  <th className="pb-2 text-right">Tax Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.taxCollected.byRate.map((row, i) => (
-                  <tr key={i} className="border-b border-cdy-navy-border/50">
-                    <td className="py-2 text-cdy-white">
-                      {row.rateName} ({row.ratePercent}%)
-                    </td>
-                    <td className="py-2 text-center text-cdy-muted">{row.invoiceCount}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                    <th className="pb-2">Rate</th>
+                    <th className="pb-2 text-center">Invoices</th>
+                    <th className="pb-2 text-right">Gross Revenue</th>
+                    <th className="pb-2 text-right">Tax Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.taxCollected.byRate.map((row, i) => (
+                    <tr key={i} className="border-b border-cdy-navy-border/50">
+                      <td className="py-2 text-cdy-white">
+                        {row.rateName} ({row.ratePercent}%)
+                      </td>
+                      <td className="py-2 text-center text-cdy-muted">{row.invoiceCount}</td>
+                      <td className="py-2 text-right text-cdy-white">
+                        {formatCurrency(row.grossRevenue)}
+                      </td>
+                      <td className="py-2 text-right text-cdy-white">
+                        {formatCurrency(row.taxAmount)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-medium">
+                    <td colSpan={3} className="py-2 text-cdy-white">TOTAL COLLECTED</td>
                     <td className="py-2 text-right text-cdy-white">
-                      {formatCurrency(row.grossRevenue)}
-                    </td>
-                    <td className="py-2 text-right text-cdy-white">
-                      {formatCurrency(row.taxAmount)}
+                      {formatCurrency(report.taxCollected.total)}
                     </td>
                   </tr>
-                ))}
-                <tr className="font-medium">
-                  <td colSpan={3} className="py-2 text-cdy-white">TOTAL COLLECTED</td>
-                  <td className="py-2 text-right text-cdy-white">
-                    {formatCurrency(report.taxCollected.total)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <p className="text-sm text-cdy-muted">
@@ -170,44 +172,46 @@ export default function TaxReportPage(): JSX.Element {
           {report.remittances.length > 0 && (
             <div>
               <h3 className="mb-3 text-sm font-medium uppercase text-cdy-muted">Remittances Paid</h3>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="pb-2">Date</th>
-                    <th className="pb-2">Authority</th>
-                    <th className="pb-2 text-right">Amount</th>
-                    <th className="pb-2">Reference</th>
-                    <th className="pb-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.remittances.map((r) => (
-                    <tr key={r.id} className="border-b border-cdy-navy-border/50">
-                      <td className="py-2 text-cdy-muted">
-                        {format(new Date(r.paidAt), 'MMM d, yyyy')}
-                      </td>
-                      <td className="py-2 text-cdy-white">{r.authorityName}</td>
-                      <td className="py-2 text-right text-cdy-white">
-                        {formatCurrency(r.amount, r.currency)}
-                      </td>
-                      <td className="py-2 text-cdy-muted">{r.reference ?? '—'}</td>
-                      <td className="py-2">
-                        <PermissionGate feature="finance.tax" action="write">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
-                            onClick={() => setRemittanceToDelete(r)}
-                            aria-label="Delete remittance"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </PermissionGate>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="pb-2">Date</th>
+                      <th className="pb-2">Authority</th>
+                      <th className="pb-2 text-right">Amount</th>
+                      <th className="pb-2">Reference</th>
+                      <th className="pb-2">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {report.remittances.map((r) => (
+                      <tr key={r.id} className="border-b border-cdy-navy-border/50">
+                        <td className="py-2 text-cdy-muted">
+                          {format(new Date(r.paidAt), 'MMM d, yyyy')}
+                        </td>
+                        <td className="py-2 text-cdy-white">{r.authorityName}</td>
+                        <td className="py-2 text-right text-cdy-white">
+                          {formatCurrency(r.amount, r.currency)}
+                        </td>
+                        <td className="py-2 text-cdy-muted">{r.reference ?? '—'}</td>
+                        <td className="py-2">
+                          <PermissionGate feature="finance.tax" action="write">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                              onClick={() => setRemittanceToDelete(r)}
+                              aria-label="Delete remittance"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </PermissionGate>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

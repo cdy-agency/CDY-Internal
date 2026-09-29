@@ -274,10 +274,10 @@ export default function ClientDetailPage(): JSX.Element {
             <h2 className="mb-4 font-medium text-cdy-white">Client info</h2>
             <div className="space-y-1 text-sm text-cdy-muted">
               <p>{client.contactName}</p>
-              <p>{client.email}</p>
+              <p className="break-words">{client.email}</p>
               <p>{client.phone ?? '—'}</p>
               <p>{client.country}</p>
-              {client.website && <p>{client.website}</p>}
+              {client.website && <p className="break-words">{client.website}</p>}
               <p className="pt-2">
                 Created: {format(new Date(client.createdAt), 'MMM d, yyyy h:mm a')}
               </p>
@@ -386,41 +386,43 @@ export default function ClientDetailPage(): JSX.Element {
 
       {tab === 'invoices' && (
         <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                <th className="px-2 py-2">Invoice #</th>
-                <th className="px-2 py-2">Amount</th>
-                <th className="px-2 py-2">Status</th>
-                <th className="px-2 py-2">Due date</th>
-                <th className="px-2 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {client.invoices?.map((inv) => (
-                <tr key={inv.id} className="border-b border-cdy-navy-border/50">
-                  <td className="px-2 py-2 font-mono text-cdy-white">{inv.invoiceNumber}</td>
-                  <td className="px-2 py-2 text-cdy-white">
-                    {formatCurrency(inv.total, inv.currency)}
-                  </td>
-                  <td className="px-2 py-2">
-                    <InvoiceStatusBadge status={inv.status as InvoiceStatus} />
-                  </td>
-                  <td className="px-2 py-2 text-cdy-muted">
-                    {format(new Date(inv.dueDate), 'MMM d, yyyy')}
-                  </td>
-                  <td className="px-2 py-2">
-                    <Link
-                      href={`/finance/invoices/${inv.id}`}
-                      className="text-cdy-red hover:underline"
-                    >
-                      View
-                    </Link>
-                  </td>
+          <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                  <th className="px-2 py-2">Invoice #</th>
+                  <th className="px-2 py-2">Amount</th>
+                  <th className="px-2 py-2">Status</th>
+                  <th className="px-2 py-2">Due date</th>
+                  <th className="px-2 py-2">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {client.invoices?.map((inv) => (
+                  <tr key={inv.id} className="border-b border-cdy-navy-border/50">
+                    <td className="px-2 py-2 font-mono text-cdy-white">{inv.invoiceNumber}</td>
+                    <td className="px-2 py-2 text-cdy-white">
+                      {formatCurrency(inv.total, inv.currency)}
+                    </td>
+                    <td className="px-2 py-2">
+                      <InvoiceStatusBadge status={inv.status as InvoiceStatus} />
+                    </td>
+                    <td className="px-2 py-2 text-cdy-muted">
+                      {format(new Date(inv.dueDate), 'MMM d, yyyy')}
+                    </td>
+                    <td className="px-2 py-2">
+                      <Link
+                        href={`/finance/invoices/${inv.id}`}
+                        className="text-cdy-red hover:underline"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <Link
             href={`/finance/invoices?clientId=${client.id}`}
             className="mt-4 inline-block text-sm text-cdy-red hover:underline"

@@ -140,7 +140,7 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
         role="presentation"
       />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
-        <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-cdy-white">
             New Software Project
           </h2>
@@ -154,7 +154,7 @@ function NewProjectDrawer({ open, onClose }: NewProjectDrawerProps): JSX.Element
         </div>
         <form
           onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-1 flex-col overflow-y-auto p-6"
+          className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6"
         >
           <div className="space-y-5">
             <div>
@@ -359,7 +359,7 @@ export default function SoftwareOverviewPage(): JSX.Element {
 
       {!isLoading && projects && (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Project</th>

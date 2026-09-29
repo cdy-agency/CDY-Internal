@@ -9,6 +9,8 @@ import {
   Shield,
   ClipboardList,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { redirectToLoginAfterAuthFailure } from '@/lib/session';
@@ -32,6 +34,7 @@ export default function ItLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     api
@@ -56,8 +59,28 @@ export default function ItLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-cdy-navy">
-      <aside className="flex w-60 flex-col bg-cdy-navy-light">
-        <div className="border-b border-cdy-navy-border p-4">
+      <button
+        type="button"
+        className="fixed left-3 top-3 z-50 rounded-md bg-cdy-navy-light p-2 text-cdy-white lg:hidden"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle menu"
+      >
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          role="presentation"
+        />
+      )}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col bg-cdy-navy-light transition-transform lg:static lg:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <div className="border-b border-cdy-navy-border p-4 pl-16 lg:pl-4">
           <div className="flex items-baseline gap-1">
             <span className="text-xl font-bold text-cdy-red">CDY</span>
             <span className="text-xl font-semibold text-cdy-white">IT Admin</span>
@@ -74,6 +97,7 @@ export default function ItLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setMobileOpen(false)}
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors',
                   active
@@ -104,7 +128,7 @@ export default function ItLayout({
           </Button>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto p-4 pt-16 md:p-6 md:pt-16 lg:pt-6">{children}</main>
     </div>
   );
 }

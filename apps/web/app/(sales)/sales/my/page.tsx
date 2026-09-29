@@ -67,7 +67,7 @@ function LogForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light shadow-xl">
         <div className="border-b border-cdy-navy-border p-6">
           <h2 className="text-base font-semibold text-cdy-white">
             {existingLog ? 'Edit Today\'s Log' : 'Log Today\'s Activity'}
@@ -181,7 +181,7 @@ export default function MyActivityPage() {
       {selectedCampaignId && (
         <>
           <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-cdy-white">Today's Log</p>
                 {selectedCampaign && (
@@ -229,7 +229,7 @@ export default function MyActivityPage() {
               <p className="px-6 py-8 text-center text-sm text-cdy-muted">No logs yet.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-cdy-navy-border text-left text-xs text-cdy-muted">
                       <th className="px-4 py-3">Date</th>

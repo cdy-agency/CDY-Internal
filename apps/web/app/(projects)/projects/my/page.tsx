@@ -68,7 +68,7 @@ export default function MyTasksPage(): JSX.Element {
         <p className="text-sm text-cdy-muted">Loading…</p>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4 text-center">
               <p className="text-2xl font-semibold text-cdy-red">
                 {overview?.overdue ?? 0}

@@ -181,26 +181,28 @@ export default function BudgetDetailPage(): JSX.Element {
       {budget.expenses && budget.expenses.length > 0 && (
         <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
           <h3 className="mb-4 font-medium text-cdy-white">Expense Breakdown</h3>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                <th className="pb-2">Date</th>
-                <th className="pb-2">Vendor</th>
-                <th className="pb-2">Category</th>
-                <th className="pb-2 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {budget.expenses.map((exp) => (
-                <tr key={exp.id} className="border-b border-cdy-navy-border/50">
-                  <td className="py-2 text-cdy-muted">{format(new Date(exp.date), 'MMM d, yyyy')}</td>
-                  <td className="py-2 text-cdy-white">{exp.vendorName}</td>
-                  <td className="py-2 text-cdy-muted">{exp.category}</td>
-                  <td className="py-2 text-right text-cdy-white">{fmt(exp.amount)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Vendor</th>
+                  <th className="pb-2">Category</th>
+                  <th className="pb-2 text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {budget.expenses.map((exp) => (
+                  <tr key={exp.id} className="border-b border-cdy-navy-border/50">
+                    <td className="py-2 text-cdy-muted">{format(new Date(exp.date), 'MMM d, yyyy')}</td>
+                    <td className="py-2 text-cdy-white">{exp.vendorName}</td>
+                    <td className="py-2 text-cdy-muted">{exp.category}</td>
+                    <td className="py-2 text-right text-cdy-white">{fmt(exp.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

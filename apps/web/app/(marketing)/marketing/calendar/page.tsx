@@ -116,7 +116,8 @@ function GlobalCalendarGrid({
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="rounded-lg border border-cdy-navy-border overflow-hidden">
+    <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+      <div className="min-w-[640px]">
       <div className="grid grid-cols-7 bg-cdy-navy-light border-b border-cdy-navy-border">
         {DAYS.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs font-medium text-cdy-muted">
@@ -153,6 +154,7 @@ function GlobalCalendarGrid({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

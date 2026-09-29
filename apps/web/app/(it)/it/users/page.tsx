@@ -28,7 +28,7 @@ export default function ItUsersPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-cdy-white">Users</h1>
         <PermissionGate feature="it.users" action="write">
           <Button asChild>
@@ -36,8 +36,8 @@ export default function ItUsersPage(): JSX.Element {
           </Button>
         </PermissionGate>
       </div>
-      <div className="overflow-hidden rounded-lg border border-cdy-navy-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-cdy-navy-light text-left text-cdy-muted">
             <tr>
               <th className="p-3">Name</th>

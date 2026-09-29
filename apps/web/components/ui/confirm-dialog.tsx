@@ -47,7 +47,7 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6"
         onClick={(e) => e.stopPropagation()}
         role="alertdialog"
         aria-modal="true"

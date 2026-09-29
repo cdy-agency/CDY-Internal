@@ -35,7 +35,7 @@ export function ReportFilterBar({
   children,
 }: ReportFilterBarProps): JSX.Element {
   return (
-    <div className="sticky top-0 z-10 -mx-6 mb-6 border-b border-cdy-navy-border bg-cdy-navy px-6 py-4">
+    <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-cdy-navy-border bg-cdy-navy px-4 py-4 md:-mx-6 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
           {presets.map((preset) => (
@@ -54,14 +54,14 @@ export function ReportFilterBar({
           ))}
           <Input
             type="date"
-            className="w-36"
+            className="min-w-0 flex-1 sm:w-36 sm:flex-none"
             value={from}
             onChange={(e) => onCustomChange(e.target.value, to)}
           />
           <span className="text-cdy-muted">—</span>
           <Input
             type="date"
-            className="w-36"
+            className="min-w-0 flex-1 sm:w-36 sm:flex-none"
             value={to}
             onChange={(e) => onCustomChange(from, e.target.value)}
           />

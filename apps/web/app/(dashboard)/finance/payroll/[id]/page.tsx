@@ -248,7 +248,7 @@ export default function PayrollDetailPage(): JSX.Element {
             {run.processedAt && ` · Processed ${new Date(run.processedAt).toLocaleString()}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <PermissionGate feature="finance.payroll" action="write">
             {run.status === PayrollStatus.DRAFT && canWritePayroll && (
               <Button
@@ -329,7 +329,7 @@ export default function PayrollDetailPage(): JSX.Element {
       )}
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
               <th className="px-4 py-3 font-medium">Employee</th>
@@ -466,7 +466,7 @@ export default function PayrollDetailPage(): JSX.Element {
 
       {confirmProcess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full overflow-y-auto max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Process Payroll?</h2>
             <p className="mt-3 text-sm text-cdy-muted">
               This will send payslips to {run.lineItems.length} employees and mark

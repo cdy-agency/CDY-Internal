@@ -98,38 +98,40 @@ function BucketCard({
       </button>
       {open && bucket.count > 0 && (
         <div className="border-t border-cdy-navy-border/50 px-4 pb-4">
-          <table className="mt-2 w-full text-sm">
-            <thead>
-              <tr className="text-left text-cdy-muted">
-                <th className="pb-2 font-medium">Invoice #</th>
-                <th className="pb-2 font-medium">Client</th>
-                <th className="pb-2 font-medium text-right">Amount</th>
-                <th className="pb-2 font-medium">Due Date</th>
-                <th className="pb-2 font-medium text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bucket.invoices.map((inv) => (
-                <tr key={inv.id} className="border-t border-cdy-navy-border/30">
-                  <td className="py-2 font-mono text-cdy-red">
-                    <Link href={`/finance/invoices/${inv.id}`}>
-                      {inv.invoiceNumber}
-                    </Link>
-                  </td>
-                  <td className="py-2 text-cdy-white">{inv.clientName}</td>
-                  <td className="py-2 text-right text-cdy-white">
-                    {formatCurrency(inv.remaining)}
-                  </td>
-                  <td className="py-2 text-cdy-muted">
-                    {format(new Date(inv.dueDate), 'MMM d, yyyy')}
-                  </td>
-                  <td className="py-2 text-right">
-                    {inv.daysOverdue > 0 && <ReminderButton invoiceId={inv.id} />}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="mt-2 w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="text-left text-cdy-muted">
+                  <th className="pb-2 font-medium">Invoice #</th>
+                  <th className="pb-2 font-medium">Client</th>
+                  <th className="pb-2 font-medium text-right">Amount</th>
+                  <th className="pb-2 font-medium">Due Date</th>
+                  <th className="pb-2 font-medium text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {bucket.invoices.map((inv) => (
+                  <tr key={inv.id} className="border-t border-cdy-navy-border/30">
+                    <td className="py-2 font-mono text-cdy-red">
+                      <Link href={`/finance/invoices/${inv.id}`}>
+                        {inv.invoiceNumber}
+                      </Link>
+                    </td>
+                    <td className="py-2 text-cdy-white">{inv.clientName}</td>
+                    <td className="py-2 text-right text-cdy-white">
+                      {formatCurrency(inv.remaining)}
+                    </td>
+                    <td className="py-2 text-cdy-muted">
+                      {format(new Date(inv.dueDate), 'MMM d, yyyy')}
+                    </td>
+                    <td className="py-2 text-right">
+                      {inv.daysOverdue > 0 && <ReminderButton invoiceId={inv.id} />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -176,10 +178,10 @@ export default function InvoiceAgeingPage(): JSX.Element {
             As of {format(new Date(), 'MMMM d, yyyy')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Input
             placeholder="Filter by client..."
-            className="w-48"
+            className="w-full sm:w-48"
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
           />

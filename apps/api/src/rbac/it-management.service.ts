@@ -256,9 +256,10 @@ export class ItManagementService {
     updatedAt: true,
   } as const;
 
+  // Deactivated users (isActive=false, deletedAt set) stay visible here so IT
+  // can see their status and reactivate them.
   async listUsers() {
     return this.prisma.user.findMany({
-      where: { deletedAt: null },
       select: {
         ...ItManagementService.SAFE_USER_SELECT,
         role: { select: { id: true, key: true, name: true } },
@@ -269,7 +270,7 @@ export class ItManagementService {
 
   async getUser(id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: { id },
       select: {
         ...ItManagementService.SAFE_USER_SELECT,
         role: true,

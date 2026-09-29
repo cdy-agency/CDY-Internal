@@ -55,7 +55,7 @@ function DiffModal({
         onClick={onClose}
         role="presentation"
       />
-      <div className="fixed left-1/2 top-1/2 z-50 max-h-[80vh] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
+      <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-medium text-cdy-white">Change diff</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -115,7 +115,7 @@ export default function HrAuditPage(): JSX.Element {
         This log is read-only. Entries cannot be edited or deleted.
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 md:grid-cols-5">
+      <div className="grid gap-3 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:grid-cols-2 lg:grid-cols-5">
         <Input
           placeholder="User ID"
           value={userId}
@@ -149,7 +149,7 @@ export default function HrAuditPage(): JSX.Element {
       {data && (
         <>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-cdy-navy text-xs uppercase text-cdy-muted">
                 <tr>
                   <th className="px-4 py-3">Timestamp</th>
@@ -202,7 +202,7 @@ export default function HrAuditPage(): JSX.Element {
             </table>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-cdy-muted">
               Page {data.page} of {data.totalPages} ({data.total} entries)
             </p>

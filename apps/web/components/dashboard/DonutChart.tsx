@@ -54,7 +54,7 @@ export function DonutChart({
     : [];
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex flex-wrap items-center gap-6">
       <svg width={size} height={size} style={{ flexShrink: 0 }}>
         <circle
           cx={cx}

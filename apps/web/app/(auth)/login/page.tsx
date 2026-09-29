@@ -55,7 +55,7 @@ export default function LoginPage(): JSX.Element {
           <p className="text-sm text-cdy-muted">Internal Operations Platform</p>
         </div>
 
-        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-8">
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

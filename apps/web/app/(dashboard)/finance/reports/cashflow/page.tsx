@@ -328,7 +328,7 @@ export default function CashFlowPage(): JSX.Element {
             type="number"
             value={openingBalance}
             onChange={(e) => setOpeningBalance(e.target.value)}
-            className="w-40"
+            className="w-full sm:w-40"
           />
         </div>
       </div>
@@ -386,8 +386,8 @@ export default function CashFlowPage(): JSX.Element {
         <CashFlowChart weeks={data.weeks} />
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-cdy-navy-border">
-        <table className="w-full text-left">
+      <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+        <table className="w-full min-w-[640px] text-left">
           <thead className="bg-cdy-navy text-xs uppercase text-cdy-muted">
             <tr>
               <th className="px-4 py-3">Week</th>
@@ -408,7 +408,7 @@ export default function CashFlowPage(): JSX.Element {
 
       <PermissionGate feature="finance.reports" action="write">
         <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-medium text-cdy-white">Manual Adjustments</h2>
             <Button size="sm" onClick={() => setShowAddForm(!showAddForm)}>
               + Add Adjustment
@@ -448,40 +448,42 @@ export default function CashFlowPage(): JSX.Element {
           {adjustments.length === 0 ? (
             <p className="text-sm text-cdy-muted">No manual adjustments in range.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-cdy-muted">
-                  <th className="pb-2">Label</th>
-                  <th className="pb-2">Direction</th>
-                  <th className="pb-2">Amount</th>
-                  <th className="pb-2">Date</th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {adjustments.map((adj) => (
-                  <tr key={adj.id} className="border-t border-cdy-navy-border">
-                    <td className="py-2 text-cdy-white">{adj.label}</td>
-                    <td className="py-2 text-cdy-muted">{adj.direction}</td>
-                    <td className="py-2 text-cdy-white">
-                      {formatCurrency(adj.amount)}
-                    </td>
-                    <td className="py-2 text-cdy-muted">
-                      {format(new Date(adj.date), 'MMM d, yyyy')}
-                    </td>
-                    <td className="py-2 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void handleDeleteAdjustment(adj.id)}
-                      >
-                        Delete
-                      </Button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-cdy-muted">
+                    <th className="pb-2">Label</th>
+                    <th className="pb-2">Direction</th>
+                    <th className="pb-2">Amount</th>
+                    <th className="pb-2">Date</th>
+                    <th className="pb-2" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {adjustments.map((adj) => (
+                    <tr key={adj.id} className="border-t border-cdy-navy-border">
+                      <td className="py-2 text-cdy-white">{adj.label}</td>
+                      <td className="py-2 text-cdy-muted">{adj.direction}</td>
+                      <td className="py-2 text-cdy-white">
+                        {formatCurrency(adj.amount)}
+                      </td>
+                      <td className="py-2 text-cdy-muted">
+                        {format(new Date(adj.date), 'MMM d, yyyy')}
+                      </td>
+                      <td className="py-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleDeleteAdjustment(adj.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </PermissionGate>

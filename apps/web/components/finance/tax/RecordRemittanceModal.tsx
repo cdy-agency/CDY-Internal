@@ -99,7 +99,7 @@ export function RecordRemittanceModal({
               <Label htmlFor="authority">Authority name</Label>
               <Input id="authority" value={authorityName} onChange={(e) => setAuthorityName(e.target.value)} required />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="remAmount">Amount</Label>
                 <Input id="remAmount" type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
@@ -119,7 +119,7 @@ export function RecordRemittanceModal({
               <Label htmlFor="remRef">Reference (optional)</Label>
               <Input id="remRef" value={reference} onChange={(e) => setReference(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="periodFrom">Period from</Label>
                 <Input id="periodFrom" type="date" value={periodFrom} onChange={(e) => setPeriodFrom(e.target.value)} required />

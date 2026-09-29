@@ -82,7 +82,7 @@ export default function AllProjectsPage(): JSX.Element {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or code…"
-          className="h-9 w-64 rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white placeholder:text-cdy-muted"
+          className="h-9 w-full rounded-md border border-cdy-navy-border bg-cdy-navy px-3 text-sm text-cdy-white placeholder:text-cdy-muted sm:w-64"
         />
         {!isLoading && (
           <span className="text-xs text-cdy-muted">
@@ -92,7 +92,7 @@ export default function AllProjectsPage(): JSX.Element {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light">
-        <table className="w-full text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-cdy-muted">
               <th className="px-4 py-3 font-medium">Code</th>

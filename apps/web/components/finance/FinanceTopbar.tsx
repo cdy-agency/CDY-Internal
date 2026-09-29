@@ -28,8 +28,8 @@ export function FinanceTopbar({
 
   return (
     <>
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-cdy-navy-border bg-cdy-navy px-4 py-3">
-        <div className="min-w-0">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-cdy-navy-border bg-cdy-navy py-3 pl-16 pr-4 lg:px-6">
+        <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-1 text-sm text-cdy-muted truncate">
             <span className="truncate">{breadcrumb}</span>
             <ChevronRight className="h-3.5 w-3.5" />
@@ -38,7 +38,7 @@ export function FinanceTopbar({
           <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-cdy-white truncate">{title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden md:block">
+          <div className="hidden xl:block">
             <ModuleSwitcher />
           </div>
           <button
@@ -57,6 +57,10 @@ export function FinanceTopbar({
           {actionLabel && onAction && (
             <Button onClick={onAction} className="whitespace-nowrap">{actionLabel}</Button>
           )}
+        </div>
+        {/* Below xl the switcher gets its own scrollable row instead of disappearing */}
+        <div className="w-full min-w-0 xl:hidden">
+          <ModuleSwitcher />
         </div>
       </header>
       <NotificationDrawer

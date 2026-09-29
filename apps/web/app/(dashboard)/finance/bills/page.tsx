@@ -85,7 +85,7 @@ export default function BillsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-cdy-white">Bills</h1>
         <PermissionGate feature="finance.bills" action="write">
           <Button onClick={() => { setEditBill(null); setDrawerOpen(true); }}>
@@ -96,7 +96,7 @@ export default function BillsPage(): JSX.Element {
       </div>
 
       {data && data.alerts.dueSoonCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
           <span>
             ⚠ {data.alerts.dueSoonCount} bill
             {data.alerts.dueSoonCount === 1 ? '' : 's'} due within 3 days totalling{' '}
@@ -109,7 +109,7 @@ export default function BillsPage(): JSX.Element {
       )}
 
       {data && data.alerts.overdueCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-[var(--cdy-danger)]/30 bg-[var(--cdy-danger)]/10 px-4 py-3 text-sm text-[var(--cdy-danger)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--cdy-danger)]/30 bg-[var(--cdy-danger)]/10 px-4 py-3 text-sm text-[var(--cdy-danger)]">
           <span>
             🔴 {data.alerts.overdueCount} bill
             {data.alerts.overdueCount === 1 ? '' : 's'} overdue totalling{' '}
@@ -144,7 +144,7 @@ export default function BillsPage(): JSX.Element {
       {!isLoading && data && data.data.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                   <th className="px-4 py-3 font-medium">Vendor</th>
@@ -231,7 +231,7 @@ export default function BillsPage(): JSX.Element {
             </table>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-cdy-muted">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cdy-muted">
             <span>
               Page {data.page} of {data.totalPages} ({data.total} bills)
             </span>

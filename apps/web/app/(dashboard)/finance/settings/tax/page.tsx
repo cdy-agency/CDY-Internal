@@ -41,7 +41,7 @@ export default function TaxRatesPage(): JSX.Element {
         <span className="text-cdy-white">Tax Rates</span>
       </nav>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-cdy-white">Tax Rates</h1>
         <PermissionGate feature="finance.tax" action="write">
           <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={() => setModalOpen(true)}>
@@ -54,7 +54,7 @@ export default function TaxRatesPage(): JSX.Element {
 
       {rates && (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -100,7 +100,7 @@ export default function TaxRatesPage(): JSX.Element {
           </button>
           {showInactive && (
             <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light opacity-60">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <tbody>
                   {inactiveRates.map((rate) => (
                     <tr key={rate.id} className="border-b border-cdy-navy-border/50">

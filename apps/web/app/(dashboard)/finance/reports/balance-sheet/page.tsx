@@ -80,7 +80,7 @@ function EntryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+      <div className="max-h-[90vh] w-full overflow-y-auto max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
         <h2 className="text-lg font-semibold text-cdy-white">
           {entry ? 'Edit Entry' : `Add ${type === 'ASSET' ? 'Asset' : 'Liability'}`}
         </h2>
@@ -218,7 +218,7 @@ export default function BalanceSheetPage(): JSX.Element {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-44"
+          className="min-w-0 flex-1 sm:w-44 sm:flex-none"
         />
       </div>
 
@@ -234,12 +234,12 @@ export default function BalanceSheetPage(): JSX.Element {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold tracking-wider text-cdy-red">
             ASSETS
           </h2>
-          <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-4 items-center gap-2">
+          <div className="space-y-3 overflow-x-auto text-sm">
+            <div className="grid min-w-[360px] grid-cols-4 items-center gap-2">
               <Link
                 href="/finance/ar"
                 className="col-span-2 text-cdy-muted hover:text-cdy-red"
@@ -270,7 +270,7 @@ export default function BalanceSheetPage(): JSX.Element {
             </div>
 
             {data.assets.manual.map((entry) => (
-              <div key={entry.id} className="grid grid-cols-4 items-center gap-2">
+              <div key={entry.id} className="grid min-w-[360px] grid-cols-4 items-center gap-2">
                 <span className="col-span-2 text-cdy-muted">{entry.label}</span>
                 <span className="text-right text-cdy-white">
                   {formatCurrency(entry.amount)}
@@ -316,11 +316,11 @@ export default function BalanceSheetPage(): JSX.Element {
           </div>
         </div>
 
-        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+        <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold tracking-wider text-cdy-red">
             LIABILITIES
           </h2>
-          <div className="space-y-3 text-sm">
+          <div className="space-y-3 overflow-x-auto text-sm">
             <div className="flex justify-between">
               <Link href="/finance/bills" className="text-cdy-muted hover:text-cdy-red">
                 Accounts Payable (system)

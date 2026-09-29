@@ -165,7 +165,7 @@ export default function ProposalsPage(): JSX.Element {
       {isLoading && <p className="text-cdy-muted">Loading proposals...</p>}
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
               <th className="px-4 py-3">Title</th>
@@ -292,7 +292,7 @@ export default function ProposalsPage(): JSX.Element {
 
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Reject proposal</h2>
             <p className="mt-1 text-sm text-cdy-muted">{rejectModal.title}</p>
             <Input

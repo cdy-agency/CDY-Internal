@@ -306,13 +306,13 @@ function DeliverModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
         role="presentation"
       />
-      <div className="relative z-10 w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-cdy-white">
           Mark project as delivered?
         </h2>
@@ -801,7 +801,7 @@ export default function BrandingProjectPage(): JSX.Element {
           )}
         </div>
         <PermissionGate feature="branding.projects" action="write">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {project.status !== 'DELIVERED' && (
               <>
                 <Button
@@ -877,7 +877,7 @@ export default function BrandingProjectPage(): JSX.Element {
           <h2 className="text-sm font-semibold text-cdy-white">
             Suppliers involved
           </h2>
-          <div className="overflow-hidden rounded-lg border border-cdy-navy-border">
+          <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
             <table className="w-full text-sm">
               <tbody>
                 {uniqueSuppliers.map(({ supplier, itemTitle }) => (

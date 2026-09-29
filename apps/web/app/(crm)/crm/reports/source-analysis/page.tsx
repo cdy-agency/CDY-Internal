@@ -88,7 +88,7 @@ export default function SourceAnalysisPage(): JSX.Element {
       {report && (
         <>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-cdy-navy text-left text-xs uppercase text-cdy-muted">
                 <tr>
                   <th className="px-4 py-3">Source</th>

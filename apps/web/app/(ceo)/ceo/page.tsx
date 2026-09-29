@@ -366,7 +366,7 @@ export default function CeoDashboardPage() {
         </div>
 
         {/* Row 2b — Income / Expenses / Balance (date-range filterable) */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SectionCard>
             <p className="text-xs font-medium uppercase tracking-wide text-blue-400">
               Total Income — {ceoRangePeriodLabel}
@@ -429,8 +429,8 @@ export default function CeoDashboardPage() {
                   key={bill.id}
                   className="flex items-center justify-between rounded-lg border border-cdy-navy-border/50 px-3 py-2"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-cdy-white">{bill.vendorName}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-cdy-white">{bill.vendorName}</p>
                     <p
                       className={`text-xs ${
                         bill.daysUntilDue <= 0
@@ -447,7 +447,7 @@ export default function CeoDashboardPage() {
                           : `Due in ${bill.daysUntilDue} days`}
                     </p>
                   </div>
-                  <span className="ml-4 font-mono text-sm text-cdy-white">
+                  <span className="ml-4 shrink-0 font-mono text-sm text-cdy-white">
                     {formatCurrency(bill.amount, bill.currency)}
                   </span>
                 </div>
@@ -565,6 +565,8 @@ export default function CeoDashboardPage() {
 
             {/* Payment method — income vs expenses vs net */}
             <SectionCard title="Payment methods — income vs expenses">
+              <div className="overflow-x-auto">
+              <div className="min-w-[320px]">
               {/* Column headers */}
               <div className="mb-1 grid grid-cols-4 gap-1 border-b border-cdy-navy-border pb-1.5">
                 {(['Method', 'In', 'Out', 'Net'] as const).map((h, i) => (
@@ -607,6 +609,8 @@ export default function CeoDashboardPage() {
               {(summary?.finance.charts?.paymentMethodSummary ?? []).length === 0 && (
                 <p className="py-4 text-center text-xs text-cdy-muted">No payment activity this month</p>
               )}
+              </div>
+              </div>
             </SectionCard>
           </div>
         )}
@@ -708,7 +712,7 @@ export default function CeoDashboardPage() {
           {isLoading ? (
             <Skeleton className="h-36 w-full" />
           ) : (
-            <div className="grid grid-cols-2 items-center gap-4 lg:grid-cols-5">
+            <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-5">
               <div className="grid grid-cols-2 gap-3 lg:col-span-3">
                 {[
                   { label: 'Total team',       value: summary?.hr.totalEmployees ?? 0, alert: false },
@@ -774,7 +778,7 @@ export default function CeoDashboardPage() {
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex justify-between text-xs">
                           <span className="truncate font-medium text-cdy-white">{p.name}</span>
-                          <span className="ml-2 flex-shrink-0 text-cdy-muted">{p.client?.companyName ?? ''}</span>
+                          <span className="ml-2 max-w-[50%] flex-shrink-0 truncate text-cdy-muted">{p.client?.companyName ?? ''}</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-cdy-navy">
                           <div
@@ -796,11 +800,11 @@ export default function CeoDashboardPage() {
         <div id="service-lines">
         <SectionCard title="Service Lines">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { label: 'Marketing',   value: `${summary?.services.marketingClients ?? 0} clients`,     href: '/marketing',  color: 'text-pink-400' },
                 { label: 'Software',    value: `${summary?.services.softwareProjects ?? 0} projects`,    href: '/software',   color: 'text-blue-400' },
@@ -830,7 +834,7 @@ export default function CeoDashboardPage() {
             title="Ventures (this month)"
             action={<Link href="/finance/ventures" className="text-xs text-cdy-red hover:underline">View ventures →</Link>}
           >
-            <div className="mb-4 grid grid-cols-3 gap-4">
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                 { label: 'Total income',   value: `RWF${(summary?.ventures.totalIncome ?? 0).toLocaleString()}`,   color: 'text-green-400' },
                 { label: 'Total expenses', value: `RWF${(summary?.ventures.totalExpenses ?? 0).toLocaleString()}`, color: 'text-red-400' },
@@ -839,15 +843,15 @@ export default function CeoDashboardPage() {
               ].map((m) => (
                 <div key={m.label} className="rounded-lg bg-cdy-navy p-3">
                   <p className="text-xs text-cdy-muted">{m.label}</p>
-                  <p className={`mt-0.5 font-mono text-xl font-bold ${m.color}`}>{m.value}</p>
+                  <p className={`mt-0.5 break-words font-mono text-xl font-bold ${m.color}`}>{m.value}</p>
                 </div>
               ))}
             </div>
             <div className="space-y-2">
               {(summary?.ventures.list ?? []).map((v) => (
-                <div key={v.id} className="flex items-center gap-3 text-sm">
+                <div key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                   <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: `#${v.color}` }} />
-                  <span className="flex-1 text-cdy-muted">{v.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-cdy-muted">{v.name}</span>
                   <span className="font-mono text-xs text-green-400">+RWF{v.income.toLocaleString()}</span>
                   <span className="font-mono text-xs text-red-400">−RWF{v.expenses.toLocaleString()}</span>
                   <span className={`w-20 text-right font-mono text-xs font-bold ${v.net >= 0 ? 'text-cdy-white' : 'text-red-400'}`}>

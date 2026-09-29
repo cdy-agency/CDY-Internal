@@ -128,7 +128,7 @@ export default function BudgetListPage(): JSX.Element {
         <span className="text-cdy-white">Project Budget</span>
       </nav>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-cdy-white">Project Budgets</h1>
         <PermissionGate feature="finance.budget" action="write">
           <Button onClick={() => setFormOpen(!formOpen)}>Add Project Budget</Button>
@@ -144,7 +144,7 @@ export default function BudgetListPage(): JSX.Element {
             {pending.map((req) => (
               <li
                 key={req.id}
-                className="flex items-center justify-between gap-4"
+                className="flex flex-wrap items-center justify-between gap-4"
               >
                 <span>
                   {req.projectName ?? req.projectId}: {formatCurrency(req.requestedBudget)}
@@ -196,7 +196,7 @@ export default function BudgetListPage(): JSX.Element {
 
       {budgets && (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Project</th>

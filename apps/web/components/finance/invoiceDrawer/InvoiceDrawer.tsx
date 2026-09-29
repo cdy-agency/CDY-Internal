@@ -267,7 +267,7 @@ export function InvoiceDrawer({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="projectId">Project (optional)</Label>
                 <select
@@ -301,7 +301,7 @@ export function InvoiceDrawer({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due Date</Label>
                 <Input
@@ -348,8 +348,8 @@ export function InvoiceDrawer({
                   const amount = qty * price;
 
                   return (
-                    <div key={field.id} className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1 space-y-1">
+                    <div key={field.id} className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+                      <div className="min-w-0 flex-1 basis-full space-y-1 sm:basis-0">
                         <Input
                           placeholder="Description"
                           {...register(`lineItems.${index}.description`)}
@@ -365,7 +365,7 @@ export function InvoiceDrawer({
                         type="number"
                         min={0.01}
                         step={0.01}
-                        className="w-20"
+                        className="w-16 sm:w-20"
                         {...register(`lineItems.${index}.quantity`)}
                         disabled={isReadOnly}
                       />
@@ -377,7 +377,7 @@ export function InvoiceDrawer({
                         {...register(`lineItems.${index}.unitPrice`)}
                         disabled={isReadOnly}
                       />
-                      <div className="flex w-28 items-center justify-end pt-2 text-sm text-cdy-white">
+                      <div className="flex min-w-0 flex-1 items-center justify-end pt-2 text-sm text-cdy-white sm:w-28 sm:flex-none">
                         {fmt(amount)}
                       </div>
                       <button

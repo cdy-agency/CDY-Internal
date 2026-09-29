@@ -73,7 +73,7 @@ export default function ExpensesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-cdy-white">Expenses</h1>
         <PermissionGate feature="finance.expenses" action="write">
           <Button onClick={openCreate}>
@@ -175,7 +175,7 @@ export default function ExpensesPage(): JSX.Element {
       {!isLoading && data && data.data.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                   <th className="px-4 py-3 font-medium">Date</th>
@@ -272,7 +272,7 @@ export default function ExpensesPage(): JSX.Element {
             </table>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-cdy-muted">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cdy-muted">
             <span>
               Page {data.page} of {data.totalPages} ({data.total} expenses)
             </span>

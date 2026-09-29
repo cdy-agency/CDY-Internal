@@ -246,7 +246,7 @@ export default function ArLedgerPage(): JSX.Element {
 
       {data && !isLoading && (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Client</th>
@@ -314,63 +314,65 @@ export default function ArLedgerPage(): JSX.Element {
                       {expanded && (
                         <tr key={`${client.clientId}-detail`}>
                           <td colSpan={6} className="bg-cdy-navy/20 px-4 py-3">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="text-left text-cdy-muted">
-                                  <th className="pb-2 font-medium">
-                                    Invoice #
-                                  </th>
-                                  <th className="pb-2 font-medium text-right">
-                                    Amount
-                                  </th>
-                                  <th className="pb-2 font-medium text-right">
-                                    Remaining
-                                  </th>
-                                  <th className="pb-2 font-medium">Due Date</th>
-                                  <th className="pb-2 font-medium">Status</th>
-                                  <th className="pb-2 font-medium">Action</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {client.invoices.map((inv) => (
-                                  <tr
-                                    key={inv.id}
-                                    className="border-t border-cdy-navy-border/30"
-                                  >
-                                    <td className="py-2 font-mono text-cdy-white">
-                                      {inv.invoiceNumber}
-                                    </td>
-                                    <td className="py-2 text-right text-cdy-muted">
-                                      {formatCurrency(inv.total)}
-                                    </td>
-                                    <td className="py-2 text-right text-cdy-white">
-                                      {formatCurrency(inv.remaining)}
-                                    </td>
-                                    <td className="py-2 text-cdy-muted">
-                                      {format(
-                                        new Date(inv.dueDate),
-                                        'MMM d, yyyy',
-                                      )}
-                                    </td>
-                                    <td className="py-2">
-                                      <InvoiceStatusBadge status={inv.status} />
-                                    </td>
-                                    <td className="py-2">
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link
-                                            href={`/finance/invoices/${inv.id}`}
-                                          >
-                                            View
-                                          </Link>
-                                        </Button>
-                                        <ReminderButton invoiceId={inv.id} />
-                                      </div>
-                                    </td>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="text-left text-cdy-muted">
+                                    <th className="pb-2 font-medium">
+                                      Invoice #
+                                    </th>
+                                    <th className="pb-2 font-medium text-right">
+                                      Amount
+                                    </th>
+                                    <th className="pb-2 font-medium text-right">
+                                      Remaining
+                                    </th>
+                                    <th className="pb-2 font-medium">Due Date</th>
+                                    <th className="pb-2 font-medium">Status</th>
+                                    <th className="pb-2 font-medium">Action</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody>
+                                  {client.invoices.map((inv) => (
+                                    <tr
+                                      key={inv.id}
+                                      className="border-t border-cdy-navy-border/30"
+                                    >
+                                      <td className="py-2 font-mono text-cdy-white">
+                                        {inv.invoiceNumber}
+                                      </td>
+                                      <td className="py-2 text-right text-cdy-muted">
+                                        {formatCurrency(inv.total)}
+                                      </td>
+                                      <td className="py-2 text-right text-cdy-white">
+                                        {formatCurrency(inv.remaining)}
+                                      </td>
+                                      <td className="py-2 text-cdy-muted">
+                                        {format(
+                                          new Date(inv.dueDate),
+                                          'MMM d, yyyy',
+                                        )}
+                                      </td>
+                                      <td className="py-2">
+                                        <InvoiceStatusBadge status={inv.status} />
+                                      </td>
+                                      <td className="py-2">
+                                        <div className="flex flex-wrap gap-2">
+                                          <Button variant="outline" size="sm" asChild>
+                                            <Link
+                                              href={`/finance/invoices/${inv.id}`}
+                                            >
+                                              View
+                                            </Link>
+                                          </Button>
+                                          <ReminderButton invoiceId={inv.id} />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </td>
                         </tr>
                       )}

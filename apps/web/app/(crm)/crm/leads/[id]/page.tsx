@@ -548,7 +548,7 @@ export default function LeadDetailPage(): JSX.Element {
 
       {activityOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Log Activity</h2>
             <div className="mt-4 space-y-3">
               <select
@@ -582,7 +582,7 @@ export default function LeadDetailPage(): JSX.Element {
 
       {proposalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Add Proposal</h2>
             <div className="mt-4 space-y-3">
               <Input
@@ -642,7 +642,7 @@ export default function LeadDetailPage(): JSX.Element {
 
       {rejectProposalId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">Reject proposal</h2>
             <Input
               className="mt-4"
@@ -698,7 +698,7 @@ function InfoRow({
   return (
     <div>
       <p className="text-xs text-cdy-dim">{label}</p>
-      <p className="text-cdy-white">{value}</p>
+      <p className="break-words text-cdy-white">{value}</p>
     </div>
   );
 }

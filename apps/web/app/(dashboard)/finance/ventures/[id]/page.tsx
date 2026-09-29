@@ -160,12 +160,12 @@ export default function VentureDetailPage(): JSX.Element {
               <div>
                 <div className="flex items-center gap-2">
                   <span
-                    className="h-4 w-4 rounded-full"
+                    className="h-4 w-4 shrink-0 rounded-full"
                     style={{ backgroundColor: ventureColorHex(venture.color) }}
                   />
                   {editName ? (
-                    <div className="flex items-center gap-2">
-                      <Input value={nameValue} onChange={(e) => setNameValue(e.target.value)} className="w-64" />
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <Input value={nameValue} onChange={(e) => setNameValue(e.target.value)} className="w-full min-w-0 sm:w-64" />
                       <Button size="sm" onClick={handleSaveName}>Save</Button>
                       <Button size="sm" variant="outline" onClick={() => setEditName(false)}>Cancel</Button>
                     </div>
@@ -217,14 +217,14 @@ export default function VentureDetailPage(): JSX.Element {
               ))}
               <Input
                 type="date"
-                className="w-36"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-none"
                 value={from}
                 onChange={(e) => { setActivePreset('custom'); setFrom(e.target.value); }}
               />
               <span className="text-cdy-muted">—</span>
               <Input
                 type="date"
-                className="w-36"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-none"
                 value={to}
                 onChange={(e) => { setActivePreset('custom'); setTo(e.target.value); }}
               />
@@ -293,7 +293,7 @@ export default function VentureDetailPage(): JSX.Element {
                   <div>
                     <h3 className="mb-2 text-sm font-medium text-cdy-muted">Direct Income</h3>
                     <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-                      <table className="w-full text-sm">
+                      <table className="w-full min-w-[640px] text-sm">
                         <thead className="bg-cdy-navy text-left text-cdy-muted">
                           <tr>
                             <th className="px-4 py-3">Date</th>
@@ -343,7 +343,7 @@ export default function VentureDetailPage(): JSX.Element {
                   <InvoiceTableSkeleton />
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[640px] text-sm">
                       <thead className="bg-cdy-navy text-left text-cdy-muted">
                         <tr>
                           <th className="px-4 py-3">Date</th>
@@ -421,7 +421,7 @@ export default function VentureDetailPage(): JSX.Element {
                   <InvoiceTableSkeleton />
                 ) : (
                   <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[640px] text-sm">
                       <thead className="bg-cdy-navy text-left text-cdy-muted">
                         <tr>
                           <th className="px-4 py-3">Date</th>
@@ -478,7 +478,7 @@ export default function VentureDetailPage(): JSX.Element {
                   Retainer contracts linked to this venture ({ventureRetainers.length} total).
                 </p>
                 <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[640px] text-sm">
                     <thead className="bg-cdy-navy text-left text-cdy-muted">
                       <tr>
                         <th className="px-4 py-3">Client</th>
@@ -534,7 +534,7 @@ export default function VentureDetailPage(): JSX.Element {
                   Clients tagged to this venture ({venture.clients?.length ?? 0} total).
                 </p>
                 <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[640px] text-sm">
                     <thead className="bg-cdy-navy text-left text-cdy-muted">
                       <tr>
                         <th className="px-4 py-3">Client</th>

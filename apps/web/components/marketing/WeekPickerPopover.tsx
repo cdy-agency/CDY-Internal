@@ -50,7 +50,7 @@ export function WeekPickerPopover({
         {label}
       </Button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-72 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
+        <div className="fixed inset-x-4 z-20 mt-2 rounded-lg sm:absolute sm:inset-x-auto sm:right-0 sm:w-72 border border-cdy-navy-border bg-cdy-navy-light p-4 shadow-xl">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-cdy-muted">
             Select week
           </p>

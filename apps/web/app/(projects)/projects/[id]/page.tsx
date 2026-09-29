@@ -507,7 +507,7 @@ export default function ProjectDetailPage(): JSX.Element {
 
       {activeTab === 'tasks' && (
         <div>
-          <div className="mb-4 flex justify-end gap-2">
+          <div className="mb-4 flex flex-wrap justify-end gap-2">
             <PermissionGate feature="projects.tasks" action="write">
               <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
                 Import tasks from CSV
@@ -545,7 +545,7 @@ export default function ProjectDetailPage(): JSX.Element {
       {activeTab === 'milestones' && (
         <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-5">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-cdy-muted">
                   <th className="pb-3 pr-4 font-medium">Milestone</th>
@@ -918,7 +918,7 @@ export default function ProjectDetailPage(): JSX.Element {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="taskPriority">Priority</Label>
                   <select

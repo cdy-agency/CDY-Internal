@@ -54,7 +54,7 @@ function ProjectRow({ project }: { project: ProjectRecord }): JSX.Element {
             {project.projectCode}
           </span>
         </Link>
-        <span className="shrink-0 text-xs text-cdy-muted">
+        <span className="max-w-[40%] shrink-0 truncate text-xs text-cdy-muted sm:max-w-none">
           {project.client?.companyName ?? '—'}
         </span>
         <span className="shrink-0 font-mono text-xs text-cdy-muted">
@@ -142,7 +142,7 @@ export default function ProjectsOverviewPage(): JSX.Element {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <PermissionGate feature="projects.all" action="write">
           <Link href="/projects/new">
             <Button className="bg-cdy-red hover:bg-cdy-red/90">
@@ -153,7 +153,7 @@ export default function ProjectsOverviewPage(): JSX.Element {
       </div>
 
       {/* Row 1 — Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SectionCard>
           <MetricHero
             value={String(summary?.activeProjects ?? 0)}

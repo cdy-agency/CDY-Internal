@@ -68,7 +68,7 @@ export function AmendRetainerModal({
     <>
       <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} role="presentation" />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="max-h-[90vh] w-full overflow-y-auto max-w-md rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-cdy-white">Amend Retainer</h2>
             <button type="button" onClick={onClose} className="text-cdy-muted hover:text-cdy-white"><X className="h-5 w-5" /></button>

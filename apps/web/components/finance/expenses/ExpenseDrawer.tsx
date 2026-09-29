@@ -250,7 +250,7 @@ export function ExpenseDrawer({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount</Label>
                 <Input
@@ -379,7 +379,7 @@ export function ExpenseDrawer({
 
             <div className="space-y-2">
               <Label>Payment Method (optional)</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {(['BANK_TRANSFER', 'MTN_MOMO', 'AIRTEL_MONEY', 'CARD', 'CASH', 'OTHER'] as const).map((method) => (
                   <button
                     key={method}

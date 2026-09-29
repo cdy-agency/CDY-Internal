@@ -123,7 +123,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
             )}
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span className="max-lg:hidden max-md:inline">{item.label}</span>
+            <span>{item.label}</span>
           </Link>
         );
       })}
@@ -134,7 +134,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
     <>
       <button
         type="button"
-        className="fixed left-4 top-4 z-50 rounded-md bg-cdy-navy-light p-2 md:hidden"
+        className="fixed left-3 top-3 z-50 rounded-md bg-cdy-navy-light p-2 text-cdy-white lg:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Toggle menu"
       >
@@ -143,7 +143,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setMobileOpen(false)}
           role="presentation"
         />
@@ -151,14 +151,13 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-cdy-navy-light transition-transform md:static',
-          'max-lg:w-10 max-lg:overflow-hidden',
+          'fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col bg-cdy-navy-light transition-transform lg:static lg:translate-x-0',
           mobileOpen
-            ? 'translate-x-0 max-md:w-60'
-            : '-translate-x-full max-md:-translate-x-full md:translate-x-0 max-lg:translate-x-0',
+            ? 'translate-x-0'
+            : '-translate-x-full',
         )}
       >
-        <div className="border-b border-cdy-navy-border p-4 max-lg:hidden max-md:block">
+        <div className="border-b border-cdy-navy-border p-4 pl-16 lg:pl-4">
           <div className="flex items-baseline gap-1">
             <span className="text-xl font-bold text-cdy-red">CDY</span>
             <span className="text-xl font-semibold text-cdy-white">Finance</span>
@@ -170,7 +169,7 @@ export function FinanceSidebar({ user, onLogout }: FinanceSidebarProps): JSX.Ele
 
         {navLinks}
 
-        <div className="border-t border-cdy-navy-border p-4 max-lg:hidden max-md:block">
+        <div className="border-t border-cdy-navy-border p-4">
           {user && (
             <div className="mb-3">
               <p className="text-sm font-medium text-cdy-white">

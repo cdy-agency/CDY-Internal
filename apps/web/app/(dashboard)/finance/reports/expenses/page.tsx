@@ -150,19 +150,19 @@ export default function ExpenseSummaryReportPage(): JSX.Element {
                   : 0;
               return (
                 <div key={cat.category} className="flex items-center gap-3">
-                  <span className="w-24 shrink-0 text-right text-sm text-cdy-muted">
+                  <span className="w-20 shrink-0 text-right text-sm text-cdy-muted sm:w-24">
                     {cat.category.charAt(0) + cat.category.slice(1).toLowerCase()}
                   </span>
-                  <div className="flex h-5 flex-1 overflow-hidden rounded bg-cdy-navy">
+                  <div className="flex h-5 min-w-0 flex-1 overflow-hidden rounded bg-cdy-navy">
                     <div
                       className="h-full bg-cdy-red"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-28 shrink-0 text-right font-mono text-sm text-cdy-white">
+                  <span className="w-24 shrink-0 text-right font-mono text-sm text-cdy-white sm:w-28">
                     {formatCurrency(cat.amount)}
                   </span>
-                  <span className="w-14 shrink-0 text-right text-xs text-cdy-muted">
+                  <span className="w-12 shrink-0 text-right text-xs text-cdy-muted sm:w-14">
                     {pct.toFixed(1)}%
                   </span>
                 </div>
@@ -216,7 +216,7 @@ export default function ExpenseSummaryReportPage(): JSX.Element {
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                   <th className="px-4 py-3 font-medium">Date</th>

@@ -35,7 +35,7 @@ export default function TeamWorkloadPage(): JSX.Element {
         <p className="text-sm text-cdy-muted">Loading…</p>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-4 text-center">
               <p className="text-2xl font-semibold text-cdy-white">
                 {data?.totalActiveTasks ?? 0}
@@ -63,7 +63,7 @@ export default function TeamWorkloadPage(): JSX.Element {
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border text-cdy-muted">
                   <th className="px-4 py-3 font-medium">Employee</th>
@@ -121,7 +121,7 @@ export default function TeamWorkloadPage(): JSX.Element {
                           <p className="mb-3 text-sm font-medium text-cdy-white">
                             {row.employeeName} — {row.taskCount} open tasks
                           </p>
-                          <table className="w-full text-left text-sm">
+                          <table className="w-full min-w-[560px] text-left text-sm">
                             <thead>
                               <tr className="text-cdy-muted">
                                 <th className="pb-2 pr-3">Project</th>

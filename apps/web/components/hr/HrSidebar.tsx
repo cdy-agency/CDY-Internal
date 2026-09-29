@@ -132,7 +132,7 @@ export function HrSidebar({ user, onLogout }: HrSidebarProps): JSX.Element {
 
   const sidebar = (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-cdy-navy-border bg-cdy-navy">
-      <div className="border-b border-cdy-navy-border px-5 py-4">
+      <div className="border-b border-cdy-navy-border py-4 pl-16 pr-5 lg:pl-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-cdy-red">
           CDY
         </p>
@@ -202,7 +202,7 @@ export function HrSidebar({ user, onLogout }: HrSidebarProps): JSX.Element {
     <>
       <button
         type="button"
-        className="fixed left-4 top-4 z-50 rounded-md bg-cdy-navy-light p-2 text-cdy-white lg:hidden"
+        className="fixed left-3 top-3 z-50 rounded-md bg-cdy-navy-light p-2 text-cdy-white lg:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Toggle menu"
       >

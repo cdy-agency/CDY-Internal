@@ -66,7 +66,7 @@ function SalaryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+      <div className="max-h-[90vh] w-full overflow-y-auto max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
         <h2 className="text-lg font-semibold text-cdy-white">
           {isUpdate ? 'Update Employee Salary' : 'Set Employee Salary'}
         </h2>
@@ -185,7 +185,7 @@ export default function EmployeeSalariesPage(): JSX.Element {
         <span className="text-cdy-white">Employee Salaries</span>
       </nav>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-cdy-white">Employee Salaries</h1>
         <PermissionGate feature="hr.payroll" action="write">
           <Button className="bg-cdy-red hover:bg-cdy-red/90" onClick={openCreate}>
@@ -195,7 +195,7 @@ export default function EmployeeSalariesPage(): JSX.Element {
       </div>
 
       {noSalaryEmployees.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
           <span>
             ⚠ {noSalaryEmployees.length} active employee
             {noSalaryEmployees.length === 1 ? '' : 's'} without a salary set — they will
@@ -205,7 +205,7 @@ export default function EmployeeSalariesPage(): JSX.Element {
       )}
 
       <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
               <th className="px-4 py-3 font-medium">Employee</th>

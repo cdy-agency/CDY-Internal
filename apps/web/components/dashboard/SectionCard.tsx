@@ -15,7 +15,7 @@ export function SectionCard({ title, action, children, className }: SectionCardP
       className={`rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-5 ${className ?? ''}`}
     >
       {(title ?? action) ? (
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           {title && (
             <h3 className="text-xs font-semibold uppercase tracking-wide text-cdy-white">
               {title}

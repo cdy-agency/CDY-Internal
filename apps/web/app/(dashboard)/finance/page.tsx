@@ -111,7 +111,7 @@ export default function FinanceDashboard(): JSX.Element {
   return (
     <div className="space-y-6 p-6">
       {isError && (
-        <div className="flex items-center justify-between rounded-lg border border-[var(--cdy-danger)]/30 bg-[var(--cdy-danger)]/10 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--cdy-danger)]/30 bg-[var(--cdy-danger)]/10 px-4 py-3">
           <p className="text-sm text-[var(--cdy-danger)]">
             Failed to load finance summary.
           </p>
@@ -423,71 +423,73 @@ export default function FinanceDashboard(): JSX.Element {
         {/* Payment method — income vs expenses vs net */}
         <SectionCard title="Payment methods — income vs expenses">
           {/* Header row */}
-          <div className="mb-1 grid grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2">
-            {(['Method', 'Income', 'Expenses', 'Net'] as const).map((h, i) => (
-              <span
-                key={h}
-                className={`text-xs uppercase tracking-wide text-cdy-dim ${i > 0 ? 'text-right' : ''}`}
+          <div className="overflow-x-auto">
+            <div className="mb-1 grid min-w-[420px] grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2">
+              {(['Method', 'Income', 'Expenses', 'Net'] as const).map((h, i) => (
+                <span
+                  key={h}
+                  className={`text-xs uppercase tracking-wide text-cdy-dim ${i > 0 ? 'text-right' : ''}`}
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+            {(data?.charts?.paymentMethodSummary ?? []).map((item) => (
+              <div
+                key={item.method}
+                className="grid min-w-[420px] grid-cols-4 gap-2 border-b border-cdy-navy-border/50 py-3 last:border-0"
               >
-                {h}
-              </span>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="truncate text-sm text-cdy-muted">{item.label}</span>
+                </div>
+                <div className="text-right">
+                  {item.income.amount > 0 ? (
+                    <>
+                      <span className="font-mono text-sm text-green-400">
+                        +{formatCurrency(item.income.amount)}
+                      </span>
+                      {item.income.count > 0 && (
+                        <span className="block text-xs text-cdy-dim">{item.income.count}×</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-cdy-dim">—</span>
+                  )}
+                </div>
+                <div className="text-right">
+                  {item.expenses.amount > 0 ? (
+                    <>
+                      <span className="font-mono text-sm text-red-400">
+                        −{formatCurrency(item.expenses.amount)}
+                      </span>
+                      {item.expenses.count > 0 && (
+                        <span className="block text-xs text-cdy-dim">{item.expenses.count}×</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-cdy-dim">—</span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`font-mono text-sm font-semibold ${
+                      item.net > 0
+                        ? 'text-cdy-white'
+                        : item.net < 0
+                          ? 'text-red-400'
+                          : 'text-cdy-dim'
+                    }`}
+                  >
+                    {item.net > 0 ? '+' : ''}{formatCurrency(item.net)}
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
-          {(data?.charts?.paymentMethodSummary ?? []).map((item) => (
-            <div
-              key={item.method}
-              className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border/50 py-3 last:border-0"
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="truncate text-sm text-cdy-muted">{item.label}</span>
-              </div>
-              <div className="text-right">
-                {item.income.amount > 0 ? (
-                  <>
-                    <span className="font-mono text-sm text-green-400">
-                      +{formatCurrency(item.income.amount)}
-                    </span>
-                    {item.income.count > 0 && (
-                      <span className="block text-xs text-cdy-dim">{item.income.count}×</span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-xs text-cdy-dim">—</span>
-                )}
-              </div>
-              <div className="text-right">
-                {item.expenses.amount > 0 ? (
-                  <>
-                    <span className="font-mono text-sm text-red-400">
-                      −{formatCurrency(item.expenses.amount)}
-                    </span>
-                    {item.expenses.count > 0 && (
-                      <span className="block text-xs text-cdy-dim">{item.expenses.count}×</span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-xs text-cdy-dim">—</span>
-                )}
-              </div>
-              <div className="text-right">
-                <span
-                  className={`font-mono text-sm font-semibold ${
-                    item.net > 0
-                      ? 'text-cdy-white'
-                      : item.net < 0
-                        ? 'text-red-400'
-                        : 'text-cdy-dim'
-                  }`}
-                >
-                  {item.net > 0 ? '+' : ''}{formatCurrency(item.net)}
-                </span>
-              </div>
-            </div>
-          ))}
           {(data?.charts?.paymentMethodSummary ?? []).length === 0 && !isLoading && (
             <p className="py-6 text-center text-sm text-cdy-muted">
               No payment activity this month
@@ -506,7 +508,7 @@ export default function FinanceDashboard(): JSX.Element {
               size="md"
               isLoading={isLoading}
             />
-            <div className="grid grid-cols-3 gap-3 border-t border-cdy-navy-border pt-3">
+            <div className="grid grid-cols-1 gap-3 border-t border-cdy-navy-border pt-3 sm:grid-cols-3">
               <div>
                 <p className="text-xs text-cdy-dim">ARR</p>
                 <p className="font-mono text-sm font-semibold text-cdy-white">
@@ -600,7 +602,7 @@ export default function FinanceDashboard(): JSX.Element {
       {/* Row 7 — Reserve Fund (Finance Manager + CEO only) */}
       <PermissionGate feature="finance.reserve" action="read">
         <SectionCard>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs font-medium uppercase tracking-wide text-cdy-dim">
               Reserve Fund
             </p>
@@ -670,8 +672,8 @@ export default function FinanceDashboard(): JSX.Element {
         </SectionCard>
 
         <SectionCard title="Income vs Expenses — 6 months">
-          <div className="space-y-0">
-            <div className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2 text-xs uppercase tracking-wide text-cdy-dim">
+          <div className="space-y-0 overflow-x-auto">
+            <div className="grid min-w-[420px] grid-cols-4 gap-2 border-b border-cdy-navy-border pb-2 text-xs uppercase tracking-wide text-cdy-dim">
               <span>Month</span>
               <span className="text-right">Income</span>
               <span className="text-right">Expenses</span>
@@ -683,7 +685,7 @@ export default function FinanceDashboard(): JSX.Element {
               (data?.monthlyComparison ?? []).map((row) => (
                 <div
                   key={row.month}
-                  className="grid grid-cols-4 gap-2 border-b border-cdy-navy-border/40 py-2 text-sm last:border-0"
+                  className="grid min-w-[420px] grid-cols-4 gap-2 border-b border-cdy-navy-border/40 py-2 text-sm last:border-0"
                 >
                   <span className="font-medium text-cdy-muted">{row.month}</span>
                   <span className="text-right font-mono text-green-400">

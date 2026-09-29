@@ -113,7 +113,7 @@ export default function ClientCalendarPage(): JSX.Element {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <WeekPickerPopover onDownload={handleDownload} />
               <PermissionGate feature="marketing.content" action="write">
                 <Button onClick={() => openAdd()}>
@@ -249,7 +249,8 @@ function CalendarGrid({
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="rounded-lg border border-cdy-navy-border overflow-hidden">
+    <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
+      <div className="min-w-[640px]">
       {/* Day headers */}
       <div className="grid grid-cols-7 bg-cdy-navy-light border-b border-cdy-navy-border">
         {DAYS.map((d) => (
@@ -308,6 +309,7 @@ function CalendarGrid({
           );
         })}
       </div>
+      </div>
     </div>
   );
 }
@@ -345,7 +347,7 @@ function ListView({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
             <th className="px-4 py-3 font-medium">Date</th>
@@ -428,12 +430,12 @@ function MonthlySummaryCard({
   const platforms = Object.entries(summary.byPlatform);
 
   return (
-    <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 space-y-5">
+    <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:p-6 space-y-5">
       <h2 className="text-base font-semibold text-cdy-white">
         {formatMonth(month)} Summary
       </h2>
 
-      <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:gap-x-8 lg:grid-cols-4">
         {[
           { label: 'Posts target', value: summary.postsTarget },
           { label: 'Published', value: summary.published },
@@ -493,9 +495,9 @@ function MonthlySummaryCard({
           <div className="space-y-2">
             {platforms.map(([platform, stats]) => (
               <div key={platform}>
-                <div className="mb-0.5 flex items-center justify-between text-xs">
-                  <span className="capitalize text-cdy-muted">{platform}</span>
-                  <span className="text-cdy-white">
+                <div className="mb-0.5 flex items-center justify-between gap-2 text-xs">
+                  <span className="min-w-0 truncate capitalize text-cdy-muted">{platform}</span>
+                  <span className="shrink-0 text-cdy-white">
                     {stats.planned} planned · {stats.published} published
                   </span>
                 </div>
@@ -515,7 +517,7 @@ function MonthlySummaryCard({
 
       {/* Invoice */}
       {summary.invoice ? (
-        <div className="flex items-center gap-4 rounded-md border border-cdy-navy-border bg-cdy-navy px-4 py-3 text-sm">
+        <div className="flex flex-wrap items-center gap-4 rounded-md border border-cdy-navy-border bg-cdy-navy px-4 py-3 text-sm">
           <div>
             <p className="text-xs text-cdy-muted">Invoice</p>
             <Link

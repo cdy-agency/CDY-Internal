@@ -134,7 +134,7 @@ export function ProjectApprovalsPanel({
         <p className="text-sm text-cdy-muted">No approvals yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-cdy-navy-border text-cdy-muted">
                 <th className="pb-3 pr-4 font-medium">Status</th>
@@ -236,7 +236,7 @@ export function ProjectApprovalsPanel({
             role="presentation"
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy p-6">
+            <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-cdy-navy-border bg-cdy-navy p-6">
               <h3 className="mb-4 font-semibold text-cdy-white">
                 Request Changes
               </h3>

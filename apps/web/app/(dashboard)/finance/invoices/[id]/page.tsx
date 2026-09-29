@@ -183,7 +183,7 @@ export default function InvoiceDetailPage(): JSX.Element {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <div className="grid gap-6 lg:grid-cols-[65%_35%]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
           <Skeleton className="h-96 rounded-lg" />
           <Skeleton className="h-64 rounded-lg" />
         </div>
@@ -281,9 +281,9 @@ export default function InvoiceDetailPage(): JSX.Element {
         <span className="font-mono text-cdy-white">{invoice.invoiceNumber}</span>
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[65%_35%]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <div className="space-y-6">
-          <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-4 sm:p-6">
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="font-mono text-2xl font-bold text-cdy-white">
@@ -310,7 +310,7 @@ export default function InvoiceDetailPage(): JSX.Element {
                 <div className="text-cdy-white">
                   <p className="font-medium">{invoice.client.companyName}</p>
                   <p className="text-sm text-cdy-muted">{invoice.client.contactName}</p>
-                  <p className="text-sm text-cdy-muted">{invoice.client.email}</p>
+                  <p className="break-all text-sm text-cdy-muted">{invoice.client.email}</p>
                   {invoice.client.phone && (
                     <p className="text-sm text-cdy-muted">{invoice.client.phone}</p>
                   )}
@@ -374,66 +374,68 @@ export default function InvoiceDetailPage(): JSX.Element {
 
           {plan && (
             <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-medium text-cdy-white">
                   Payment Plan — {plan.status}
                 </h3>
                 <Calendar className="h-4 w-4 text-cdy-muted" />
               </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="pb-2 font-medium">#</th>
-                    <th className="pb-2 font-medium text-right">Amount</th>
-                    <th className="pb-2 font-medium">Due Date</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plan.instalments.map((inst) => (
-                    <tr
-                      key={inst.id}
-                      className="border-b border-cdy-navy-border/50"
-                    >
-                      <td className="py-2 text-cdy-white">
-                        {inst.instalmentNumber}
-                      </td>
-                      <td className="py-2 text-right text-cdy-white">
-                        {fmt(inst.amount)}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {format(new Date(inst.dueDate), 'MMM d, yyyy')}
-                      </td>
-                      <td className="py-2">
-                        {inst.status === InstalmentStatus.PAID ? (
-                          <span className="text-[var(--cdy-success)]">
-                            ✅ PAID
-                          </span>
-                        ) : inst.status === InstalmentStatus.OVERDUE ? (
-                          <span className="text-cdy-red">⚠ OVERDUE</span>
-                        ) : (
-                          <span className="text-amber-400">⏳ PENDING</span>
-                        )}
-                      </td>
-                      <td className="py-2">
-                        <PermissionGate feature="finance.payment_plans" action="write">
-                          {inst.status !== InstalmentStatus.PAID &&
-                            plan.status === PaymentPlanStatus.ACTIVE && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPayInstalment(inst)}
-                              >
-                                Mark as Paid
-                              </Button>
-                            )}
-                        </PermissionGate>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="pb-2 font-medium">#</th>
+                      <th className="pb-2 font-medium text-right">Amount</th>
+                      <th className="pb-2 font-medium">Due Date</th>
+                      <th className="pb-2 font-medium">Status</th>
+                      <th className="pb-2 font-medium">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {plan.instalments.map((inst) => (
+                      <tr
+                        key={inst.id}
+                        className="border-b border-cdy-navy-border/50"
+                      >
+                        <td className="py-2 text-cdy-white">
+                          {inst.instalmentNumber}
+                        </td>
+                        <td className="py-2 text-right text-cdy-white">
+                          {fmt(inst.amount)}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {format(new Date(inst.dueDate), 'MMM d, yyyy')}
+                        </td>
+                        <td className="py-2">
+                          {inst.status === InstalmentStatus.PAID ? (
+                            <span className="text-[var(--cdy-success)]">
+                              ✅ PAID
+                            </span>
+                          ) : inst.status === InstalmentStatus.OVERDUE ? (
+                            <span className="text-cdy-red">⚠ OVERDUE</span>
+                          ) : (
+                            <span className="text-amber-400">⏳ PENDING</span>
+                          )}
+                        </td>
+                        <td className="py-2">
+                          <PermissionGate feature="finance.payment_plans" action="write">
+                            {inst.status !== InstalmentStatus.PAID &&
+                              plan.status === PaymentPlanStatus.ACTIVE && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPayInstalment(inst)}
+                                >
+                                  Mark as Paid
+                                </Button>
+                              )}
+                          </PermissionGate>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <p className="mt-3 text-sm text-cdy-muted">
                 Remaining:{' '}
                 <span className="font-medium text-cdy-white">
@@ -464,72 +466,74 @@ export default function InvoiceDetailPage(): JSX.Element {
           {invoice.creditNotes.length > 0 && (
             <div className="rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-5">
               <h3 className="mb-4 font-medium text-cdy-white">Credit Notes</h3>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="pb-2 font-medium">Number</th>
-                    <th className="pb-2 font-medium text-right">Amount</th>
-                    <th className="pb-2 font-medium">Reason</th>
-                    <th className="pb-2 font-medium">Issued</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoice.creditNotes.map((cn) => (
-                    <tr
-                      key={cn.id}
-                      className="border-b border-cdy-navy-border/50"
-                    >
-                      <td className="py-2 font-mono text-cdy-white">
-                        {cn.creditNoteNumber}
-                      </td>
-                      <td className="py-2 text-right text-cdy-white">
-                        {fmt(cn.amount)}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {cn.reason.replace(/_/g, ' ')}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {format(new Date(cn.issuedAt), 'MMM d, yyyy')}
-                      </td>
-                      <td className="py-2 text-cdy-muted">{cn.status}</td>
-                      <td className="py-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              handleCreditNotePdf(cn.id, cn.creditNoteNumber)
-                            }
-                            disabled={cnPdfLoading === cn.id}
-                          >
-                            {cnPdfLoading === cn.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              'View PDF'
-                            )}
-                          </Button>
-                          <PermissionGate
-                            feature="finance.credit_notes"
-                            action="write"
-                          >
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="pb-2 font-medium">Number</th>
+                      <th className="pb-2 font-medium text-right">Amount</th>
+                      <th className="pb-2 font-medium">Reason</th>
+                      <th className="pb-2 font-medium">Issued</th>
+                      <th className="pb-2 font-medium">Status</th>
+                      <th className="pb-2 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoice.creditNotes.map((cn) => (
+                      <tr
+                        key={cn.id}
+                        className="border-b border-cdy-navy-border/50"
+                      >
+                        <td className="py-2 font-mono text-cdy-white">
+                          {cn.creditNoteNumber}
+                        </td>
+                        <td className="py-2 text-right text-cdy-white">
+                          {fmt(cn.amount)}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {cn.reason.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {format(new Date(cn.issuedAt), 'MMM d, yyyy')}
+                        </td>
+                        <td className="py-2 text-cdy-muted">{cn.status}</td>
+                        <td className="py-2">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
-                              onClick={() => setCreditNoteToDelete(cn)}
-                              aria-label="Delete credit note"
+                              onClick={() =>
+                                handleCreditNotePdf(cn.id, cn.creditNoteNumber)
+                              }
+                              disabled={cnPdfLoading === cn.id}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              {cnPdfLoading === cn.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                'View PDF'
+                              )}
                             </Button>
-                          </PermissionGate>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            <PermissionGate
+                              feature="finance.credit_notes"
+                              action="write"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-[var(--cdy-danger)] hover:text-[var(--cdy-danger)]"
+                                onClick={() => setCreditNoteToDelete(cn)}
+                                aria-label="Delete credit note"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </PermissionGate>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -687,41 +691,43 @@ export default function InvoiceDetailPage(): JSX.Element {
             {invoice.payments.length === 0 ? (
               <p className="text-sm text-cdy-muted">No payments recorded yet</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
-                    <th className="pb-2 font-medium">Date</th>
-                    <th className="pb-2 font-medium text-right">Amount</th>
-                    <th className="pb-2 font-medium">Method</th>
-                    <th className="pb-2 font-medium">Account</th>
-                    <th className="pb-2 font-medium">Reference</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoice.payments.map((payment) => (
-                    <tr
-                      key={payment.id}
-                      className="border-b border-cdy-navy-border/50"
-                    >
-                      <td className="py-2 text-cdy-white">
-                        {format(new Date(payment.paidAt), 'MMM d, yyyy')}
-                      </td>
-                      <td className="py-2 text-right text-cdy-white">
-                        {fmt(payment.amount)}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {payment.method.replace(/_/g, ' ')}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {payment.accountName ?? '—'}
-                      </td>
-                      <td className="py-2 text-cdy-muted">
-                        {payment.reference ?? '—'}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead>
+                    <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
+                      <th className="pb-2 font-medium">Date</th>
+                      <th className="pb-2 font-medium text-right">Amount</th>
+                      <th className="pb-2 font-medium">Method</th>
+                      <th className="pb-2 font-medium">Account</th>
+                      <th className="pb-2 font-medium">Reference</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {invoice.payments.map((payment) => (
+                      <tr
+                        key={payment.id}
+                        className="border-b border-cdy-navy-border/50"
+                      >
+                        <td className="py-2 text-cdy-white">
+                          {format(new Date(payment.paidAt), 'MMM d, yyyy')}
+                        </td>
+                        <td className="py-2 text-right text-cdy-white">
+                          {fmt(payment.amount)}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {payment.method.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {payment.accountName ?? '—'}
+                        </td>
+                        <td className="py-2 text-cdy-muted">
+                          {payment.reference ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 

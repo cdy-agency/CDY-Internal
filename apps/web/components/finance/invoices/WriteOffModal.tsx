@@ -87,7 +87,7 @@ export function WriteOffModal({
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-[480px] rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl"
+          className="max-h-[90vh] w-full overflow-y-auto max-w-[480px] rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6 shadow-xl"
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"

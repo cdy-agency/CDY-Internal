@@ -80,7 +80,7 @@ export default function SalesPerformancePage(): JSX.Element {
 
       {report && (
         <>
-          <div className="grid grid-cols-2 gap-4 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ['Total Revenue Won', formatCurrency(report.totals.totalRevenue)],
               ['Total Deals', String(report.totals.totalDealsWon)],
@@ -126,9 +126,9 @@ export default function SalesPerformancePage(): JSX.Element {
                       >
                         #{rank}
                       </span>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium text-cdy-white">{agent.agentName}</p>
-                        <p className="text-sm text-cdy-muted">{agent.email}</p>
+                        <p className="break-words text-sm text-cdy-muted">{agent.email}</p>
                       </div>
                     </div>
                     <Button

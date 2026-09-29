@@ -35,8 +35,10 @@ export function DataTable({ columns, rows }: DataTableProps): JSX.Element {
                   className={`py-2.5 pr-4 text-sm overflow-hidden ${
                     ci === 0
                       ? 'font-medium text-cdy-white whitespace-nowrap'
-                      : 'font-mono text-cdy-muted whitespace-nowrap'
-                  } ${ci === 1 ? 'max-w-[160px] break-words' : ''}`}
+                      : ci === 1
+                        ? 'font-mono text-cdy-muted max-w-[160px] break-words'
+                        : 'font-mono text-cdy-muted whitespace-nowrap'
+                  }`}
                 >
                   {cell}
                 </td>

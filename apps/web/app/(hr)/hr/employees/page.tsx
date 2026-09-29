@@ -222,7 +222,7 @@ export default function EmployeesPage(): JSX.Element {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-cdy-navy-border/50">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-cdy-navy-light">
               <tr className="text-left text-cdy-muted">
                 <th className="px-4 py-3 font-medium">Code</th>

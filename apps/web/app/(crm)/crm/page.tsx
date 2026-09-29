@@ -58,7 +58,7 @@ function AgentView({ month }: { month: string }): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Hero metrics */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SectionCard>
           <MetricHero
             value={formatCurrency(data?.performance.revenueWon ?? 0)}
@@ -109,7 +109,7 @@ function AgentView({ month }: { month: string }): JSX.Element {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {targetRevenue > 0 && (
           <SectionCard title="Revenue vs target">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-6">
               <GaugeChart
                 value={Math.min(revenueProgress, 100)}
                 label="% of target"
@@ -484,7 +484,7 @@ function TeamView({
       {/* Target modal */}
       {targetOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">
               Set Monthly Targets — {format(monthDate, 'MMMM yyyy')}
             </h2>

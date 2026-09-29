@@ -187,7 +187,7 @@ export default function CommissionRulesPage(): JSX.Element {
         <span className="text-cdy-white">Rules</span>
       </nav>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-cdy-white">Commission Rules</h1>
         <PermissionGate feature="finance.commissions" action="write">
           <Button
@@ -206,7 +206,7 @@ export default function CommissionRulesPage(): JSX.Element {
               {group.agentName}
             </h2>
             <div className="overflow-x-auto rounded-lg border border-cdy-navy-border bg-cdy-navy-light">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-cdy-navy-border text-left text-cdy-muted">
                     <th className="px-4 py-3 font-medium">Service Type</th>
@@ -278,7 +278,7 @@ export default function CommissionRulesPage(): JSX.Element {
 
       {deactivateTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
+          <div className="max-h-[90vh] w-full overflow-y-auto max-w-md rounded-lg border border-cdy-navy-border bg-cdy-navy-light p-6">
             <h2 className="text-lg font-semibold text-cdy-white">
               Deactivate this rule?
             </h2>

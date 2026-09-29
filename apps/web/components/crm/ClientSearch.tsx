@@ -53,7 +53,7 @@ export function ClientSearch({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
       {value && (
-        <p className="mt-1 text-xs text-cdy-muted">
+        <p className="mt-1 break-words text-xs text-cdy-muted">
           {value.contactName} · {value.email}
         </p>
       )}
@@ -101,7 +101,7 @@ export function ClientSearch({
                 onMouseDown={() => selectClient(client)}
               >
                 <span className="font-medium text-cdy-white">{client.companyName ?? client.contactName}</span>
-                <span className="block text-xs text-cdy-muted">
+                <span className="block break-words text-xs text-cdy-muted">
                   {client.contactName} · {client.email}
                 </span>
               </button>

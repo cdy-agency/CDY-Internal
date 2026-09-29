@@ -198,7 +198,7 @@ export default function PerformanceReviewDetailPage(): JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-cdy-white">
           Performance Review — {review.period}
         </h2>
@@ -224,7 +224,7 @@ export default function PerformanceReviewDetailPage(): JSX.Element {
       </div>
 
       <div className="rounded-lg border border-cdy-navy-border/50 bg-cdy-navy-light p-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <span
             className={cn(
               'rounded-full px-3 py-1 text-sm font-medium',

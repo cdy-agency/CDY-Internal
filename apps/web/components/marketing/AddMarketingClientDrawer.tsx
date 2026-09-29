@@ -84,7 +84,7 @@ export function AddMarketingClientDrawer({
         role="presentation"
       />
       <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-cdy-navy-light shadow-xl">
-        <div className="flex items-center justify-between border-b border-cdy-navy-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-cdy-navy-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-cdy-white">
             Add Marketing Client
           </h2>
@@ -98,7 +98,7 @@ export function AddMarketingClientDrawer({
         </div>
         <form
           onSubmit={(e) => void handleSubmit(e)}
-          className="flex flex-1 flex-col overflow-y-auto p-6"
+          className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6"
         >
           <div className="space-y-5">
             <div>

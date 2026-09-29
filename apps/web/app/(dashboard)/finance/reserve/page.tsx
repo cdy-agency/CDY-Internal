@@ -363,9 +363,9 @@ export default function ReservePage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl">
+    <div className="max-w-4xl space-y-6 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-cdy-white">Reserve Fund</h1>
           <p className="mt-0.5 text-sm text-cdy-muted">CDY company savings and emergency fund</p>
@@ -383,7 +383,7 @@ export default function ReservePage(): JSX.Element {
       </div>
 
       {isError && (
-        <div className="flex items-center justify-between rounded-lg border border-red-800/40 bg-red-900/10 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-800/40 bg-red-900/10 px-4 py-3">
           <p className="text-sm text-red-400">Failed to load reserve data.</p>
           <button onClick={() => void refetch()} className="text-sm text-cdy-muted underline hover:text-cdy-white">
             Retry
@@ -427,7 +427,7 @@ export default function ReservePage(): JSX.Element {
 
       {/* Transaction history */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-cdy-white">
             Transaction history
           </h2>

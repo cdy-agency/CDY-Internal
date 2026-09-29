@@ -64,7 +64,7 @@ export default function InvoicesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-cdy-white">Invoices</h1>
         <PermissionGate feature="finance.invoices" action="write">
           <Button onClick={openCreate}>
@@ -96,7 +96,7 @@ export default function InvoicesPage(): JSX.Element {
         </div>
         <Input
           placeholder="Search client..."
-          className="w-48"
+          className="w-full sm:w-48"
           value={filters.clientId ?? ''}
           onChange={(e) =>
             setFilters((prev) => ({
@@ -108,7 +108,7 @@ export default function InvoicesPage(): JSX.Element {
         />
         <Input
           type="date"
-          className="w-40"
+          className="w-full sm:w-40"
           value={filters.dateFrom ?? ''}
           onChange={(e) =>
             setFilters((prev) => ({
@@ -120,7 +120,7 @@ export default function InvoicesPage(): JSX.Element {
         />
         <Input
           type="date"
-          className="w-40"
+          className="w-full sm:w-40"
           value={filters.dateTo ?? ''}
           onChange={(e) =>
             setFilters((prev) => ({
@@ -175,7 +175,7 @@ export default function InvoicesPage(): JSX.Element {
       {!isLoading && data && data.data.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-lg border border-cdy-navy-border">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-cdy-navy-border bg-cdy-navy-light text-left text-cdy-muted">
                   <th className="px-4 py-3 font-medium">Invoice #</th>
@@ -240,7 +240,7 @@ export default function InvoicesPage(): JSX.Element {
             </table>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-cdy-muted">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cdy-muted">
             <span>
               Page {data.page} of {data.totalPages} ({data.total} invoices)
             </span>

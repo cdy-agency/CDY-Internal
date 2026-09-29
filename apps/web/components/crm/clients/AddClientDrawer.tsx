@@ -223,7 +223,7 @@ export function AddClientDrawer({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-cdy-muted">Email *</Label>
               <Input
@@ -246,7 +246,7 @@ export function AddClientDrawer({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-cdy-muted">Country</Label>
               <Input
@@ -270,7 +270,7 @@ export function AddClientDrawer({
           {/* Source */}
           <div>
             <Label className="text-cdy-muted">How did they reach CDY?</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {SOURCE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

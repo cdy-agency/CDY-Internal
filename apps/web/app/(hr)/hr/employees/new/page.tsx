@@ -109,21 +109,21 @@ export default function NewEmployeePage(): JSX.Element {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-cdy-white">Add Employee</h2>
         <Link href="/hr/employees" className="text-sm text-cdy-muted hover:text-cdy-white">
           ← Back to directory
         </Link>
       </div>
 
-      <div className="flex gap-1 border-b border-cdy-navy-border">
+      <div className="flex gap-1 overflow-x-auto border-b border-cdy-navy-border">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'px-4 py-2 text-sm font-medium transition-colors',
+              'whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors',
               tab === t.id
                 ? 'border-b-2 border-cdy-red text-cdy-red'
                 : 'text-cdy-muted hover:text-cdy-white',
